@@ -1,0 +1,203 @@
+openapi: 3.0.3
+info:
+  title: SICA - Sistema Integrado de Control de Acceso (Zona Acme)
+  description: API REST para el control de accesos, visitas, incidentes y auditoría del complejo empresarial Zona Acme (Java Puro / Sin Framework).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Servidor Local H2 / JDK HttpServer
+
+paths:
+  /auth/login:
+    post:
+      summary: Autenticación de usuarios y emisión de JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  example: admin123
+      responses:
+        '200':
+          description: Autenticación exitosa
+        '400':
+          description: Credenciales inválidas o datos faltantes
+
+  /auth/logout:
+    post:
+      summary: Cierre de sesión y revocación del token JWT
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sesión cerrada exitosamente
+
+  /usuarios:
+    get:
+      summary: Listar todos los usuarios
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuarios
+    post:
+      summary: Crear un nuevo usuario
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Usuario creado
+
+  /personas:
+    get:
+      summary: Listar todas las personas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de personas
+    post:
+      summary: Registrar una nueva persona
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Persona creada
+
+  /personas/buscar/{doc}:
+    get:
+      summary: Buscar persona por documento de identidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: doc
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Persona encontrada
+
+  /visitas/preregistrar:
+    post:
+      summary: Pre-registrar una visita (Funcionario)
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Visita en estado APROBADO creada
+
+  /visitas/no-anunciada:
+    post:
+      summary: Registrar una visita no anunciada (Guardia)
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Visita en estado PENDIENTE_APROBACION creada
+
+  /visitas/pase-temporal:
+    post:
+      summary: Registrar ingreso puntual por carnet olvidado (Guardia)
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Pase temporal PENDIENTE_APROBACION_OLVIDO creado
+
+  /visitas/{id}/aprobar:
+    put:
+      summary: Aprobar visita pendiente (Funcionario)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Visita aprobada
+
+  /visitas/{id}/check-in:
+    post:
+      summary: Registrar ingreso (Check-In) de una visita con regularización de salida olvidada
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Check-in realizado
+        '403':
+          description: Rechazado por estar la persona RESTRINGIDA por incidente
+
+  /visitas/{id}/check-out:
+    post:
+      summary: Registrar salida (Check-Out) de una visita
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Check-out realizado
+
+  /incidentes:
+    post:
+      summary: Registrar incidente y restringir acceso a la persona de inmediato
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Incidente registrado y estadoAcceso cambiado a RESTRINGIDO
+    get:
+      summary: Listar todos los incidentes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de incidentes
+
+  /reportes/personas-dentro:
+    get:
+      summary: Personas actualmente dentro del complejo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Reporte de ocupación actual
+
+  /reportes/auditoria:
+    get:
+      summary: Consultar bitácora de auditoría inmutable
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Bitácora de eventos
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
