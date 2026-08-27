@@ -64,6 +64,8 @@ public class AuthUseCase {
         String token = jwtPort.generateToken(usuario);
         auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_SUCCESS", "Inicio de sesion exitoso", ipOrigen);
 
+        java.util.Set<String> permisos = usuarioRepository.findPermissionsByRoleId(usuario.getRolId());
+
         return new LoginResponseDTO(
                 token,
                 "Bearer",
@@ -72,9 +74,11 @@ public class AuthUseCase {
                 usuario.getNombreCompleto(),
                 usuario.getRolId(),
                 usuario.getRolNombre(),
-                usuario.getEmpresaId()
+                usuario.getEmpresaId(),
+                permisos
         );
     }
+
 
     public void logout(AuthenticatedUserContext userContext, String tokenJti, String ipOrigen) {
         if (userContext != null && tokenJti != null) {
