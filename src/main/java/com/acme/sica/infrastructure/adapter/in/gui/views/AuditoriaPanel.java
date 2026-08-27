@@ -571,6 +571,12 @@ public class AuditoriaPanel extends JPanel {
                 onSuccess.run();
                 loadData();
             } catch (Exception e) {
+                JOptionPane.showMessageDialog(parent, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+
     private void executeEditarUsuario() {
         int row = tblUsuarios.getSelectedRow();
         if (row == -1) {
