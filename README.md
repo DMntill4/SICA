@@ -1,186 +1,205 @@
-# SICA - Sistema Integrado de Control de Acceso (Zona Acme)
+<div align="center">
 
-**Backend Java ejecutable (API REST autocontenida sin framework de aplicación)**
+# SICA — Sistema Integrado de Control de Acceso
+### *Complejo Empresarial "Zona Acme"*
 
-SICA es un sistema de backend diseñado para automatizar y asegurar el control de ingresos, salidas, incidentes y visitas en el Complejo Empresarial "Zona Acme" (con más de 30 empresas).
+[![Java 21+](https://img.shields.io/badge/JAVA_21+-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
+[![Java Swing](https://img.shields.io/badge/JAVA_SWING-007396?style=for-the-badge&logo=java&logoColor=white)](https://docs.oracle.com/javase/tutorial/uiswing/)
+[![Jackson JSON](https://img.shields.io/badge/JACKSON_JSON-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://github.com/FasterXML/jackson)
+[![Apache Maven](https://img.shields.io/badge/APACHE_MAVEN-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)](https://maven.apache.org/)
+[![MySQL 8.0](https://img.shields.io/badge/MYSQL_8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![JWT Auth](https://img.shields.io/badge/JWT_AUTH-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
+[![FlatLaf UI](https://img.shields.io/badge/FLATLAF_DARK-1E293B?style=for-the-badge&logo=swing&logoColor=white)](https://www.formdev.com/flatlaf/)
+[![GitFlow](https://img.shields.io/badge/GITFLOW-F05032?style=for-the-badge&logo=git&logoColor=white)](https://github.com/DMntill4/SICA.git)
+
+<p align="center">
+  <b>Sistema de backend de arquitectura hexagonal pura + cliente GUI en Java Swing (FlatLaf Dark) para el control de accesos, visitantes, incidentes y auditoría inmutable en tiempo real.</b>
+</p>
+
+</div>
 
 ---
 
-## 1. Justificación de Arquitectura (Sin Framework)
+## Tabla de Contenidos
 
-El desarrollo del backend fue construido utilizando **Java Estándar puro** (`com.sun.net.httpserver.HttpServer` nativo del JDK) y persistencia mediante **JDBC puro** sobre una base de datos **MySQL 8.3** (vía Docker) con fallback a **H2 en modo archivo**.
-
-### ¿Por qué no se usó Spring Boot / JPA?
-- **Control Total y Transparencia**: En lugar de depender de "magia" o configuración automática de Spring (`@RestController`, `@Autowired`, `@Entity`), la aplicación construye a mano el servidor HTTP, el enrutador de peticiones, el manejo de hilos concurrentes, la inyección de dependencias por constructor y las consultas SQL mediante `PreparedStatement` y `ResultSet`.
-- **Diferencia entre Framework y Librerías Puntuales**:
-  - Un **framework** (Spring/Quarkus) impone la arquitectura global de la aplicación.
-  - Las **librerías puntuales** resuelven tareas matemáticas o algorítmicas del estándar de la industria que no deben reimplementarse a mano por seguridad (Jackson para parseo JSON, `jBCrypt` para hashing de contraseñas de un solo sentido, y Auth0 `java-jwt` para la firma y verificación de tokens).
+- [1. Introducción y Contexto del Problema](#1-introducción-y-contexto-del-problema)
+- [2. Características Principales](#2-características-principales)
+- [3. Stack Tecnológico](#3-stack-tecnológico)
+- [4. Arquitectura Hexagonal y Patrones de Diseño](#4-arquitectura-hexagonal-y-patrones-de-diseño)
+- [5. Control de Acceso Basado en Roles (RBAC)](#5-control-de-acceso-basado-en-roles-rbac)
+- [6. Guía de Instalación y Ejecución](#6-guía-de-instalación-y-ejecución)
+- [7. Catálogo de Endpoints REST API](#7-catálogo-de-endpoints-rest-api)
+- [8. Pruebas Unitarias y Cobertura QA](#8-pruebas-unitarias-y-cobertura-qa)
+- [9. Contribuidores y Autores](#9-contribuidores-y-autores)
 
 ---
 
-## 2. Estructura del Proyecto (Arquitectura Hexagonal Explícita)
+## 1. Introducción y Contexto del Problema
+
+El Complejo Empresarial **"Zona Acme"** alberga a más de 30 empresas de alto perfil. Sin embargo, su control de acceso manual basado en cuadernos de papel y comunicación por radio generaba cuellos de botella, falta de trazabilidad e imprecisión en emergencias.
+
+**SICA** resuelve estas problemáticas mediante:
+- **Automatización de los 4 Flujos de Acceso**: Pre-Registrado, No Anunciado en Tiempo Real, Pase Temporal (Carnet Olvidado) y Regularización Automática de Salida Olvidada.
+- **Seguridad Reactiva e Inmediata**: Bloqueo instantáneo en portería al registrar incidentes de gravedad CRÍTICO o ALTO.
+- **Auditoría Inmutable**: Registro append-only de todas las operaciones del sistema con IP de origen y contexto de usuario.
+
+---
+
+## 2. Características Principales
+
+| Módulo | Descripción |
+|---|---|
+| **Autenticación & JWT** | Login con hashing `BCrypt` y tokens JWT de sesión sin estado con revocación en logout (`token_revocado`). |
+| **RBAC Granular** | Control de acceso basado en 16 permisos individuales en BD (`crear_persona`, `checkin_visita`, `aprobar_visita`, etc.). |
+| **Flujos de Visita** | Pre-registro por funcionarios, solicitudes en tiempo real aprobables desde GUI y regularización de salidas olvidadas (`CERRADA_POR_SISTEMA`). |
+| **Gestión de Incidentes** | Bloqueo dinámico de personas a estado `RESTRINGIDO` y botón para **Rehabilitación de Acceso**. |
+| **Interfaz Swing FlatLaf** | UI de escritorio moderna, oscura y responsiva estructurada por roles (`GuardiaPanel`, `FuncionarioPanel`, `IncidentesPanel`, `AuditoriaPanel`). |
+
+---
+
+## 3. Stack Tecnológico
+
+<div align="center">
+
+| Tecnología | Rol en la Aplicación |
+|---|---|
+| **Java 21 (OpenJDK)** | Lenguaje principal de programación con sintaxis moderna (Records, Pattern Matching). |
+| **Java Swing + FlatLaf 3.4** | Cliente GUI de escritorio con diseño oscuro (*Dark Theme*) libre de recortes. |
+| **JDK Native HttpServer** | Servidor web concurrente integrado (`com.sun.net.httpserver.HttpServer`). |
+| **MySQL 8.0 & H2 Database** | Motores de base de datos relacional (Persistencia JDBC nativa sin ORM/JPA). |
+| **Jackson Databind** | Parseo y serialización JSON de alta velocidad. |
+| **Auth0 java-jwt & jBCrypt** | Seguridad, hashing seguro de contraseñas de un solo sentido y firmas JWT. |
+| **Apache Maven** | Gestión de dependencias y empaquetado JAR ejecutable autocontenido (*Shaded JAR*). |
+| **Docker & Docker Compose** | Despliegue en contenedores para MySQL 8.0. |
+
+</div>
+
+---
+
+## 4. Arquitectura Hexagonal y Patrones de Diseño
+
+El proyecto implementa una **Arquitectura Hexagonal (Ports & Adapters)** estructurada por paquetes independientes (*Vertical Slice*):
 
 ```
 com.acme.sica
-├── domain/                              (CAPA DE DOMINIO PURA - Sin dependencias externas)
-│   ├── model/                           (Entidades: Usuario, Persona, Visita, Empresa, Incidente, Bitacora, etc.)
-│   └── enums/                           (EstadoAcceso, EstadoVisita, TipoVisita, NivelGravedad, etc.)
+├── domain/                              (DOMINIO PURO - Sin dependencias externas)
+│   ├── model/                           (Persona, Usuario, Visita, Incidente, Empresa, Bitacora)
+│   └── enums/                           (EstadoAcceso, EstadoVisita, TipoVisita, NivelGravedad)
 │
-├── application/                         (CAPA DE APLICACIÓN / CASOS DE USO)
-│   ├── AuthenticatedUserContext.java    (Record del contexto de usuario autenticado)
-│   ├── dto/                             (DTOs de Petición y Respuesta)
-│   ├── port/
-│   │   └── out/                         (Puertos de Salida: Interfaces de Repositorios y AuditService)
-│   └── usecase/
-│       ├── auth/                        (AuthUseCase: login, logout, control de intentos)
-│       ├── empresas/                    (GestionarEmpresaUseCase)
-│       ├── personas/                    (GestionarPersonaUseCase)
-│       ├── usuarios/                    (GestionarUsuarioUseCase)
-│       ├── incidentes/                  (RegistrarIncidenteUseCase)
-│       ├── visitas/                     (GestionarVisitaUseCase, VisitaFactory, Strategies)
-│       └── reportes/                    (GenerarReporteUseCase)
+├── application/                         (CAPA DE APLICACIÓN Y CASOS DE USO)
+│   ├── dto/                             (DTOs inmutables de transferencia de datos)
+│   ├── port/out/                        (Puertos de Salida: Repositorios e interfaces de infraestructura)
+│   └── usecase/                         (AuthUseCase, GestionarVisitaUseCase, RegistrarIncidenteUseCase)
 │
 └── infrastructure/                      (CAPA DE INFRAESTRUCTURA Y ADAPTADORES)
     ├── adapter/
     │   ├── in/
-    │   │   ├── http/                    (ADAPTADORES DE ENTRADA HTTP)
-    │   │   │   ├── handlers/            (AuthHttpHandler, VisitaHttpHandler, EmpresaHttpHandler, etc.)
-    │   │   │   └── router/              (Router, Route, HttpUtils, RouteHandler)
-    │   │   └── gui/                     (ADAPTADOR DE ENTRADA SWING)
-    │   │       ├── client/              (SicaApiClient - Cliente HTTP que consume la API REST)
-    │   │       └── views/               (Paneles Swing: GuardiaPanel, FuncionarioPanel, etc.)
-    │   └── out/
-    │       └── persistence/jdbc/        (ADAPTADORES DE SALIDA - Implementaciones JDBC de los Repositorios)
-    ├── config/                          (DatabaseConfig)
-    ├── db/                              (SchemaInitializer, ConnectionFactory, DatabaseFactoryProvider)
-    └── security/                        (JwtUtil, PasswordHasher, AuthMiddleware, PermissionChecker)
+    │   │   ├── http/                    (Handlers REST API HTTP y Router concurrente)
+    │   │   └── gui/                     (Cliente Swing FlatLaf: GuardiaPanel, FuncionarioPanel, etc.)
+    │   └── out/persistence/jdbc/        (Adaptadores JDBC concretos para MySQL y H2)
+    ├── config/                          (Cargador de variables y config.properties)
+    ├── db/                              (ConnectionFactory, SchemaInitializer con migraciones ALTER TABLE)
+    └── security/                        (JwtUtil, PasswordHasher, PermissionChecker)
 ```
 
-### Patrones de Diseño Aplicados
-1. **Abstract Factory Pattern (`db/connection/`)**:
-   - `ConnectionFactory`: Interfaz del producto de conexiones JDBC.
-   - `MySqlConnectionFactory`: Fábrica concreta de conexiones MySQL (`jdbc:mysql://localhost:3306/sica`).
-   - `H2ConnectionFactory`: Fábrica concreta de conexiones H2 para pruebas/fallback.
-   - `DatabaseFactoryProvider`: Proveedor que selecciona y retorna la fábrica de conexiones activa según las propiedades del sistema (`db.engine=MYSQL`).
-2. **Factory Pattern (`VisitaFactory`)**:
-   - Centraliza la instanciación de visitas asignando su estado y tipo según el flujo (`PRE_REGISTRADA`, `NO_ANUNCIADA`, `PASE_TEMPORAL`).
-3. **Strategy Pattern (`AccessValidationStrategy` & `PermissionChecker`)**:
-   - `RestrictedPersonValidationStrategy`: Bloquea inmediatamente el acceso a personas con `estadoAcceso == RESTRINGIDO`.
-   - `PreRegisteredValidationStrategy` & `UnannouncedValidationStrategy`: Validan ventanas horarias y aprobaciones de funcionarios.
-   - `PermissionChecker`: Evalúa dinámicamente si el rol del usuario posee el permiso requerido en `rol_permiso`.
+### Patrones de Diseño Aplicados:
+1. **Abstract Factory Pattern (`db/connection/`)**: Fábricas concretas `MySqlConnectionFactory` y `H2ConnectionFactory` seleccionadas dinámicamente mediante `DatabaseFactoryProvider`.
+2. **Factory Pattern (`VisitaFactory`)**: Centraliza la instanciación de visitas asignando estados según la tipología del flujo.
+3. **Strategy Pattern (`AccessValidationStrategy`)**: Algoritmos intercambiables de validación de acceso (`RestrictedPersonValidationStrategy`, `PreRegisteredValidationStrategy`, `UnannouncedValidationStrategy`).
+4. **State Pattern / Chain**: Gestión de ciclo de vida de visitas y autorización RBAC middleware.
 
 ---
 
-## 3. Modelo de Datos Relacional (E-R)
+## 5. Control de Acceso Basado en Roles (RBAC)
 
-```mermaid
-erDiagram
-    ROL ||--o{ ROL_PERMISO : tiene
-    PERMISO ||--o{ ROL_PERMISO : asignado_a
-    ROL ||--o{ USUARIO : asignado_a
-    EMPRESA ||--o{ USUARIO : emplea
-    EMPRESA ||--o{ PERSONA : pertenece
-    USUARIO ||--o{ VISITA : funcionario
-    USUARIO ||--o{ VISITA : guardia_ingreso
-    USUARIO ||--o{ VISITA : guardia_salida
-    PERSONA ||--o{ VISITA : visitante
-    PERSONA ||--o{ INCIDENTE : involucrado
-    USUARIO ||--o{ INCIDENTE : reportado_por
-    PUNTO_ACCESO ||--o{ VISITA : punto_ingreso
-    PUNTO_ACCESO ||--o{ VISITA : punto_salida
-    VISITA ||--o| CODIGO_QR : genera
+### Credenciales de Prueba Preconfiguradas:
 
-    ROL { bigint id PK; varchar nombre UK }
-    PERMISO { bigint id PK; varchar nombre UK }
-    EMPRESA { bigint id PK; varchar nit UK; varchar nombre; boolean activa }
-    USUARIO { bigint id PK; varchar username UK; varchar password_hash; bigint rol_id FK; bigint empresa_id FK; boolean bloqueado }
-    PERSONA { bigint id PK; varchar doc_identidad UK; varchar estado_acceso; bigint empresa_id FK }
-    VISITA { bigint id PK; bigint persona_id FK; varchar tipo_visita; varchar estado_visita; varchar tipo_cierre }
-    INCIDENTE { bigint id PK; bigint persona_id FK; varchar nivel_gravedad }
-    PUNTO_ACCESO { bigint id PK; varchar nombre UK }
-    BITACORA_AUDITORIA { bigint id PK; varchar accion; varchar username; text detalle }
-```
-
-Orden de creación relacional en `schema.sql`:
-1. `rol` ↔ `permiso` → `rol_permiso` (Tabla intermedia RBAC).
-2. `empresa` → `usuario` (Conexión por `empresa_id`).
-3. `token_revocado` (Lista negra para Logout JWT).
-4. `persona` (Doc. Identidad, Nombre, Apellido, `estado_acceso`: HABILITADO / RESTRINGIDO).
-5. `punto_acceso` (Puntos de control físico).
-6. `visita` (Conecta persona, funcionario, guardia, punto de acceso, tipo y estado de visita).
-7. `incidente` (Registra incidentes y restringe `persona.estado_acceso`).
-8. `bitacora_auditoria` (Bitácora inmutable Append-Only para todas las acciones críticas).
-
----
-
-## 4. Credenciales de Prueba por Rol
-
-| Usuario | Contraseña | Rol | Permisos Principales | Empresa |
+| Rol | Username | Password | Permisos Principales | Empresa |
 |---|---|---|---|---|
-| `admin` | `admin123` | **ADMIN** | Todos los permisos (1 a 16), CRUD completo, auditoría y limpieza de historial | N/A |
-| `guardia1` | `guardia123` | **GUARDIA** | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente`, `generar_reporte` | Recepción |
-| `func1` | `func123` | **FUNCIONARIO** | `preregistrar_visita`, `aprobar_visita`, `generar_reporte` | Acme Corporation |
+| **ADMIN** | `admin` | `admin123` | Control total (1 a 16), gestión de usuarios/empresas, auditoría y limpieza de visitas | N/A |
+| **GUARDIA** | `guardia1` | `guardia123` | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente`, `generar_reporte` | Recepción |
+| **FUNCIONARIO** | `func1` | `func123` | `preregistrar_visita`, `aprobar_visita`, `crear_persona`, `generar_reporte` | Acme Corporation |
 
 ---
 
-## 5. Instrucciones de Compilación y Ejecución
+## 6. Guía de Instalación y Ejecución
 
-### Requisitos
-- JDK 17 o superior.
-- Docker y Docker Compose (para la base de datos MySQL).
+### Requisitos Previos
+- **Java JDK 17 o 21** instalado.
+- **Git** instalado.
 
-### Base de Datos con Docker
-
-```bash
-# 1. Levantar MySQL 8.3 en Docker
-docker-compose up -d
-
-# Verificar que el contenedor está corriendo
-docker ps
-```
-
-### Conexión desde DBeaver
-| Parámetro | Valor |
-|---|---|
-| Host | `localhost` |
-| Puerto | `3306` |
-| Base de datos | `sica` |
-| Usuario (root) | `root` / `-3ta9}OK`4[Y` |
-| Usuario (app) | `sica_user` / `sica_pass_2026` |
-| Driver | MySQL 8 |
-
-> **Nota:** En las propiedades del driver de DBeaver, establece `allowPublicKeyRetrieval=true` y `useSSL=false`.
-
-### Compilar y Ejecutar
+### Pasos de Ejecución
 
 ```bash
-# 1. Compilar y empaquetar el proyecto
+# 1. Clonar el repositorio
+git clone https://github.com/DMntill4/SICA.git
+cd SICA
+
+# 2. Copiar la plantilla de entorno
+cp .env.example .env
+
+# 3. Compilar y empaquetar con Maven Wrapper
 ./mvnw clean package
 
-# 2. Ejecutar la aplicación (Backend HTTP + GUI Swing FlatLaf)
+# 4. Ejecutar la aplicación (Backend HTTP + GUI Swing FlatLaf)
 java -jar target/sica.jar
-
-# 3. Ejecutar solo backend (sin GUI)
-java -jar target/sica.jar --headless
 ```
 
 ---
 
-## 6. Endpoints Principales (API REST)
+## 7. Catálogo de Endpoints REST API
 
-- `POST /auth/login` - Autenticación y obtención de JWT.
-- `POST /auth/logout` - Cierre de sesión y revocación del token.
-- `GET /empresas` - Listar empresas registradas.
-- `POST /empresas` - Registrar nueva empresa (requiere permiso `crear_empresa`).
-- `PUT /empresas/{id}` - Actualizar empresa (requiere permiso `modificar_empresa`).
-- `DELETE /empresas/{id}` - Eliminar empresa (requiere permiso `eliminar_empresa`).
-- `POST /visitas/preregistrar` - Pre-registro por funcionario.
-- `POST /visitas/no-anunciada` - Registro de visitante inesperado por guardia.
-- `POST /visitas/pase-temporal` - Ingreso puntual por carnet olvidado.
-- `PUT /visitas/{id}/aprobar` - Aprobación por funcionario.
-- `POST /visitas/{id}/check-in` - Ingreso con regularización automática de salida olvidada (`CERRADA_POR_SISTEMA`).
-- `POST /visitas/{id}/check-out` - Salida normal.
-- `POST /incidentes` - Registro de incidente (restringe inmediatamente a la persona).
-- `GET /reportes/personas-dentro` - Listado de personas actualmente en el complejo.
-- `GET /reportes/auditoria` - Consulta de bitácora de auditoría inmutable.
-- `DELETE /visitas` - Limpiar historial de visitas (requiere permiso `limpiar_historial`).
+- `POST /auth/login` — Autenticación de usuario y retorno de JWT.
+- `POST /auth/logout` — Cierre de sesión y revocación del token JWT.
+- `GET /personas` — Listado de personas/visitantes registrados.
+- `POST /personas` — Registrar nueva persona (`crear_persona`).
+- `DELETE /personas/{id}` — Eliminar persona de la base de datos (`modificar_persona`).
+- `PUT /personas/{id}/rehabilitar` — Rehabilitar acceso levantando restricción de incidente.
+- `POST /visitas/preregistrar` — Pre-registro de invitado por funcionario.
+- `POST /visitas/no-anunciada` — Registro de visitante inesperado por guardia.
+- `POST /visitas/pase-temporal` — Ingreso por carnet olvidado.
+- `PUT /visitas/{id}/aprobar` — Aprobación de visita pendiente por funcionario.
+- `POST /visitas/{id}/check-in` — Registro de entrada con regularización automática de salida olvidada.
+- `POST /visitas/{id}/check-out` — Registro de salida normal.
+- `POST /incidentes` — Registro de incidente y bloqueo automático a `RESTRINGIDO`.
+- `DELETE /visitas` — Limpiar todo el historial de visitas (Solo Admin).
+- `GET /reportes/auditoria` — Consulta de la bitácora inmutable de auditoría.
+
+---
+
+## 8. Pruebas Unitarias y Cobertura QA
+
+El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 5:
+- `AuthUseCaseTest`: Verificación de intentos fallidos, bloqueos y hashing de contraseñas.
+- `VisitaFactoryTest`: Verificación de la creación de visitas según tipología.
+- `SalidaOlvidadaTest`: Verificación de la regularización automática de visitas con `CERRADA_POR_SISTEMA`.
+- `PermissionCheckerTest`: Pruebas de seguridad RBAC.
+
+```bash
+# Ejecutar la suite de pruebas unitarias
+./mvnw test
+```
+
+---
+
+## 9. Contribuidores y Autores
+
+<div align="center">
+
+| Contribuidor | Rol en el Proyecto | Perfil GitHub |
+|---|---|---|
+| **Diego Mantilla** | Lead Software Engineer | [@DMntill4](https://github.com/DMntill4) |
+| **Andrés Guerra** | Lead Software Engineer | [@andresguerra321](https://github.com/andresguerra321) |
+
+<br/>
+
+[![Diego Mantilla](https://img.shields.io/badge/DIEGO_MANTILLA-LEAD_SOFTWARE_ENGINEER-1E293B?style=for-the-badge&logo=github&logoColor=white)](https://github.com/DMntill4)
+[![Andrés Guerra](https://img.shields.io/badge/ANDRES_GUERRA-LEAD_SOFTWARE_ENGINEER-0284C7?style=for-the-badge&logo=github&logoColor=white)](https://github.com/andresguerra321)
+
+<br/>
+
+***
+
+*Sistema Integrado de Control de Acceso (SICA) — Desarrollado para Complejo Empresarial Zona Acme.*
+
+</div>
