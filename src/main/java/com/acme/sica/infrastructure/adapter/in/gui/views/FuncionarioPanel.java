@@ -217,12 +217,18 @@ public class FuncionarioPanel extends JPanel {
                 protected void done() {
                     try {
                         Visita v = get();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(FuncionarioPanel.this,
+                                "[+] Visita Pre-Registrada Exitosamente (ID #" + v.getId() + ")",
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
                         JOptionPane.showMessageDialog(FuncionarioPanel.this,
-                                "✨ Visita pre-registrada exitosamente (ID #" + v.getId() + ").\nEl guardia ya puede realizar el Check-In en portería.",
+                                "Visita pre-registrada exitosamente (ID #" + v.getId() + ").\nEl guardia ya puede realizar el Check-In en portería.",
                                 "Pre-Registro Éxitoso", JOptionPane.INFORMATION_MESSAGE);
                         loadPendientes();
                     } catch (Exception e) {
                         Throwable cause = e.getCause() != null ? e.getCause() : e;
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(FuncionarioPanel.this,
+                                "[x] Error en Pre-Registro: " + cause.getMessage(),
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
                         JOptionPane.showMessageDialog(FuncionarioPanel.this, "Error: " + cause.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
@@ -252,13 +258,20 @@ public class FuncionarioPanel extends JPanel {
             protected void done() {
                 try {
                     Visita v = get();
-                    JOptionPane.showMessageDialog(FuncionarioPanel.this, "✅ Visita ID #" + v.getId() + " APROBADA.\nEl guardia ya tiene la autorización de ingreso.", "Aprobada", JOptionPane.INFORMATION_MESSAGE);
+                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(FuncionarioPanel.this,
+                            "[+] Visita Aprobada (ID #" + v.getId() + ")",
+                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
+                    JOptionPane.showMessageDialog(FuncionarioPanel.this, "Visita ID #" + v.getId() + " APROBADA.\nEl guardia ya tiene la autorización de ingreso.", "Aprobada", JOptionPane.INFORMATION_MESSAGE);
                     loadPendientes();
                 } catch (Exception e) {
                     Throwable cause = e.getCause() != null ? e.getCause() : e;
+                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(FuncionarioPanel.this,
+                            "[x] Error al Aprobar: " + cause.getMessage(),
+                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
                     JOptionPane.showMessageDialog(FuncionarioPanel.this, "Error: " + cause.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
+
         };
         worker.execute();
     }

@@ -506,15 +506,21 @@ public class GuardiaPanel extends JPanel {
             protected void done() {
                 try {
                     Visita updated = get();
+                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(GuardiaPanel.this,
+                            "[+] Check-In Exitoso para " + updated.getPersonaNombreCompleto(),
+                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
                     JOptionPane.showMessageDialog(GuardiaPanel.this,
-                            "✅ Check-In Exitoso para " + updated.getPersonaNombreCompleto() + "\nEstado actual: "
+                            "Check-In Exitoso para " + updated.getPersonaNombreCompleto() + "\nEstado actual: "
                                     + updated.getEstadoVisita(),
                             "Ingreso Registrado", JOptionPane.INFORMATION_MESSAGE);
                     loadVisitas();
                 } catch (Exception e) {
                     Throwable cause = e.getCause() != null ? e.getCause() : e;
+                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(GuardiaPanel.this,
+                            "[x] Acceso Denegado: " + cause.getMessage(),
+                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
                     JOptionPane.showMessageDialog(GuardiaPanel.this,
-                            "❌ Error realizando Check-In:\n" + cause.getMessage(),
+                            "Error realizando Check-In:\n" + cause.getMessage(),
                             "Acceso Denegado", JOptionPane.ERROR_MESSAGE);
                 }
             }
@@ -542,12 +548,18 @@ public class GuardiaPanel extends JPanel {
             protected void done() {
                 try {
                     Visita updated = get();
+                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(GuardiaPanel.this,
+                            "[+] Check-Out Exitoso para " + updated.getPersonaNombreCompleto(),
+                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
                     JOptionPane.showMessageDialog(GuardiaPanel.this,
-                            "👋 Check-Out exitoso para " + updated.getPersonaNombreCompleto() + "\nVisita finalizada.",
+                            "Check-Out exitoso para " + updated.getPersonaNombreCompleto() + "\nVisita finalizada.",
                             "Salida Registrada", JOptionPane.INFORMATION_MESSAGE);
                     loadVisitas();
                 } catch (Exception e) {
                     Throwable cause = e.getCause() != null ? e.getCause() : e;
+                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(GuardiaPanel.this,
+                            "[x] Error en Check-Out: " + cause.getMessage(),
+                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
                     JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + cause.getMessage(), "Error",
                             JOptionPane.ERROR_MESSAGE);
                 }
@@ -555,6 +567,7 @@ public class GuardiaPanel extends JPanel {
         };
         worker.execute();
     }
+
 
     private void openNoAnunciadaDialog() {
         if (listaPersonasCache == null || listaPersonasCache.isEmpty()) {
