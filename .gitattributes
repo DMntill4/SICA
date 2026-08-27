@@ -1,0 +1,4 @@
+# Linguist configuration for GitHub repository language stats
+*.html linguist-vendored
+*.json linguist-vendored
+*.md linguist-documentation
