@@ -146,13 +146,14 @@ public class ReportesPanel extends JPanel {
                     // REP-01: Aforo Actual (Personas Dentro)
                     Map<String, Object> data = apiClient.getPersonasDentro();
                     Object personasObj = data.get("personas");
-                    ObjectMapper mapper = new ObjectMapper();
+                    ObjectMapper mapper = com.acme.sica.infrastructure.adapter.in.http.router.HttpUtils.objectMapper;
                     List<Visita> dentro = new ArrayList<>();
                     if (personasObj instanceof List) {
                         for (Object item : (List<?>) personasObj) {
                             dentro.add(mapper.convertValue(item, Visita.class));
                         }
                     }
+
 
                     List<Visita> filtradas = dentro.stream()
                             .filter(v -> filtroText.isEmpty() ||
