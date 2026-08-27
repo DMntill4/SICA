@@ -1,14 +1,17 @@
 package com.acme.sica.infrastructure.security;
 
+import com.acme.sica.application.port.out.PasswordEncoderPort;
 import org.mindrot.jbcrypt.BCrypt;
 
-public class PasswordHasher {
+public class PasswordHasher implements PasswordEncoderPort {
 
-    public static String hashPassword(String plainPassword) {
+    @Override
+    public String hashPassword(String plainPassword) {
         return BCrypt.hashpw(plainPassword, BCrypt.gensalt(10));
     }
 
-    public static boolean verifyPassword(String plainPassword, String hashedPassword) {
+    @Override
+    public boolean verifyPassword(String plainPassword, String hashedPassword) {
         if (hashedPassword == null || hashedPassword.trim().isEmpty()) {
             return false;
         }

@@ -21,9 +21,13 @@ INSERT INTO permiso (id, nombre, descripcion) VALUES (9, 'checkout_visita', 'Per
 INSERT INTO permiso (id, nombre, descripcion) VALUES (10, 'registrar_incidente', 'Permite registrar un incidente y restringir acceso');
 INSERT INTO permiso (id, nombre, descripcion) VALUES (11, 'generar_reporte', 'Permite consultar reportes y métricas del sistema');
 INSERT INTO permiso (id, nombre, descripcion) VALUES (12, 'consultar_auditoria', 'Permite consultar la bitácora de eventos');
+INSERT INTO permiso (id, nombre, descripcion) VALUES (13, 'crear_empresa', 'Permite registrar nuevas empresas en el sistema');
+INSERT INTO permiso (id, nombre, descripcion) VALUES (14, 'modificar_empresa', 'Permite actualizar datos de empresas existentes');
+INSERT INTO permiso (id, nombre, descripcion) VALUES (15, 'eliminar_empresa', 'Permite eliminar empresas del sistema');
+INSERT INTO permiso (id, nombre, descripcion) VALUES (16, 'limpiar_historial', 'Permite vaciar el historial de visitas');
 
 -- 3. Mapeo de Rol - Permisos
--- ADMIN (Permisos 1 a 12)
+-- ADMIN (Permisos 1 a 16)
 INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 1);
 INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 2);
 INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 3);
@@ -36,6 +40,10 @@ INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 9);
 INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 10);
 INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 11);
 INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 12);
+INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 13);
+INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 14);
+INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 15);
+INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (1, 16);
 
 -- GUARDIA (Permisos 4, 5, 8, 9, 10, 11)
 INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (2, 4);
