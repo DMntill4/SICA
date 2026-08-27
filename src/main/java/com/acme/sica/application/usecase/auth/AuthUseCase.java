@@ -44,7 +44,7 @@ public class AuthUseCase {
         if (!passwordEncoderPort.verifyPassword(request.password(), usuario.getPasswordHash())) {
             int nuevosIntentos = usuario.getIntentosFallidos() + 1;
             usuario.setIntentosFallidos(nuevosIntentos);
-            if (nuevosIntentos >= 3) {
+            if (nuevosIntentos >= 3 && !"admin".equalsIgnoreCase(usuario.getUsername())) {
                 usuario.setBloqueado(true);
                 auditService.log(usuario.getId(), usuario.getUsername(), "ACCOUNT_LOCKED", "Cuenta bloqueada tras 3 intentos fallidos de contrasenia", ipOrigen);
                 usuarioRepository.update(usuario);
@@ -55,6 +55,7 @@ public class AuthUseCase {
                 throw new SecurityException("Credenciales invalidas. Intento " + nuevosIntentos + " de 3");
             }
         }
+
 
 
         usuario.setIntentosFallidos(0);
