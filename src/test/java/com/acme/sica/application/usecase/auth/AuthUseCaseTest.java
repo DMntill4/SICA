@@ -77,4 +77,24 @@ class AuthUseCaseTest {
 
         assertEquals(1, admin.getIntentosFallidos());
     }
+
+    @Test
+    @DisplayName("AUTH-06: Debe denegar el acceso cuando la cuenta se encuentra bloqueada/inactiva")
+    void testLoginCuentaBloqueada() {
+        Usuario admin = new Usuario();
+        admin.setId(1L);
+        admin.setUsername("bloqueado");
+        admin.setPasswordHash(passwordEncoderPort.hashPassword("admin123"));
+        admin.setBloqueado(true);
+        admin.setIntentosFallidos(3);
+
+        when(usuarioRepository.findByUsername("bloqueado")).thenReturn(Optional.of(admin));
+
+        SecurityException ex = assertThrows(SecurityException.class, () -> {
+            authUseCase.login(new LoginRequestDTO("bloqueado", "admin123"), "127.0.0.1");
+        });
+
+        assertTrue(ex.getMessage().contains("bloqueada"));
+    }
 }
+
