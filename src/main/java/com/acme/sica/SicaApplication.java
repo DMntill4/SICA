@@ -1,21 +1,23 @@
 package com.acme.sica;
 
-import com.acme.sica.infrastructure.adapter.in.http.*;
-import com.acme.sica.infrastructure.adapter.out.jdbc.*;
-import com.acme.sica.infrastructure.audit.AuditService;
+import com.acme.sica.infrastructure.adapter.in.http.handlers.*;
+import com.acme.sica.infrastructure.adapter.out.persistence.jdbc.*;
+import com.acme.sica.application.usecase.audit.AuditService;
 import com.acme.sica.infrastructure.db.SchemaInitializer;
 import com.acme.sica.infrastructure.db.connection.ConnectionFactory;
 import com.acme.sica.infrastructure.db.connection.DatabaseFactoryProvider;
-import com.acme.sica.infrastructure.http.Router;
+import com.acme.sica.infrastructure.adapter.in.http.router.Router;
 import com.acme.sica.infrastructure.security.AuthMiddleware;
 import com.acme.sica.infrastructure.security.JwtUtil;
+import com.acme.sica.infrastructure.security.PasswordHasher;
 import com.acme.sica.infrastructure.security.PermissionChecker;
-import com.acme.sica.usecase.auth.AuthUseCase;
-import com.acme.sica.usecase.incidentes.RegistrarIncidenteUseCase;
-import com.acme.sica.usecase.personas.GestionarPersonaUseCase;
-import com.acme.sica.usecase.reportes.GenerarReporteUseCase;
-import com.acme.sica.usecase.usuarios.GestionarUsuarioUseCase;
-import com.acme.sica.usecase.visitas.GestionarVisitaUseCase;
+import com.acme.sica.application.usecase.auth.AuthUseCase;
+import com.acme.sica.application.usecase.incidentes.RegistrarIncidenteUseCase;
+import com.acme.sica.application.usecase.personas.GestionarPersonaUseCase;
+import com.acme.sica.application.usecase.reportes.GenerarReporteUseCase;
+import com.acme.sica.application.usecase.usuarios.GestionarUsuarioUseCase;
+import com.acme.sica.application.usecase.visitas.GestionarVisitaUseCase;
+import com.acme.sica.application.usecase.empresas.GestionarEmpresaUseCase;
 
 import com.sun.net.httpserver.HttpServer;
 
@@ -46,20 +48,23 @@ public class SicaApplication {
             PersonaJdbcAdapter personaRepo = new PersonaJdbcAdapter(connectionFactory);
             VisitaJdbcAdapter visitaRepo = new VisitaJdbcAdapter(connectionFactory);
             IncidenteJdbcAdapter incidenteRepo = new IncidenteJdbcAdapter(connectionFactory);
+            EmpresaJdbcAdapter empresaRepo = new EmpresaJdbcAdapter(connectionFactory);
 
             // 3. Security & Infrastructure Services
             JwtUtil jwtUtil = new JwtUtil();
+            PasswordHasher passwordHasher = new PasswordHasher();
             AuditService auditService = new AuditService(auditRepo);
             PermissionChecker permissionChecker = new PermissionChecker(usuarioRepo);
             AuthMiddleware authMiddleware = new AuthMiddleware(jwtUtil, usuarioRepo, permissionChecker);
 
             // 4. Use Cases (Application Layer)
-            AuthUseCase authUseCase = new AuthUseCase(usuarioRepo, jwtUtil, auditService);
+            AuthUseCase authUseCase = new AuthUseCase(usuarioRepo, jwtUtil, passwordHasher, auditService);
             GestionarPersonaUseCase personaUseCase = new GestionarPersonaUseCase(personaRepo, auditService);
-            GestionarUsuarioUseCase usuarioUseCase = new GestionarUsuarioUseCase(usuarioRepo, auditService);
+            GestionarUsuarioUseCase usuarioUseCase = new GestionarUsuarioUseCase(usuarioRepo, passwordHasher, auditService);
             RegistrarIncidenteUseCase incidenteUseCase = new RegistrarIncidenteUseCase(incidenteRepo, personaRepo, auditService);
             GestionarVisitaUseCase visitaUseCase = new GestionarVisitaUseCase(visitaRepo, personaRepo, auditService);
             GenerarReporteUseCase reporteUseCase = new GenerarReporteUseCase(visitaRepo, incidenteRepo, auditRepo);
+            GestionarEmpresaUseCase empresaUseCase = new GestionarEmpresaUseCase(empresaRepo, auditService);
 
             // 5. Input Adapters (HTTP Handlers)
             AuthHttpHandler authHandler = new AuthHttpHandler(authUseCase);
@@ -68,6 +73,7 @@ public class SicaApplication {
             IncidenteHttpHandler incidenteHandler = new IncidenteHttpHandler(incidenteUseCase);
             VisitaHttpHandler visitaHandler = new VisitaHttpHandler(visitaUseCase);
             ReportesHttpHandler reportesHandler = new ReportesHttpHandler(reporteUseCase);
+            EmpresaHttpHandler empresaHandler = new EmpresaHttpHandler(empresaUseCase);
 
             // 6. HTTP Router Configuration
             Router router = new Router();
@@ -84,11 +90,18 @@ public class SicaApplication {
             router.post("/auth/logout", authHandler::handleLogout, null);
 
             // Rutas Usuarios
-            router.get("/usuarios", usuarioHandler::handleFindAll, "crear_usuario");
-            router.get("/usuarios/{id}", usuarioHandler::handleFindById, "crear_usuario");
+            router.get("/usuarios", usuarioHandler::handleFindAll, null);
+            router.get("/usuarios/{id}", usuarioHandler::handleFindById, null);
             router.post("/usuarios", usuarioHandler::handleCreate, "crear_usuario");
             router.put("/usuarios/{id}", usuarioHandler::handleUpdate, "modificar_usuario");
             router.delete("/usuarios/{id}", usuarioHandler::handleDelete, "eliminar_usuario");
+
+            // Rutas Empresas
+            router.get("/empresas", empresaHandler::handleFindAll, null);
+            router.get("/empresas/{id}", empresaHandler::handleFindById, null);
+            router.post("/empresas", empresaHandler::handleCreate, "crear_empresa");
+            router.put("/empresas/{id}", empresaHandler::handleUpdate, "modificar_empresa");
+            router.delete("/empresas/{id}", empresaHandler::handleDelete, "eliminar_empresa");
 
             // Rutas Personas
             router.get("/personas", personaHandler::handleFindAll, null);
@@ -113,7 +126,7 @@ public class SicaApplication {
             router.put("/visitas/{id}/rechazar", visitaHandler::handleRechazar, "aprobar_visita");
             router.post("/visitas/{id}/check-in", visitaHandler::handleCheckIn, "checkin_visita");
             router.post("/visitas/{id}/check-out", visitaHandler::handleCheckOut, "checkout_visita");
-            router.delete("/visitas", visitaHandler::handleDeleteAll, null);
+            router.delete("/visitas", visitaHandler::handleDeleteAll, "limpiar_historial");
 
             // Rutas Reportes
             router.get("/reportes/personas-dentro", reportesHandler::handlePersonasDentro, "generar_reporte");
@@ -145,9 +158,9 @@ public class SicaApplication {
             if (!isHeadless && !java.awt.GraphicsEnvironment.isHeadless()) {
                 System.out.println("[GUI Launcher] Desplegando Interfaz Grafica Swing FlatLaf...");
                 com.formdev.flatlaf.FlatDarkLaf.setup();
-                com.acme.sica.gui.client.SicaApiClient apiClient = new com.acme.sica.gui.client.SicaApiClient();
+                com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient apiClient = new com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient();
                 javax.swing.SwingUtilities.invokeLater(() -> {
-                    com.acme.sica.gui.views.LoginFrame loginFrame = new com.acme.sica.gui.views.LoginFrame(apiClient);
+                    com.acme.sica.infrastructure.adapter.in.gui.views.LoginFrame loginFrame = new com.acme.sica.infrastructure.adapter.in.gui.views.LoginFrame(apiClient);
                     loginFrame.setVisible(true);
                 });
             } else {

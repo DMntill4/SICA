@@ -8,8 +8,9 @@ import com.auth0.jwt.interfaces.JWTVerifier;
 
 import java.util.Date;
 import java.util.UUID;
+import com.acme.sica.application.port.out.JwtPort;
 
-public class JwtUtil {
+public class JwtUtil implements JwtPort {
 
     private static final String SECRET = "SICA_SUPER_SECRET_KEY_ZONA_ACME_2026_VERY_SECURE";
     private static final String ISSUER = "SICA_ZONA_ACME";

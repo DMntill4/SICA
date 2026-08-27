@@ -1,8 +1,8 @@
 package com.acme.sica.infrastructure.security;
-
-import com.acme.sica.domain.port.UsuarioRepository;
-import com.acme.sica.infrastructure.http.HttpUtils;
-import com.acme.sica.infrastructure.http.Route;
+import com.acme.sica.application.AuthenticatedUserContext;
+import com.acme.sica.application.port.out.UsuarioRepository;
+import com.acme.sica.infrastructure.adapter.in.http.router.HttpUtils;
+import com.acme.sica.infrastructure.adapter.in.http.router.Route;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.sun.net.httpserver.HttpExchange;
 
