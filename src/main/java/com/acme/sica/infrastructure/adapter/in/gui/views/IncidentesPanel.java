@@ -42,7 +42,7 @@ public class IncidentesPanel extends JPanel {
         JPanel bannerPanel = new JPanel(new BorderLayout());
         bannerPanel.setBackground(new Color(153, 27, 27)); // Deep Red
         bannerPanel.setBorder(new EmptyBorder(8, 12, 8, 12));
-        JLabel lblHelp = new JLabel("🚨 MÓDULO DE SEGURIDAD: Al registrar un incidente con gravedad CRÍTICO o ALTO, la persona cambia automáticamente a RESTRINGIDO y su ingreso queda bloqueado en portería con Alerta Roja.");
+        JLabel lblHelp = new JLabel("[!] MÓDULO DE SEGURIDAD: Al registrar un incidente con gravedad CRÍTICO o ALTO, la persona cambia automáticamente a RESTRINGIDO y su ingreso queda bloqueado en portería.");
         lblHelp.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblHelp.setForeground(Color.WHITE);
         bannerPanel.add(lblHelp, BorderLayout.CENTER);
@@ -50,7 +50,7 @@ public class IncidentesPanel extends JPanel {
 
         // --- PANEL SUPERIOR: Formulario de Incidente ---
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBorder(new TitledBorder("🚨 Registrar Incidente de Seguridad (Restricción de Acceso)"));
+        formPanel.setBorder(new TitledBorder("[!] Registrar Incidente de Seguridad (Restricción de Acceso)"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 8, 5, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -69,17 +69,18 @@ public class IncidentesPanel extends JPanel {
         comboGravedad.setSelectedItem(NivelGravedad.CRITICO);
         comboGravedad.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        btnRegistrar = new JButton("🚨 Registrar Incidente & Bloquear Acceso");
+        btnRegistrar = new JButton("[!] Registrar Incidente & Bloquear Acceso");
         btnRegistrar.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnRegistrar.setBackground(new Color(220, 38, 38));
         btnRegistrar.setForeground(Color.WHITE);
         btnRegistrar.addActionListener(e -> executeRegistrarIncidente());
 
-        JButton btnRehabilitar = new JButton("✅ Rehabilitar Acceso (Quitar Restricción)");
+        JButton btnRehabilitar = new JButton("[+] Rehabilitar Acceso (Quitar Restricción)");
         btnRehabilitar.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnRehabilitar.setBackground(new Color(16, 185, 129));
         btnRehabilitar.setForeground(Color.WHITE);
         btnRehabilitar.addActionListener(e -> executeRehabilitarAcceso());
+
 
         JPanel btnPanel = new JPanel(new GridLayout(1, 2, 8, 4));
         btnPanel.add(btnRegistrar);

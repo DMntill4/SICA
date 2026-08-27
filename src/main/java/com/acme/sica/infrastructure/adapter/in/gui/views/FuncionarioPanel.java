@@ -47,7 +47,7 @@ public class FuncionarioPanel extends JPanel {
         JPanel bannerPanel = new JPanel(new BorderLayout());
         bannerPanel.setBackground(new Color(30, 41, 59));
         bannerPanel.setBorder(new EmptyBorder(8, 12, 8, 12));
-        JLabel lblHelp = new JLabel("💡 MÓDULO DE FUNCIONARIO: Pre-registra invitados para que su ingreso sea directo o aprueba/rechaza solicitudes de personas no anunciadas en tiempo real.");
+        JLabel lblHelp = new JLabel("[i] MÓDULO DE FUNCIONARIO: Pre-registra invitados para que su ingreso sea directo o aprueba/rechaza solicitudes de personas no anunciadas en tiempo real.");
         lblHelp.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblHelp.setForeground(new Color(226, 232, 240));
         bannerPanel.add(lblHelp, BorderLayout.CENTER);
@@ -55,7 +55,8 @@ public class FuncionarioPanel extends JPanel {
 
         // FORMULARIO PRE-REGISTRO ORGANIZADO EN 2 FILAS INDEPENDIENTES (CERO RECORTES)
         JPanel formPanel = new JPanel(new GridLayout(2, 1, 6, 6));
-        formPanel.setBorder(new TitledBorder("✨ Pre-Registrar Invitado Aprobado"));
+        formPanel.setBorder(new TitledBorder("[+] Pre-Registrar Invitado Aprobado"));
+
 
         // Fila 1: Campos de Selección
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
