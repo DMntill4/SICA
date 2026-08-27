@@ -20,9 +20,15 @@ public class PermissionChecker {
             return true;
         }
 
+        // ROL ADMIN (roleId 1L) posee acceso total a todos los permisos del sistema
+        if (roleId != null && roleId == 1L) {
+            return true;
+        }
+
         Set<String> permissions = permissionCache.computeIfAbsent(roleId, usuarioRepository::findPermissionsByRoleId);
         return permissions.contains(requiredPermission);
     }
+
 
     public Set<String> getPermissions(Long roleId) {
         return permissionCache.computeIfAbsent(roleId, usuarioRepository::findPermissionsByRoleId);

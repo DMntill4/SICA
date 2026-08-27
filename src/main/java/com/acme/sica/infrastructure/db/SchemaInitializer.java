@@ -65,6 +65,13 @@ public class SchemaInitializer {
             try {
                 stmt.executeUpdate("INSERT IGNORE INTO rol_permiso (rol_id, permiso_id) VALUES (3, 4)");
             } catch (Exception ignored) {}
+            try {
+                stmt.executeUpdate("INSERT IGNORE INTO permiso (id, nombre, descripcion) VALUES (17, 'gestionar_roles', 'Permite crear roles, modificar permisos de un rol y eliminar roles')");
+            } catch (Exception ignored) {}
+            try {
+                stmt.executeUpdate("INSERT IGNORE INTO rol_permiso (rol_id, permiso_id) VALUES (1, 17)");
+            } catch (Exception ignored) {}
+
 
             // 2. Sembrar Usuarios (las contraseñas se hashean)
             PasswordHasher hasher = new PasswordHasher();
