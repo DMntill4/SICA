@@ -14,50 +14,78 @@ public class ToastNotificationManager {
         INFO
     }
 
-    public static void showToast(JFrame parentFrame, String message, ToastType type) {
-        if (parentFrame == null) return;
+    public static void showToast(Component owner, String message, ToastType type) {
+        SwingUtilities.invokeLater(() -> {
+            Window window = null;
+            if (owner != null) {
+                if (owner instanceof Window w) {
+                    window = w;
+                } else {
+                    window = SwingUtilities.getWindowAncestor(owner);
+                }
+            }
 
-        JDialog toast = new JDialog(parentFrame);
-        toast.setUndecorated(true);
-        toast.setAlwaysOnTop(true);
-        toast.setLayout(new BorderLayout());
+            if (window == null) {
+                Frame[] frames = Frame.getFrames();
+                for (Frame f : frames) {
+                    if (f.isVisible() && f.isShowing()) {
+                        window = f;
+                        break;
+                    }
+                }
+            }
 
-        JPanel panel = new JPanel(new BorderLayout(10, 0));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(getBorderColor(type), 1, true),
-                new EmptyBorder(10, 16, 10, 16)
-        ));
-        panel.setBackground(getBackgroundColor(type));
+            JDialog toast = window != null ? new JDialog(window) : new JDialog();
+            toast.setUndecorated(true);
+            toast.setAlwaysOnTop(true);
+            toast.setLayout(new BorderLayout());
 
-        JLabel lblSymbol = new JLabel(getSymbol(type));
-        lblSymbol.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblSymbol.setForeground(getTextColor(type));
+            JPanel panel = new JPanel(new BorderLayout(10, 0));
+            panel.setBorder(BorderFactory.createCompoundBorder(
+                    new LineBorder(getBorderColor(type), 1, true),
+                    new EmptyBorder(12, 18, 12, 18)
+            ));
+            panel.setBackground(getBackgroundColor(type));
 
-        JLabel lblText = new JLabel(message);
-        lblText.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblText.setForeground(getTextColor(type));
+            JLabel lblSymbol = new JLabel(getSymbol(type));
+            lblSymbol.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            lblSymbol.setForeground(getTextColor(type));
 
-        panel.add(lblSymbol, BorderLayout.WEST);
-        panel.add(lblText, BorderLayout.CENTER);
+            JLabel lblText = new JLabel(message);
+            lblText.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            lblText.setForeground(getTextColor(type));
 
-        toast.add(panel);
-        toast.pack();
+            panel.add(lblSymbol, BorderLayout.WEST);
+            panel.add(lblText, BorderLayout.CENTER);
 
-        // Posicionar en la esquina inferior derecha del Frame principal
-        Point loc = parentFrame.getLocationOnScreen();
-        int x = loc.x + parentFrame.getWidth() - toast.getWidth() - 25;
-        int y = loc.y + parentFrame.getHeight() - toast.getHeight() - 40;
-        toast.setLocation(x, y);
+            toast.add(panel);
+            toast.pack();
 
-        toast.setVisible(true);
+            int x, y;
+            if (window != null && window.isShowing()) {
+                Point loc = window.getLocationOnScreen();
+                x = loc.x + window.getWidth() - toast.getWidth() - 30;
+                y = loc.y + window.getHeight() - toast.getHeight() - 45;
+            } else {
+                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                x = screenSize.width - toast.getWidth() - 30;
+                y = screenSize.height - toast.getHeight() - 60;
+            }
 
-        // Desvanecimiento / Cierre automático tras 3.5 segundos
-        Timer timer = new Timer(3500, e -> {
-            toast.setVisible(false);
-            toast.dispose();
+            toast.setLocation(x, y);
+            toast.setVisible(true);
+
+            Timer timer = new Timer(3800, e -> {
+                toast.setVisible(false);
+                toast.dispose();
+            });
+            timer.setRepeats(false);
+            timer.start();
         });
-        timer.setRepeats(false);
-        timer.start();
+    }
+
+    public static void showToast(String message, ToastType type) {
+        showToast((Component) null, message, type);
     }
 
     private static String getSymbol(ToastType type) {
@@ -71,10 +99,10 @@ public class ToastNotificationManager {
 
     private static Color getBackgroundColor(ToastType type) {
         return switch (type) {
-            case SUCCESS -> new Color(16, 185, 129); // Dark emerald
-            case WARNING -> new Color(245, 158, 11); // Dark amber
-            case ERROR -> new Color(225, 29, 72);   // Dark rose
-            case INFO -> new Color(14, 165, 233);   // Dark cyan
+            case SUCCESS -> new Color(15, 118, 110); // Emerald Deep
+            case WARNING -> new Color(180, 83, 9);   // Amber Deep
+            case ERROR -> new Color(190, 18, 60);    // Rose Deep
+            case INFO -> new Color(3, 105, 161);    // Cyan Deep
         };
     }
 

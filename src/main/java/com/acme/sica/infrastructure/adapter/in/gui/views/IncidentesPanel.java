@@ -209,6 +209,9 @@ public class IncidentesPanel extends JPanel {
                 protected void done() {
                     try {
                         Incidente inc = get();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(IncidentesPanel.this,
+                                "[!] Incidente #" + inc.getId() + " REGISTRADO - Persona Restringida",
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
                         JOptionPane.showMessageDialog(IncidentesPanel.this,
                                 "🚨 Incidente #" + inc.getId() + " REGISTRADO.\n" +
                                         "El estado de acceso de la persona cambió automáticamente a RESTRINGIDO.\n" +
@@ -217,6 +220,9 @@ public class IncidentesPanel extends JPanel {
                         loadAll();
                     } catch (Exception e) {
                         Throwable cause = e.getCause() != null ? e.getCause() : e;
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(IncidentesPanel.this,
+                                "[x] Error al registrar incidente: " + cause.getMessage(),
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
                         JOptionPane.showMessageDialog(IncidentesPanel.this, "Error: " + cause.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
@@ -243,6 +249,9 @@ public class IncidentesPanel extends JPanel {
                 protected void done() {
                     try {
                         Persona p = get();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(IncidentesPanel.this,
+                                "[+] Acceso HABILITADO para " + p.getNombre() + " " + p.getApellido(),
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
                         JOptionPane.showMessageDialog(IncidentesPanel.this,
                                 "✅ Acceso REHABILITADO para " + p.getNombre() + " " + p.getApellido() + " (Doc: " + p.getDocIdentidad() + ").\n" +
                                         "La persona vuelve a estar HABILITADA (Verde) para ingresar al complejo.",
@@ -250,6 +259,9 @@ public class IncidentesPanel extends JPanel {
                         loadAll();
                     } catch (Exception e) {
                         Throwable cause = e.getCause() != null ? e.getCause() : e;
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(IncidentesPanel.this,
+                                "[x] Error al rehabilitar acceso: " + cause.getMessage(),
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
                         JOptionPane.showMessageDialog(IncidentesPanel.this, "Error: " + cause.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
