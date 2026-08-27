@@ -3,9 +3,12 @@ package com.acme.sica.infrastructure.adapter.in.gui.client;
 import com.acme.sica.domain.enums.NivelGravedad;
 
 import com.acme.sica.domain.model.Incidente;
+import com.acme.sica.domain.model.Permiso;
 import com.acme.sica.domain.model.Persona;
+import com.acme.sica.domain.model.Rol;
 import com.acme.sica.domain.model.Usuario;
 import com.acme.sica.domain.model.Visita;
+
 
 import com.acme.sica.application.dto.*;
 import com.acme.sica.infrastructure.adapter.in.http.router.HttpUtils;
@@ -389,7 +392,70 @@ public class SicaApiClient {
         }
     }
 
+    public List<Rol> listarRoles() throws Exception {
+        HttpRequest request = buildAuthRequest("/roles")
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), new TypeReference<List<Rol>>() {});
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
+    public List<Permiso> listarPermisos() throws Exception {
+        HttpRequest request = buildAuthRequest("/permisos")
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), new TypeReference<List<Permiso>>() {});
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
+    public Rol crearRol(String nombre, String descripcion, List<Long> permisoIds) throws Exception {
+        RolDTO dto = new RolDTO(null, nombre, descripcion, permisoIds);
+        String json = HttpUtils.objectMapper.writeValueAsString(dto);
+        HttpRequest request = buildAuthRequest("/roles")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 201) {
+            return HttpUtils.objectMapper.readValue(response.body(), Rol.class);
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
+    public void actualizarPermisosRol(Long rolId, List<Long> permisoIds) throws Exception {
+        RolDTO dto = new RolDTO(rolId, null, null, permisoIds);
+        String json = HttpUtils.objectMapper.writeValueAsString(dto);
+        HttpRequest request = buildAuthRequest("/roles/" + rolId + "/permisos")
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw parseErrorResponse(response);
+        }
+    }
+
+    public void eliminarRol(Long rolId) throws Exception {
+        HttpRequest request = buildAuthRequest("/roles/" + rolId)
+                .DELETE()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw parseErrorResponse(response);
+        }
+    }
+
     private HttpRequest.Builder buildAuthRequest(String path) {
+
         String token = SessionContext.getInstance().getToken();
         return HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + path))
