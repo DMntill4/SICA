@@ -77,15 +77,23 @@ public class AuditoriaPanel extends JPanel {
         btnCrearUsuario.setForeground(Color.WHITE);
         btnCrearUsuario.addActionListener(e -> openCrearUsuarioDialog());
 
+        JButton btnToggleBloqueo = new JButton("🔒 Bloquear/Desbloquear");
+        btnToggleBloqueo.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnToggleBloqueo.setBackground(new Color(239, 68, 68));
+        btnToggleBloqueo.setForeground(Color.WHITE);
+        btnToggleBloqueo.addActionListener(e -> executeToggleBloqueoUsuario());
+
         JButton btnEliminarUsuario = new JButton("🗑️ Eliminar");
         btnEliminarUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         btnEliminarUsuario.addActionListener(e -> executeEliminarUsuario());
 
         userActionPanel.add(btnCrearUsuario);
+        userActionPanel.add(btnToggleBloqueo);
         userActionPanel.add(btnEliminarUsuario);
         leftPanel.add(userActionPanel, BorderLayout.SOUTH);
 
         splitPane.setLeftComponent(leftPanel);
+
 
         // DERECHA: Bitácora de Auditoría
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
@@ -290,4 +298,47 @@ public class AuditoriaPanel extends JPanel {
             worker.execute();
         }
     }
+
+    private void executeToggleBloqueoUsuario() {
+        int row = tblUsuarios.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Selecciona un usuario de la lista de la izquierda para cambiar su estado de bloqueo", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Long userId = (Long) tableModelUsuarios.getValueAt(row, 0);
+        String username = (String) tableModelUsuarios.getValueAt(row, 1);
+        String estadoActual = (String) tableModelUsuarios.getValueAt(row, 4);
+
+        boolean esBloqueadoActualmente = estadoActual.contains("BLOQUEADO");
+        String accionMsg = esBloqueadoActualmente ? "DESBLOQUEAR" : "BLOQUEAR";
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "¿Estás seguro de " + accionMsg + " el acceso al usuario '" + username + "' (ID #" + userId + ")?",
+                "Confirmar Cambio de Estado", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    apiClient.toggleBloqueoUsuario(userId);
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        JOptionPane.showMessageDialog(AuditoriaPanel.this, "✅ Estado de bloqueo de '" + username + "' actualizado correctamente.", "Estado Actualizado", JOptionPane.INFORMATION_MESSAGE);
+                        loadData();
+                    } catch (Exception e) {
+                        Throwable cause = e.getCause() != null ? e.getCause() : e;
+                        JOptionPane.showMessageDialog(AuditoriaPanel.this, "Error: " + cause.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
+            worker.execute();
+        }
+    }
 }
+

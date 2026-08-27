@@ -79,4 +79,19 @@ public class GestionarUsuarioUseCase {
     public List<Usuario> listarTodos() {
         return usuarioRepository.findAll();
     }
+
+    public Usuario toggleBloqueoUsuario(Long id, AuthenticatedUserContext actor, String ipOrigen) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + id));
+        boolean nuevoEstado = !usuario.isBloqueado();
+        usuario.setBloqueado(nuevoEstado);
+        if (!nuevoEstado) {
+            usuario.setIntentosFallidos(0);
+        }
+        usuarioRepository.update(usuario);
+        String accion = nuevoEstado ? "BLOQUEAR_USUARIO" : "DESBLOQUEAR_USUARIO";
+        auditService.log(actor.userId(), actor.username(), accion, "Estado de bloqueo del usuario '" + usuario.getUsername() + "' cambiado a: " + (nuevoEstado ? "BLOQUEADO" : "ACTIVO"), ipOrigen);
+        return usuario;
+    }
 }
+

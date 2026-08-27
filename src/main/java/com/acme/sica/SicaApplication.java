@@ -94,7 +94,9 @@ public class SicaApplication {
             router.get("/usuarios/{id}", usuarioHandler::handleFindById, null);
             router.post("/usuarios", usuarioHandler::handleCreate, "crear_usuario");
             router.put("/usuarios/{id}", usuarioHandler::handleUpdate, "modificar_usuario");
+            router.put("/usuarios/{id}/toggle-bloqueo", usuarioHandler::handleToggleBloqueo, "modificar_usuario");
             router.delete("/usuarios/{id}", usuarioHandler::handleDelete, "eliminar_usuario");
+
 
             // Rutas Empresas
             router.get("/empresas", empresaHandler::handleFindAll, null);
