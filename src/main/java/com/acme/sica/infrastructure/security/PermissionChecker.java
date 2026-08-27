@@ -1,6 +1,6 @@
 package com.acme.sica.infrastructure.security;
 
-import com.acme.sica.domain.port.UsuarioRepository;
+import com.acme.sica.application.port.out.UsuarioRepository;
 
 import java.util.Map;
 import java.util.Set;

@@ -7,8 +7,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import com.acme.sica.infrastructure.security.PasswordHasher;
 
 public class SchemaInitializer {
 
@@ -64,16 +66,62 @@ public class SchemaInitializer {
                 stmt.executeUpdate("INSERT IGNORE INTO rol_permiso (rol_id, permiso_id) VALUES (3, 4)");
             } catch (Exception ignored) {}
 
-            // Garantizar contraseñas semilla válidas y desbloqueadas para las pruebas de QA
-            try {
-                String hashAdmin = com.acme.sica.infrastructure.security.PasswordHasher.hashPassword("admin123");
-                String hashGuardia = com.acme.sica.infrastructure.security.PasswordHasher.hashPassword("guardia123");
-                String hashFunc = com.acme.sica.infrastructure.security.PasswordHasher.hashPassword("func123");
+            // 2. Sembrar Usuarios (las contraseñas se hashean)
+            PasswordHasher hasher = new PasswordHasher();
+            try (PreparedStatement pst = conn.prepareStatement(
+                    "INSERT IGNORE INTO usuario (id, username, password_hash, rol_id, empresa_id, bloqueado, nombre_completo, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
 
-                stmt.executeUpdate("UPDATE usuario SET password_hash = '" + hashAdmin + "', bloqueado = FALSE, intentos_fallidos = 0 WHERE username = 'admin'");
-                stmt.executeUpdate("UPDATE usuario SET password_hash = '" + hashGuardia + "', bloqueado = FALSE, intentos_fallidos = 0 WHERE username = 'guardia1'");
-                stmt.executeUpdate("UPDATE usuario SET password_hash = '" + hashFunc + "', bloqueado = FALSE, intentos_fallidos = 0 WHERE username = 'func1'");
-                System.out.println("[DB Init] Contraseñas semilla verificadas (admin/admin123, guardia1/guardia123, func1/func123).");
+                // ADMIN (admin / admin123)
+                pst.setLong(1, 1L);
+                pst.setString(2, "admin");
+                pst.setString(3, hasher.hashPassword("admin123"));
+                pst.setLong(4, 1L); // ROL ADMIN
+                pst.setNull(5, java.sql.Types.BIGINT); // Sin empresa
+                pst.setBoolean(6, false);
+                pst.setString(7, "Administrador del Sistema");
+                pst.setString(8, "admin@zonaacme.com");
+                pst.addBatch();
+
+                // GUARDIA 1 (guardia1 / guardia123)
+                pst.setLong(1, 2L);
+                pst.setString(2, "guardia1");
+                pst.setString(3, hasher.hashPassword("guardia123"));
+                pst.setLong(4, 2L); // ROL GUARDIA
+                pst.setLong(5, 1L); // Recepcion
+                pst.setBoolean(6, false);
+                pst.setString(7, "Guardia Principal");
+                pst.setString(8, "guardia1@zonaacme.com");
+                pst.addBatch();
+
+                // FUNCIONARIO 1 (func1 / func123)
+                pst.setLong(1, 3L);
+                pst.setString(2, "func1");
+                pst.setString(3, hasher.hashPassword("func123"));
+                pst.setLong(4, 3L); // ROL FUNCIONARIO
+                pst.setLong(5, 2L); // Acme Corp
+                pst.setBoolean(6, false);
+                pst.setString(7, "Funcionario Ejemplo");
+                pst.setString(8, "funcionario@acmecorp.com");
+                pst.addBatch();
+
+                pst.executeBatch();
+            }
+
+            // 3. Garantizar que las contraseñas semilla existentes tengan los hashes validos y esten desbloqueadas
+            try (PreparedStatement updatePst = conn.prepareStatement(
+                    "UPDATE usuario SET password_hash = ?, bloqueado = FALSE, intentos_fallidos = 0 WHERE username = ?")) {
+                updatePst.setString(1, hasher.hashPassword("admin123"));
+                updatePst.setString(2, "admin");
+                updatePst.executeUpdate();
+
+                updatePst.setString(1, hasher.hashPassword("guardia123"));
+                updatePst.setString(2, "guardia1");
+                updatePst.executeUpdate();
+
+                updatePst.setString(1, hasher.hashPassword("func123"));
+                updatePst.setString(2, "func1");
+                updatePst.executeUpdate();
+                System.out.println("[DB Init] Usuarios semilla verificados y actualizados (admin, guardia1, func1).");
             } catch (Exception e) {
                 System.err.println("[DB Init Warning] No se pudieron actualizar contraseñas semilla: " + e.getMessage());
             }
