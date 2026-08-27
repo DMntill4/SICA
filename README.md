@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏢 SICA — Sistema Integrado de Control de Acceso
+# SICA — Sistema Integrado de Control de Acceso
 ### *Complejo Empresarial "Zona Acme"*
 
 [![Java 21+](https://img.shields.io/badge/JAVA_21+-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
@@ -20,45 +20,45 @@
 
 ---
 
-## 📌 Tabla de Contenidos
+## Tabla de Contenidos
 
-- [📖 1. Introducción y Contexto del Problema](#-1-introducción-y-contexto-del-problema)
-- [⚡ 2. Características Principales](#-2-características-principales)
-- [🛠️ 3. Stack Tecnológico](#️-3-stack-tecnológico)
-- [🏛️ 4. Arquitectura Hexagonal y Patrones de Diseño](#️-4-arquitectura-hexagonal-y-patrones-de-diseño)
-- [📊 5. Modelo Entidad-Relación (E-R)](#-5-modelo-entidad-relación-e-r)
-- [🔐 6. Control de Acceso Basado en Roles (RBAC)](#-6-control-de-acceso-basado-en-roles-rbac)
-- [🚀 7. Guía de Instalación y Ejecución](#-7-guía-de-instalación-y-ejecución)
-- [🌐 8. Catálogo de Endpoints REST API](#-8-catálogo-de-endpoints-rest-api)
-- [🧪 9. Pruebas Unitarias y Cobertura QA](#-9-pruebas-unitarias-y-cobertura-qa)
-- [👥 10. Contribuidores y Autores](#-10-contribuidores-y-autores)
+- [1. Introducción y Contexto del Problema](#1-introducción-y-contexto-del-problema)
+- [2. Características Principales](#2-características-principales)
+- [3. Stack Tecnológico](#3-stack-tecnológico)
+- [4. Arquitectura Hexagonal y Patrones de Diseño](#4-arquitectura-hexagonal-y-patrones-de-diseño)
+- [5. Modelo Entidad-Relación (E-R)](#5-modelo-entidad-relación-e-r)
+- [6. Control de Acceso Basado en Roles (RBAC)](#6-control-de-acceso-basado-en-roles-rbac)
+- [7. Guía de Instalación y Ejecución](#7-guía-de-instalación-y-ejecución)
+- [8. Catálogo de Endpoints REST API](#8-catálogo-de-endpoints-rest-api)
+- [9. Pruebas Unitarias y Cobertura QA](#9-pruebas-unitarias-y-cobertura-qa)
+- [10. Contribuidores y Autores](#10-contribuidores-y-autores)
 
 ---
 
-## 📖 1. Introducción y Contexto del Problema
+## 1. Introducción y Contexto del Problema
 
 El Complejo Empresarial **"Zona Acme"** alberga a más de 30 empresas de alto perfil. Sin embargo, su control de acceso manual basado en cuadernos de papel y comunicación por radio generaba cuellos de botella, falta de trazabilidad e imprecisión en emergencias.
 
 **SICA** resuelve estas problemáticas mediante:
-- 🚀 **Automatización de los 4 Flujos de Acceso**: Pre-Registrado, No Anunciado en Tiempo Real, Pase Temporal (Carnet Olvidado) y Regularización Automática de Salida Olvidada.
-- 🛡️ **Seguridad Reactiva e Inmediata**: Bloqueo instantáneo en portería al registrar incidentes de gravedad CRÍTICO o ALTO.
-- 📜 **Auditoría Inmutable**: Registro append-only de todas las operaciones del sistema con IP de origen y contexto de usuario.
+- **Automatización de los 4 Flujos de Acceso**: Pre-Registrado, No Anunciado en Tiempo Real, Pase Temporal (Carnet Olvidado) y Regularización Automática de Salida Olvidada.
+- **Seguridad Reactiva e Inmediata**: Bloqueo instantáneo en portería al registrar incidentes de gravedad CRÍTICO o ALTO.
+- **Auditoría Inmutable**: Registro append-only de todas las operaciones del sistema con IP de origen y contexto de usuario.
 
 ---
 
-## ⚡ 2. Características Principales
+## 2. Características Principales
 
 | Módulo | Descripción |
 |---|---|
-| 🔑 **Autenticación & JWT** | Login con hashing `BCrypt` y tokens JWT de sesión sin estado con revocación en logout (`token_revocado`). |
-| 🛡️ **RBAC Granular** | Control de acceso basado en 16 permisos individuales en BD (`crear_persona`, `checkin_visita`, `aprobar_visita`, etc.). |
-| 📋 **Flujos de Visita** | Pre-registro por funcionarios, solicitudes en tiempo real aprobables desde GUI y regularización de salidas olvidadas (`CERRADA_POR_SISTEMA`). |
-| 🚨 **Gestión de Incidentes** | Bloqueo dinámico de personas a estado `RESTRINGIDO` y botón para **Rehabilitación de Acceso**. |
-| 🎨 **Interfaz Swing FlatLaf** | UI de escritorio moderna, oscura y responsiva estructurada por roles (`GuardiaPanel`, `FuncionarioPanel`, `IncidentesPanel`, `AuditoriaPanel`). |
+| **Autenticación & JWT** | Login con hashing `BCrypt` y tokens JWT de sesión sin estado con revocación en logout (`token_revocado`). |
+| **RBAC Granular** | Control de acceso basado en 16 permisos individuales en BD (`crear_persona`, `checkin_visita`, `aprobar_visita`, etc.). |
+| **Flujos de Visita** | Pre-registro por funcionarios, solicitudes en tiempo real aprobables desde GUI y regularización de salidas olvidadas (`CERRADA_POR_SISTEMA`). |
+| **Gestión de Incidentes** | Bloqueo dinámico de personas a estado `RESTRINGIDO` y botón para **Rehabilitación de Acceso**. |
+| **Interfaz Swing FlatLaf** | UI de escritorio moderna, oscura y responsiva estructurada por roles (`GuardiaPanel`, `FuncionarioPanel`, `IncidentesPanel`, `AuditoriaPanel`). |
 
 ---
 
-## 🛠️ 3. Stack Tecnológico
+## 3. Stack Tecnológico
 
 <div align="center">
 
@@ -77,7 +77,7 @@ El Complejo Empresarial **"Zona Acme"** alberga a más de 30 empresas de alto pe
 
 ---
 
-## 🏛️ 4. Arquitectura Hexagonal y Patrones de Diseño
+## 4. Arquitectura Hexagonal y Patrones de Diseño
 
 El proyecto implementa una **Arquitectura Hexagonal (Ports & Adapters)** estructurada por paquetes independientes (*Vertical Slice*):
 
@@ -103,7 +103,7 @@ com.acme.sica
     └── security/                        (JwtUtil, PasswordHasher, PermissionChecker)
 ```
 
-### 🧩 Patrones de Diseño Aplicados:
+### Patrones de Diseño Aplicados:
 1. **Abstract Factory Pattern (`db/connection/`)**: Fábricas concretas `MySqlConnectionFactory` y `H2ConnectionFactory` seleccionadas dinámicamente mediante `DatabaseFactoryProvider`.
 2. **Factory Pattern (`VisitaFactory`)**: Centraliza la instanciación de visitas asignando estados según la tipología del flujo.
 3. **Strategy Pattern (`AccessValidationStrategy`)**: Algoritmos intercambiables de validación de acceso (`RestrictedPersonValidationStrategy`, `PreRegisteredValidationStrategy`, `UnannouncedValidationStrategy`).
@@ -111,7 +111,7 @@ com.acme.sica
 
 ---
 
-## 📊 5. Modelo Entidad-Relación (E-R)
+## 5. Modelo Entidad-Relación (E-R)
 
 ```mermaid
 erDiagram
@@ -143,21 +143,21 @@ erDiagram
 
 ---
 
-## 🔐 6. Control de Acceso Basado en Roles (RBAC)
+## 6. Control de Acceso Basado en Roles (RBAC)
 
 ### Credenciales de Prueba Preconfiguradas:
 
 | Rol | Username | Password | Permisos Principales | Empresa |
 |---|---|---|---|---|
-| 👑 **ADMIN** | `admin` | `admin123` | Control total (1 a 16), gestión de usuarios/empresas, auditoría y limpieza de visitas | N/A |
-| 🛡️ **GUARDIA** | `guardia1` | `guardia123` | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente`, `generar_reporte` | Recepción |
-| 👔 **FUNCIONARIO** | `func1` | `func123` | `preregistrar_visita`, `aprobar_visita`, `crear_persona`, `generar_reporte` | Acme Corporation |
+| **ADMIN** | `admin` | `admin123` | Control total (1 a 16), gestión de usuarios/empresas, auditoría y limpieza de visitas | N/A |
+| **GUARDIA** | `guardia1` | `guardia123` | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente`, `generar_reporte` | Recepción |
+| **FUNCIONARIO** | `func1` | `func123` | `preregistrar_visita`, `aprobar_visita`, `crear_persona`, `generar_reporte` | Acme Corporation |
 
 ---
 
-## 🚀 7. Guía de Instalación y Ejecución
+## 7. Guía de Instalación y Ejecución
 
-### Requisitos Previo
+### Requisitos Previos
 - **Java JDK 17 o 21** instalado.
 - **Git** instalado.
 
@@ -180,7 +180,7 @@ java -jar target/sica.jar
 
 ---
 
-## 🌐 8. Catálogo de Endpoints REST API
+## 8. Catálogo de Endpoints REST API
 
 - `POST /auth/login` — Autenticación de usuario y retorno de JWT.
 - `POST /auth/logout` — Cierre de sesión y revocación del token JWT.
@@ -200,7 +200,7 @@ java -jar target/sica.jar
 
 ---
 
-## 🧪 9. Pruebas Unitarias y Cobertura QA
+## 9. Pruebas Unitarias y Cobertura QA
 
 El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 5:
 - `AuthUseCaseTest`: Verificación de intentos fallidos, bloqueos y hashing de contraseñas.
@@ -215,19 +215,19 @@ El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 
 
 ---
 
-## 👥 10. Contribuidores y Autores
+## 10. Contribuidores y Autores
 
 <div align="center">
 
 | Contribuidor | Rol en el Proyecto | Perfil GitHub |
 |---|---|---|
-| **Diego Mantilla** | 👑 Lead Software Engineer & Backend Architect | [@DMntill4](https://github.com/DMntill4) |
-| **Andrés Guerra** | 🛡️ Core Developer & System Integrator | [@andresguerra321](https://github.com/andresguerra321) |
+| **Diego Mantilla** | Lead Software Engineer | [@DMntill4](https://github.com/DMntill4) |
+| **Andrés Guerra** | Lead Software Engineer | [@andresguerra321](https://github.com/andresguerra321) |
 
 <br/>
 
-[![Diego Mantilla](https://img.shields.io/badge/DIEGO_MANTILLA-LEAD_DEVELOPER-1E293B?style=for-the-badge&logo=github&logoColor=white)](https://github.com/DMntill4)
-[![Andrés Guerra](https://img.shields.io/badge/ANDRES_GUERRA-CORE_DEVELOPER-0284C7?style=for-the-badge&logo=github&logoColor=white)](https://github.com/andresguerra321)
+[![Diego Mantilla](https://img.shields.io/badge/DIEGO_MANTILLA-LEAD_SOFTWARE_ENGINEER-1E293B?style=for-the-badge&logo=github&logoColor=white)](https://github.com/DMntill4)
+[![Andrés Guerra](https://img.shields.io/badge/ANDRES_GUERRA-LEAD_SOFTWARE_ENGINEER-0284C7?style=for-the-badge&logo=github&logoColor=white)](https://github.com/andresguerra321)
 
 <br/>
 
