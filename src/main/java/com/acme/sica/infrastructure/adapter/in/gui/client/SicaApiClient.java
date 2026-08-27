@@ -180,6 +180,27 @@ public class SicaApiClient {
         }
     }
 
+    public Map<String, Object> actualizarUsuario(Long id, String nombreCompleto, String email, Long rolId) throws Exception {
+        Map<String, Object> body = Map.of(
+                "nombreCompleto", nombreCompleto,
+                "email", email,
+                "rolId", rolId
+        );
+        String json = HttpUtils.objectMapper.writeValueAsString(body);
+
+        HttpRequest request = buildAuthRequest("/usuarios/" + id)
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
     public void eliminarUsuario(Long id) throws Exception {
         HttpRequest request = buildAuthRequest("/usuarios/" + id)
                 .DELETE()
@@ -190,6 +211,51 @@ public class SicaApiClient {
             throw parseErrorResponse(response);
         }
     }
+
+    public List<Map<String, Object>> listarEmpresas() throws Exception {
+        HttpRequest request = buildAuthRequest("/empresas")
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), new TypeReference<List<Map<String, Object>>>() {});
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
+    public Map<String, Object> crearEmpresa(String nit, String nombre, String ubicacionOficina) throws Exception {
+        Map<String, Object> body = Map.of(
+                "nit", nit,
+                "nombre", nombre,
+                "ubicacionOficina", ubicacionOficina,
+                "activa", true
+        );
+        String json = HttpUtils.objectMapper.writeValueAsString(body);
+
+        HttpRequest request = buildAuthRequest("/empresas")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 201) {
+            return HttpUtils.objectMapper.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
+    public void eliminarEmpresa(Long id) throws Exception {
+        HttpRequest request = buildAuthRequest("/empresas/" + id)
+                .DELETE()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw parseErrorResponse(response);
+        }
+    }
+
 
     public Visita preregistrarVisita(Long personaId, String motivo, LocalDateTime fechaProgramada) throws Exception {
         PreregistroVisitaDTO dto = new PreregistroVisitaDTO(personaId, motivo, fechaProgramada);

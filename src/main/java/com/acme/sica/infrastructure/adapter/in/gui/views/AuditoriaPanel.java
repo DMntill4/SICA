@@ -73,14 +73,20 @@ public class AuditoriaPanel extends JPanel {
         JScrollPane scrollUsers = new JScrollPane(tblUsuarios);
         leftPanel.add(scrollUsers, BorderLayout.CENTER);
 
-        JPanel userActionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 4));
+        JPanel userActionPanel = new JPanel(new GridLayout(2, 3, 4, 4));
         JButton btnCrearUsuario = new JButton("👤 Crear Usuario");
         btnCrearUsuario.setFont(new Font("Segoe UI", Font.BOLD, 11));
         btnCrearUsuario.setBackground(new Color(16, 185, 129));
         btnCrearUsuario.setForeground(Color.WHITE);
         btnCrearUsuario.addActionListener(e -> openCrearUsuarioDialog());
 
-        JButton btnToggleBloqueo = new JButton("🔒 Bloquear/Desbloquear");
+        JButton btnEditarUsuario = new JButton("✏️ Editar Usuario");
+        btnEditarUsuario.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnEditarUsuario.setBackground(new Color(14, 165, 233));
+        btnEditarUsuario.setForeground(Color.WHITE);
+        btnEditarUsuario.addActionListener(e -> executeEditarUsuario());
+
+        JButton btnToggleBloqueo = new JButton("🔒 Bloquear/Desbloq");
         btnToggleBloqueo.setFont(new Font("Segoe UI", Font.BOLD, 11));
         btnToggleBloqueo.setBackground(new Color(239, 68, 68));
         btnToggleBloqueo.setForeground(Color.WHITE);
@@ -92,19 +98,25 @@ public class AuditoriaPanel extends JPanel {
         btnGestionarRoles.setForeground(Color.WHITE);
         btnGestionarRoles.addActionListener(e -> openRolesDialog());
 
+        JButton btnEmpresas = new JButton("🏢 Empresas");
+        btnEmpresas.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnEmpresas.setBackground(new Color(245, 158, 11));
+        btnEmpresas.setForeground(Color.WHITE);
+        btnEmpresas.addActionListener(e -> openEmpresasDialog());
+
         JButton btnEliminarUsuario = new JButton("🗑️ Eliminar");
         btnEliminarUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         btnEliminarUsuario.addActionListener(e -> executeEliminarUsuario());
 
         userActionPanel.add(btnCrearUsuario);
-        userActionPanel.add(btnGestionarRoles);
+        userActionPanel.add(btnEditarUsuario);
         userActionPanel.add(btnToggleBloqueo);
+        userActionPanel.add(btnGestionarRoles);
+        userActionPanel.add(btnEmpresas);
         userActionPanel.add(btnEliminarUsuario);
         leftPanel.add(userActionPanel, BorderLayout.SOUTH);
 
-
         splitPane.setLeftComponent(leftPanel);
-
 
         // DERECHA: Bitácora de Auditoría
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
@@ -194,7 +206,7 @@ public class AuditoriaPanel extends JPanel {
                 try {
                     Map<String, Object> res = get();
                     tableModelAuditoria.setRowCount(0);
-                    Object listObj = res.get("registros");
+                    Object listObj = res.get("auditoria") != null ? res.get("auditoria") : res.get("registros");
                     if (listObj instanceof List) {
                         List<?> list = (List<?>) listObj;
                         ObjectMapper mapper = new ObjectMapper();
@@ -559,10 +571,172 @@ public class AuditoriaPanel extends JPanel {
                 onSuccess.run();
                 loadData();
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(parent, "Error: " + e.getMessage(), "Error al Eliminar Rol", JOptionPane.ERROR_MESSAGE);
+    private void executeEditarUsuario() {
+        int row = tblUsuarios.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Selecciona un usuario de la lista para editar", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Long userId = Long.valueOf(tableModelUsuarios.getValueAt(row, 0).toString());
+        String username = (String) tableModelUsuarios.getValueAt(row, 1);
+        String nombreActual = (String) tableModelUsuarios.getValueAt(row, 2);
+        String emailActual = (String) tableModelUsuarios.getValueAt(row, 3);
+
+        JTextField txtNombre = new JTextField(nombreActual, 15);
+        JTextField txtEmail = new JTextField(emailActual, 15);
+
+        JComboBox<String> comboRol = new JComboBox<>();
+        try {
+            List<Rol> roles = apiClient.listarRoles();
+            for (Rol r : roles) {
+                comboRol.addItem(r.getId() + " - " + r.getNombre() + " (" + (r.getDescripcion() != null ? r.getDescripcion() : "") + ")");
+            }
+        } catch (Exception e) {
+            comboRol.addItem("1 - ADMIN");
+            comboRol.addItem("2 - GUARDIA");
+            comboRol.addItem("3 - FUNCIONARIO");
+        }
+
+        JPanel panel = new JPanel(new GridLayout(4, 2, 6, 6));
+        panel.add(new JLabel("Username:")); panel.add(new JLabel("<b>" + username + "</b>"));
+        panel.add(new JLabel("Nombre Completo:")); panel.add(txtNombre);
+        panel.add(new JLabel("Email:")); panel.add(txtEmail);
+        panel.add(new JLabel("Rol del Sistema:")); panel.add(comboRol);
+
+        int option = JOptionPane.showConfirmDialog(this, panel, "✏️ Editar Usuario: " + username, JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            String nom = txtNombre.getText().trim();
+            String email = txtEmail.getText().trim();
+            String selRol = (String) comboRol.getSelectedItem();
+            Long rolId = Long.parseLong(selRol.split(" - ")[0]);
+
+            if (nom.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "El nombre completo no puede estar vacío", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            try {
+                apiClient.actualizarUsuario(userId, nom, email, rolId);
+                JOptionPane.showMessageDialog(this, "✅ Usuario '" + username + "' actualizado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
+
+    private void openEmpresasDialog() {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "🏢 Gestión de Empresas (Zona Acme)", true);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(650, 420);
+        dialog.setLocationRelativeTo(this);
+
+        String[] cols = {"ID", "NIT", "Nombre de Empresa", "Ubicación Oficina", "Estado"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable table = new JTable(model);
+        table.setRowHeight(24);
+
+        Runnable reloadEmpresas = () -> {
+            SwingWorker<List<Map<String, Object>>, Void> worker = new SwingWorker<>() {
+                @Override
+                protected List<Map<String, Object>> doInBackground() throws Exception {
+                    return apiClient.listarEmpresas();
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        List<Map<String, Object>> list = get();
+                        model.setRowCount(0);
+                        for (Map<String, Object> emp : list) {
+                            model.addRow(new Object[]{
+                                    emp.get("id"),
+                                    emp.get("nit"),
+                                    emp.get("nombre"),
+                                    emp.get("ubicacionOficina"),
+                                    Boolean.TRUE.equals(emp.get("activa")) ? "🟢 ACTIVA" : "🔴 INACTIVA"
+                            });
+                        }
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(dialog, "Error cargando empresas: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
+            worker.execute();
+        };
+
+        reloadEmpresas.run();
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 6));
+        JButton btnCrear = new JButton("➕ Crear Empresa");
+        btnCrear.setBackground(new Color(16, 185, 129));
+        btnCrear.setForeground(Color.WHITE);
+        btnCrear.addActionListener(e -> {
+            JTextField txtNit = new JTextField(15);
+            JTextField txtNombre = new JTextField(15);
+            JTextField txtOficina = new JTextField(15);
+
+            JPanel form = new JPanel(new GridLayout(3, 2, 4, 4));
+            form.add(new JLabel("NIT Empresa:")); form.add(txtNit);
+            form.add(new JLabel("Nombre Empresa:")); form.add(txtNombre);
+            form.add(new JLabel("Ubicación Oficina:")); form.add(txtOficina);
+
+            int opt = JOptionPane.showConfirmDialog(dialog, form, "➕ Registrar Nueva Empresa (USR-05)", JOptionPane.OK_CANCEL_OPTION);
+            if (opt == JOptionPane.OK_OPTION) {
+                String nit = txtNit.getText().trim();
+                String nom = txtNombre.getText().trim();
+                String ofic = txtOficina.getText().trim();
+
+                if (nit.isEmpty() || nom.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "NIT y Nombre son obligatorios", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                try {
+                    apiClient.crearEmpresa(nit, nom, ofic);
+                    JOptionPane.showMessageDialog(dialog, "✅ Empresa '" + nom + "' registrada correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                    reloadEmpresas.run();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        JButton btnEliminar = new JButton("🗑️ Eliminar Empresa");
+        btnEliminar.setBackground(new Color(239, 68, 68));
+        btnEliminar.setForeground(Color.WHITE);
+        btnEliminar.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(dialog, "Selecciona una empresa de la lista", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            Long id = Long.valueOf(model.getValueAt(row, 0).toString());
+            String nom = (String) model.getValueAt(row, 2);
+
+            int conf = JOptionPane.showConfirmDialog(dialog, "¿Estás seguro de eliminar la empresa '" + nom + "'?", "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
+            if (conf == JOptionPane.YES_OPTION) {
+                try {
+                    apiClient.eliminarEmpresa(id);
+                    JOptionPane.showMessageDialog(dialog, "Empresa eliminada correctamente");
+                    reloadEmpresas.run();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage());
+                }
+            }
+        });
+
+        btnPanel.add(btnCrear);
+        btnPanel.add(btnEliminar);
+
+        dialog.add(new JScrollPane(table), BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
 }
+
 
 
