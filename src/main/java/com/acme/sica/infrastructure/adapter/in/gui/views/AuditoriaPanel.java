@@ -1,8 +1,11 @@
 package com.acme.sica.infrastructure.adapter.in.gui.views;
 
+import com.acme.sica.domain.model.Permiso;
+import com.acme.sica.domain.model.Rol;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -83,14 +86,22 @@ public class AuditoriaPanel extends JPanel {
         btnToggleBloqueo.setForeground(Color.WHITE);
         btnToggleBloqueo.addActionListener(e -> executeToggleBloqueoUsuario());
 
+        JButton btnGestionarRoles = new JButton("🛡️ Roles & Permisos");
+        btnGestionarRoles.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnGestionarRoles.setBackground(new Color(99, 102, 241));
+        btnGestionarRoles.setForeground(Color.WHITE);
+        btnGestionarRoles.addActionListener(e -> openRolesDialog());
+
         JButton btnEliminarUsuario = new JButton("🗑️ Eliminar");
         btnEliminarUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         btnEliminarUsuario.addActionListener(e -> executeEliminarUsuario());
 
         userActionPanel.add(btnCrearUsuario);
+        userActionPanel.add(btnGestionarRoles);
         userActionPanel.add(btnToggleBloqueo);
         userActionPanel.add(btnEliminarUsuario);
         leftPanel.add(userActionPanel, BorderLayout.SOUTH);
+
 
         splitPane.setLeftComponent(leftPanel);
 
@@ -212,11 +223,17 @@ public class AuditoriaPanel extends JPanel {
         JTextField txtNombre = new JTextField(15);
         JTextField txtEmail = new JTextField(15);
 
-        JComboBox<String> comboRol = new JComboBox<>(new String[]{
-                "1 - ADMIN (Administrador Total)",
-                "2 - GUARDIA (Control Portería)",
-                "3 - FUNCIONARIO (Anfitrión)"
-        });
+        JComboBox<String> comboRol = new JComboBox<>();
+        try {
+            List<Rol> roles = apiClient.listarRoles();
+            for (Rol r : roles) {
+                comboRol.addItem(r.getId() + " - " + r.getNombre() + " (" + (r.getDescripcion() != null ? r.getDescripcion() : "") + ")");
+            }
+        } catch (Exception e) {
+            comboRol.addItem("1 - ADMIN");
+            comboRol.addItem("2 - GUARDIA");
+            comboRol.addItem("3 - FUNCIONARIO");
+        }
 
         JPanel panel = new JPanel(new GridLayout(5, 2, 6, 6));
         panel.add(new JLabel("Username:")); panel.add(txtUsername);
@@ -224,6 +241,7 @@ public class AuditoriaPanel extends JPanel {
         panel.add(new JLabel("Nombre Completo:")); panel.add(txtNombre);
         panel.add(new JLabel("Email:")); panel.add(txtEmail);
         panel.add(new JLabel("Rol del Sistema:")); panel.add(comboRol);
+
 
         int option = JOptionPane.showConfirmDialog(this, panel, "👤 Crear Nuevo Usuario en SICA", JOptionPane.OK_CANCEL_OPTION);
         if (option == JOptionPane.OK_OPTION) {
@@ -341,5 +359,210 @@ public class AuditoriaPanel extends JPanel {
             worker.execute();
         }
     }
+
+    private void openRolesDialog() {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "🛡️ Gestión de Roles y Permisos RBAC", true);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(750, 500);
+        dialog.setLocationRelativeTo(this);
+
+        String[] cols = {"ID", "Nombre de Rol", "Descripción", "Permisos Asignados"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable table = new JTable(model);
+        table.setRowHeight(26);
+
+        Runnable reloadRoles = () -> {
+            SwingWorker<List<Rol>, Void> worker = new SwingWorker<>() {
+                @Override
+                protected List<Rol> doInBackground() throws Exception {
+                    return apiClient.listarRoles();
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        List<Rol> list = get();
+                        model.setRowCount(0);
+                        for (Rol r : list) {
+                            model.addRow(new Object[]{
+                                    r.getId(),
+                                    r.getNombre(),
+                                    r.getDescripcion(),
+                                    String.join(", ", r.getPermisoCodigos())
+                            });
+                        }
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(dialog, "Error al cargar roles: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
+            worker.execute();
+        };
+
+        reloadRoles.run();
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 6));
+
+        JButton btnCrear = new JButton("➕ Crear Nuevo Rol");
+        btnCrear.setBackground(new Color(16, 185, 129));
+        btnCrear.setForeground(Color.WHITE);
+        btnCrear.addActionListener(e -> openCrearRolDialog(dialog, reloadRoles));
+
+        JButton btnModificar = new JButton("✏️ Editar Permisos");
+        btnModificar.setBackground(new Color(99, 102, 241));
+        btnModificar.setForeground(Color.WHITE);
+        btnModificar.addActionListener(e -> openEditarPermisosDialog(dialog, table, model, reloadRoles));
+
+        JButton btnEliminar = new JButton("🗑️ Eliminar Rol");
+        btnEliminar.setBackground(new Color(239, 68, 68));
+        btnEliminar.setForeground(Color.WHITE);
+        btnEliminar.addActionListener(e -> executeEliminarRol(dialog, table, model, reloadRoles));
+
+        btnPanel.add(btnCrear);
+        btnPanel.add(btnModificar);
+        btnPanel.add(btnEliminar);
+
+        dialog.add(new JScrollPane(table), BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
+
+    private void openCrearRolDialog(JDialog parent, Runnable onSuccess) {
+        JTextField txtNombre = new JTextField(15);
+        JTextField txtDesc = new JTextField(20);
+
+        JPanel permPanel = new JPanel(new GridLayout(0, 2, 4, 4));
+        List<JCheckBox> checkBoxes = new java.util.ArrayList<>();
+
+        try {
+            List<Permiso> permisos = apiClient.listarPermisos();
+            for (Permiso p : permisos) {
+                JCheckBox chk = new JCheckBox(p.getNombre() + " (" + p.getDescripcion() + ")");
+                chk.putClientProperty("permisoId", p.getId());
+                checkBoxes.add(chk);
+                permPanel.add(chk);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(parent, "Error cargando lista de permisos: " + e.getMessage());
+            return;
+        }
+
+        JPanel form = new JPanel(new BorderLayout(8, 8));
+        JPanel top = new JPanel(new GridLayout(2, 2, 4, 4));
+        top.add(new JLabel("Nombre del Rol (ej. Recepcionista):")); top.add(txtNombre);
+        top.add(new JLabel("Descripción:")); top.add(txtDesc);
+
+        form.add(top, BorderLayout.NORTH);
+        form.add(new JScrollPane(permPanel), BorderLayout.CENTER);
+
+        int option = JOptionPane.showConfirmDialog(parent, form, "➕ Crear Nuevo Rol en SICA", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            String nom = txtNombre.getText().trim();
+            String desc = txtDesc.getText().trim();
+
+            if (nom.isEmpty()) {
+                JOptionPane.showMessageDialog(parent, "El nombre del rol es obligatorio", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            List<Long> selIds = new java.util.ArrayList<>();
+            for (JCheckBox chk : checkBoxes) {
+                if (chk.isSelected()) {
+                    selIds.add((Long) chk.getClientProperty("permisoId"));
+                }
+            }
+
+            try {
+                apiClient.crearRol(nom, desc, selIds);
+                JOptionPane.showMessageDialog(parent, "✅ Rol '" + nom + "' creado exitosamente con " + selIds.size() + " permisos.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                onSuccess.run();
+                loadData();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(parent, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void openEditarPermisosDialog(JDialog parent, JTable table, DefaultTableModel model, Runnable onSuccess) {
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(parent, "Selecciona un rol de la tabla para editar sus permisos", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Long rolId = Long.valueOf(model.getValueAt(row, 0).toString());
+        String rolNombre = (String) model.getValueAt(row, 1);
+
+        JPanel permPanel = new JPanel(new GridLayout(0, 2, 4, 4));
+        List<JCheckBox> checkBoxes = new java.util.ArrayList<>();
+
+        try {
+            List<Rol> roles = apiClient.listarRoles();
+            Rol rolActual = roles.stream().filter(r -> r.getId().equals(rolId)).findFirst().orElse(null);
+            List<Long> actualIds = rolActual != null ? rolActual.getPermisoIds() : List.of();
+
+            List<Permiso> permisos = apiClient.listarPermisos();
+            for (Permiso p : permisos) {
+                JCheckBox chk = new JCheckBox(p.getNombre() + " (" + p.getDescripcion() + ")");
+                chk.putClientProperty("permisoId", p.getId());
+                if (actualIds.contains(p.getId())) {
+                    chk.setSelected(true);
+                }
+                checkBoxes.add(chk);
+                permPanel.add(chk);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(parent, "Error cargando datos: " + e.getMessage());
+            return;
+        }
+
+        int option = JOptionPane.showConfirmDialog(parent, new JScrollPane(permPanel), "✏️ Modificar Permisos de Rol: " + rolNombre, JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            List<Long> selIds = new java.util.ArrayList<>();
+            for (JCheckBox chk : checkBoxes) {
+                if (chk.isSelected()) {
+                    selIds.add((Long) chk.getClientProperty("permisoId"));
+                }
+            }
+
+            try {
+                apiClient.actualizarPermisosRol(rolId, selIds);
+                JOptionPane.showMessageDialog(parent, "✅ Permisos actualizados correctamente para el rol '" + rolNombre + "'.", "Permisos Actualizados", JOptionPane.INFORMATION_MESSAGE);
+                onSuccess.run();
+                loadData();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(parent, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void executeEliminarRol(JDialog parent, JTable table, DefaultTableModel model, Runnable onSuccess) {
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(parent, "Selecciona un rol de la tabla para eliminar", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Long rolId = Long.valueOf(model.getValueAt(row, 0).toString());
+        String rolNombre = (String) model.getValueAt(row, 1);
+
+        int confirm = JOptionPane.showConfirmDialog(parent,
+                "¿Estás seguro de eliminar el rol '" + rolNombre + "' (ID #" + rolId + ")?",
+                "Confirmar Eliminación de Rol", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                apiClient.eliminarRol(rolId);
+                JOptionPane.showMessageDialog(parent, "✅ Rol '" + rolNombre + "' eliminado correctamente.", "Rol Eliminado", JOptionPane.INFORMATION_MESSAGE);
+                onSuccess.run();
+                loadData();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(parent, "Error: " + e.getMessage(), "Error al Eliminar Rol", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
 }
+
 
