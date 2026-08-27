@@ -72,22 +72,34 @@ public class MainDashboardFrame extends JFrame {
         incidentesPanel = new IncidentesPanel(apiClient);
         auditoriaPanel = new AuditoriaPanel(apiClient);
 
-        // Filtrar según el rol del usuario
-        if (session.isAdmin() || session.isGuardia()) {
-            tabbedPane.addTab("🛡️ Control de Accesos (Guardia)", guardiaPanel);
+        // Filtrar según el rol y/o permisos asignados al usuario (Soporte RBAC Dinámico)
+        boolean showGuardiaTab = session.isAdmin() || session.isGuardia() || session.hasPermission("checkin_visita") || session.hasPermission("checkout_visita") || session.hasPermission("crear_persona");
+        boolean showFuncionarioTab = session.isAdmin() || session.isFuncionario() || session.hasPermission("preregistrar_visita") || session.hasPermission("aprobar_visita");
+        boolean showIncidentesTab = session.isAdmin() || session.isGuardia() || session.hasPermission("registrar_incidente");
+        boolean showAuditoriaTab = session.isAdmin() || session.hasPermission("consultar_auditoria") || session.hasPermission("gestionar_roles") || session.hasPermission("crear_usuario");
+
+        if (showGuardiaTab) {
+            tabbedPane.addTab("🛡️ Control de Accesos (Portería)", guardiaPanel);
         }
 
-        if (session.isAdmin() || session.isFuncionario()) {
+        if (showFuncionarioTab) {
             tabbedPane.addTab("📋 Pre-Registro y Aprobaciones", funcionarioPanel);
         }
 
-        if (session.isAdmin() || session.isGuardia()) {
+        if (showIncidentesTab) {
             tabbedPane.addTab("🚨 Gestión de Incidentes", incidentesPanel);
         }
 
-        if (session.isAdmin()) {
+        if (showAuditoriaTab) {
             tabbedPane.addTab("📊 Bitácora & Auditoría", auditoriaPanel);
         }
+
+        // Fallback: Si es un rol personalizado sin coincidencia específica, habilitar vista funcional por defecto
+        if (tabbedPane.getTabCount() == 0) {
+            tabbedPane.addTab("🛡️ Control de Accesos", guardiaPanel);
+            tabbedPane.addTab("📋 Pre-Registro", funcionarioPanel);
+        }
+
 
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
     }
