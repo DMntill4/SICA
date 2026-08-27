@@ -8,3 +8,10 @@ data/
 *.jar
 .DS_Store
 *.lock.db
+
+# Ignorados especificos
+.agents/
+graphify-out/
+*.py
+*.ps1
+requerimientos.txt

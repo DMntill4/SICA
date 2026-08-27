@@ -23,6 +23,9 @@ public class GuardiaPanel extends JPanel {
     private JLabel lblPersonaNombre;
     private JLabel lblPersonaDoc;
     private JLabel lblPersonaEstado;
+    private JLabel lblPersonaFoto;
+    private JLabel lblVisitaTarget;
+    private JLabel lblVisitaEstado;
 
     private JTable tblPersonas;
     private DefaultTableModel tableModelPersonas;
@@ -150,7 +153,7 @@ public class GuardiaPanel extends JPanel {
         searchBar.add(btnSearch);
 
         // Tarjeta Visual de Estado
-        JPanel cardPersona = new JPanel(new GridLayout(3, 1, 4, 4));
+        JPanel cardPersona = new JPanel(new GridLayout(6, 1, 4, 4));
         cardPersona.setBorder(BorderFactory.createCompoundBorder(
                 new TitledBorder("Tarjeta de Estado SICA"),
                 new EmptyBorder(4, 10, 4, 10)));
@@ -159,6 +162,16 @@ public class GuardiaPanel extends JPanel {
 
         lblPersonaDoc = new JLabel("Documento: -");
         lblPersonaDoc.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        
+        lblPersonaFoto = new JLabel("📷 Foto: [URL de foto no disponible]");
+        lblPersonaFoto.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        lblPersonaFoto.setForeground(Color.GRAY);
+        
+        lblVisitaTarget = new JLabel("🏢 Visita a: -");
+        lblVisitaTarget.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        
+        lblVisitaEstado = new JLabel("🎫 Estado Visita: -");
+        lblVisitaEstado.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
         lblPersonaEstado = new JLabel(" ESTADO SICA: SELECCIONE PERSONA ", SwingConstants.CENTER);
         lblPersonaEstado.setOpaque(true);
@@ -168,6 +181,9 @@ public class GuardiaPanel extends JPanel {
 
         cardPersona.add(lblPersonaNombre);
         cardPersona.add(lblPersonaDoc);
+        cardPersona.add(lblPersonaFoto);
+        cardPersona.add(lblVisitaTarget);
+        cardPersona.add(lblVisitaEstado);
         cardPersona.add(lblPersonaEstado);
 
         topRight.add(searchBar, BorderLayout.WEST);
@@ -384,6 +400,23 @@ public class GuardiaPanel extends JPanel {
                     Persona p = get();
                     lblPersonaNombre.setText("Persona: " + p.getNombre() + " " + p.getApellido());
                     lblPersonaDoc.setText("Doc: " + p.getDocIdentidad() + " | Tipo: " + p.getTipoDocumento());
+                    
+                    // TODO: The backend doesn't support photo URL yet. We simulate it for now.
+                    lblPersonaFoto.setText("📷 Foto: [URL https://sica.local/fotos/" + p.getDocIdentidad() + ".jpg]");
+
+                    Visita activeVisita = currentVisitas != null ? currentVisitas.stream()
+                            .filter(v -> v.getPersonaDocIdentidad() != null && v.getPersonaDocIdentidad().equals(p.getDocIdentidad()))
+                            .filter(v -> "PRE_REGISTRADA".equals(v.getEstadoVisita().name()) || "APROBADA".equals(v.getEstadoVisita().name()) || "EN_CURSO".equals(v.getEstadoVisita().name()))
+                            .findFirst().orElse(null) : null;
+
+                    if (activeVisita != null) {
+                        String target = activeVisita.getFuncionarioNombreCompleto() != null ? activeVisita.getFuncionarioNombreCompleto() : "N/A";
+                        lblVisitaTarget.setText("🏢 Visita a: " + target);
+                        lblVisitaEstado.setText("🎫 Estado Visita: " + activeVisita.getEstadoVisita().name());
+                    } else {
+                        lblVisitaTarget.setText("🏢 Visita a: Ninguna visita activa");
+                        lblVisitaEstado.setText("🎫 Estado Visita: -");
+                    }
 
                     if ("RESTRINGIDO".equals(p.getEstadoAcceso().name())) {
                         lblPersonaEstado.setText(" 🚨 ALERTA: ACCESO DENEGADO (PERSONA RESTRINGIDA) ");
@@ -414,6 +447,9 @@ public class GuardiaPanel extends JPanel {
                 } catch (Exception e) {
                     lblPersonaNombre.setText("Persona: No encontrada en BD");
                     lblPersonaDoc.setText("Documento: " + doc);
+                    lblPersonaFoto.setText("📷 Foto: [No Disponible]");
+                    lblVisitaTarget.setText("🏢 Visita a: -");
+                    lblVisitaEstado.setText("🎫 Estado Visita: -");
                     lblPersonaEstado.setText(" ⚠️ PERSONA NO REGISTRADA ");
                     lblPersonaEstado.setBackground(new Color(234, 179, 8));
                     if (tableModelPersonaIncidentes != null) {

@@ -134,11 +134,18 @@ public class AuditoriaPanel extends JPanel {
 
         rightPanel.add(scrollAudit, BorderLayout.CENTER);
 
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
         btnRefresh = new JButton("🔄 Actualizar Auditoría");
         btnRefresh.addActionListener(e -> loadData());
-        actionPanel.add(btnRefresh);
 
+        JButton btnExportarCSV = new JButton("📥 Exportar Reporte CSV");
+        btnExportarCSV.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnExportarCSV.setBackground(new Color(16, 185, 129));
+        btnExportarCSV.setForeground(Color.WHITE);
+        btnExportarCSV.addActionListener(e -> executeExportarCSV());
+
+        actionPanel.add(btnExportarCSV);
+        actionPanel.add(btnRefresh);
         rightPanel.add(actionPanel, BorderLayout.SOUTH);
         splitPane.setRightComponent(rightPanel);
 
@@ -569,9 +576,15 @@ public class AuditoriaPanel extends JPanel {
                 apiClient.eliminarRol(rolId);
                 JOptionPane.showMessageDialog(parent, "✅ Rol '" + rolNombre + "' eliminado correctamente.", "Rol Eliminado", JOptionPane.INFORMATION_MESSAGE);
                 onSuccess.run();
-                loadData();
             } catch (Exception e) {
+                JOptionPane.showMessageDialog(parent, "Error: " + e.getMessage(), "Error al Eliminar Rol", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     private void executeEditarUsuario() {
+
+
         int row = tblUsuarios.getSelectedRow();
         if (row == -1) {
             JOptionPane.showMessageDialog(this, "Selecciona un usuario de la lista para editar", "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -736,7 +749,40 @@ public class AuditoriaPanel extends JPanel {
         dialog.add(btnPanel, BorderLayout.SOUTH);
         dialog.setVisible(true);
     }
+
+    private void executeExportarCSV() {
+        if (tableModelAuditoria.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "No hay registros en la tabla para exportar", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("📥 Guardar Reporte de Auditoría (CSV)");
+        fileChooser.setSelectedFile(new java.io.File("reporte_auditoria_sica.csv"));
+
+        int userSelection = fileChooser.showSaveDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            java.io.File fileToSave = fileChooser.getSelectedFile();
+            try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(fileToSave, java.nio.charset.StandardCharsets.UTF_8))) {
+                pw.println("ID,Usuario,Accion,Detalle,IP_Origen,Fecha_Hora");
+                for (int i = 0; i < tableModelAuditoria.getRowCount(); i++) {
+                    String id = String.valueOf(tableModelAuditoria.getValueAt(i, 0));
+                    String usr = String.valueOf(tableModelAuditoria.getValueAt(i, 1));
+                    String acc = String.valueOf(tableModelAuditoria.getValueAt(i, 2));
+                    String det = String.valueOf(tableModelAuditoria.getValueAt(i, 3)).replace(",", ";");
+                    String ip = String.valueOf(tableModelAuditoria.getValueAt(i, 4));
+                    String fecha = String.valueOf(tableModelAuditoria.getValueAt(i, 5));
+
+                    pw.printf("%s,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"%n", id, usr, acc, det, ip, fecha);
+                }
+                JOptionPane.showMessageDialog(this, "✅ Reporte exportado exitosamente en:\n" + fileToSave.getAbsolutePath(), "Exportación Completa", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Error exportando CSV: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
 }
+
 
 
 
