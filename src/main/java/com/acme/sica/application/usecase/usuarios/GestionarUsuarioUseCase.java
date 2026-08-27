@@ -53,6 +53,9 @@ public class GestionarUsuarioUseCase {
         usuario.setRolId(dto.rolId());
         usuario.setEmpresaId(dto.empresaId());
         if (dto.bloqueado() != null) {
+            if (dto.bloqueado() && "admin".equalsIgnoreCase(usuario.getUsername())) {
+                throw new IllegalArgumentException("El usuario Administrador principal (admin) no puede ser bloqueado");
+            }
             usuario.setBloqueado(dto.bloqueado());
             if (!dto.bloqueado()) {
                 usuario.setIntentosFallidos(0);
@@ -72,6 +75,9 @@ public class GestionarUsuarioUseCase {
     public void eliminarUsuario(Long id, AuthenticatedUserContext actor, String ipOrigen) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + id));
+        if ("admin".equalsIgnoreCase(usuario.getUsername())) {
+            throw new IllegalArgumentException("El usuario Administrador principal (admin) no puede ser eliminado");
+        }
         usuarioRepository.deleteById(id);
         auditService.log(actor.userId(), actor.username(), "ELIMINAR_USUARIO", "Usuario eliminado ID: " + id + " username: " + usuario.getUsername(), ipOrigen);
     }
@@ -83,7 +89,12 @@ public class GestionarUsuarioUseCase {
     public Usuario toggleBloqueoUsuario(Long id, AuthenticatedUserContext actor, String ipOrigen) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + id));
+
         boolean nuevoEstado = !usuario.isBloqueado();
+        if (nuevoEstado && "admin".equalsIgnoreCase(usuario.getUsername())) {
+            throw new IllegalArgumentException("El usuario Administrador principal (admin) no puede ser bloqueado");
+        }
+
         usuario.setBloqueado(nuevoEstado);
         if (!nuevoEstado) {
             usuario.setIntentosFallidos(0);
@@ -94,4 +105,5 @@ public class GestionarUsuarioUseCase {
         return usuario;
     }
 }
+
 
