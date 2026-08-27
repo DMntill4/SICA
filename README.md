@@ -26,12 +26,11 @@
 - [2. Características Principales](#2-características-principales)
 - [3. Stack Tecnológico](#3-stack-tecnológico)
 - [4. Arquitectura Hexagonal y Patrones de Diseño](#4-arquitectura-hexagonal-y-patrones-de-diseño)
-- [5. Modelo Entidad-Relación (E-R)](#5-modelo-entidad-relación-e-r)
-- [6. Control de Acceso Basado en Roles (RBAC)](#6-control-de-acceso-basado-en-roles-rbac)
-- [7. Guía de Instalación y Ejecución](#7-guía-de-instalación-y-ejecución)
-- [8. Catálogo de Endpoints REST API](#8-catálogo-de-endpoints-rest-api)
-- [9. Pruebas Unitarias y Cobertura QA](#9-pruebas-unitarias-y-cobertura-qa)
-- [10. Contribuidores y Autores](#10-contribuidores-y-autores)
+- [5. Control de Acceso Basado en Roles (RBAC)](#5-control-de-acceso-basado-en-roles-rbac)
+- [6. Guía de Instalación y Ejecución](#6-guía-de-instalación-y-ejecución)
+- [7. Catálogo de Endpoints REST API](#7-catálogo-de-endpoints-rest-api)
+- [8. Pruebas Unitarias y Cobertura QA](#8-pruebas-unitarias-y-cobertura-qa)
+- [9. Contribuidores y Autores](#9-contribuidores-y-autores)
 
 ---
 
@@ -111,39 +110,7 @@ com.acme.sica
 
 ---
 
-## 5. Modelo Entidad-Relación (E-R)
-
-```mermaid
-erDiagram
-    ROL ||--o{ ROL_PERMISO : "posee"
-    PERMISO ||--o{ ROL_PERMISO : "pertenece"
-    ROL ||--o{ USUARIO : "asignado_a"
-    EMPRESA ||--o{ USUARIO : "emplea"
-    EMPRESA ||--o{ PERSONA : "pertenece"
-    USUARIO ||--o{ VISITA : "funcionario_anfitrion"
-    USUARIO ||--o{ VISITA : "guardia_ingreso"
-    USUARIO ||--o{ VISITA : "guardia_salida"
-    PERSONA ||--o{ VISITA : "visitante"
-    PERSONA ||--o{ INCIDENTE : "involucrado"
-    USUARIO ||--o{ INCIDENTE : "reportado_por"
-    PUNTO_ACCESO ||--o{ VISITA : "punto_ingreso"
-    PUNTO_ACCESO ||--o{ VISITA : "punto_salida"
-    USUARIO ||--o{ BITACORA_AUDITORIA : "ejecuta_accion"
-
-    ROL { bigint id PK; varchar nombre UK }
-    PERMISO { bigint id PK; varchar nombre UK }
-    EMPRESA { bigint id PK; varchar nit UK; varchar nombre; boolean activa }
-    USUARIO { bigint id PK; varchar username UK; varchar password_hash; bigint rol_id FK; bigint empresa_id FK }
-    PERSONA { bigint id PK; varchar doc_identidad UK; varchar estado_acceso; bigint empresa_id FK }
-    VISITA { bigint id PK; bigint persona_id FK; varchar tipo_visita; varchar estado_visita; varchar tipo_cierre }
-    INCIDENTE { bigint id PK; bigint persona_id FK; varchar nivel_gravedad }
-    PUNTO_ACCESO { bigint id PK; varchar nombre UK }
-    BITACORA_AUDITORIA { bigint id PK; varchar accion; varchar username; text detalle; datetime fecha_hora }
-```
-
----
-
-## 6. Control de Acceso Basado en Roles (RBAC)
+## 5. Control de Acceso Basado en Roles (RBAC)
 
 ### Credenciales de Prueba Preconfiguradas:
 
@@ -155,7 +122,7 @@ erDiagram
 
 ---
 
-## 7. Guía de Instalación y Ejecución
+## 6. Guía de Instalación y Ejecución
 
 ### Requisitos Previos
 - **Java JDK 17 o 21** instalado.
@@ -180,7 +147,7 @@ java -jar target/sica.jar
 
 ---
 
-## 8. Catálogo de Endpoints REST API
+## 7. Catálogo de Endpoints REST API
 
 - `POST /auth/login` — Autenticación de usuario y retorno de JWT.
 - `POST /auth/logout` — Cierre de sesión y revocación del token JWT.
@@ -200,7 +167,7 @@ java -jar target/sica.jar
 
 ---
 
-## 9. Pruebas Unitarias y Cobertura QA
+## 8. Pruebas Unitarias y Cobertura QA
 
 El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 5:
 - `AuthUseCaseTest`: Verificación de intentos fallidos, bloqueos y hashing de contraseñas.
@@ -215,7 +182,7 @@ El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 
 
 ---
 
-## 10. Contribuidores y Autores
+## 9. Contribuidores y Autores
 
 <div align="center">
 
