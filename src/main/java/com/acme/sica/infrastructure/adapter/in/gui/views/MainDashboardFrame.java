@@ -15,6 +15,7 @@ public class MainDashboardFrame extends JFrame {
     private FuncionarioPanel funcionarioPanel;
     private IncidentesPanel incidentesPanel;
     private AuditoriaPanel auditoriaPanel;
+    private ReportesPanel reportesPanel;
 
     public MainDashboardFrame(SicaApiClient apiClient) {
         this.apiClient = apiClient;
@@ -71,11 +72,13 @@ public class MainDashboardFrame extends JFrame {
         funcionarioPanel = new FuncionarioPanel(apiClient);
         incidentesPanel = new IncidentesPanel(apiClient);
         auditoriaPanel = new AuditoriaPanel(apiClient);
+        reportesPanel = new ReportesPanel(apiClient);
 
         // Filtrar según el rol y/o permisos asignados al usuario (Soporte RBAC Dinámico)
         boolean showGuardiaTab = session.isAdmin() || session.isGuardia() || session.hasPermission("checkin_visita") || session.hasPermission("checkout_visita") || session.hasPermission("crear_persona");
         boolean showFuncionarioTab = session.isAdmin() || session.isFuncionario() || session.hasPermission("preregistrar_visita") || session.hasPermission("aprobar_visita");
         boolean showIncidentesTab = session.isAdmin() || session.isGuardia() || session.hasPermission("registrar_incidente");
+        boolean showReportesTab = session.isAdmin() || session.hasPermission("generar_reporte");
         boolean showAuditoriaTab = session.isAdmin() || session.hasPermission("consultar_auditoria") || session.hasPermission("gestionar_roles") || session.hasPermission("crear_usuario");
 
         if (showGuardiaTab) {
@@ -90,9 +93,14 @@ public class MainDashboardFrame extends JFrame {
             tabbedPane.addTab("🚨 Gestión de Incidentes", incidentesPanel);
         }
 
+        if (showReportesTab) {
+            tabbedPane.addTab("📈 Reportes & Estadísticas", reportesPanel);
+        }
+
         if (showAuditoriaTab) {
             tabbedPane.addTab("📊 Bitácora & Auditoría", auditoriaPanel);
         }
+
 
         // Fallback: Si es un rol personalizado sin coincidencia específica, habilitar vista funcional por defecto
         if (tabbedPane.getTabCount() == 0) {
