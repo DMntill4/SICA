@@ -8,7 +8,7 @@ SICA es un sistema de backend diseñado para automatizar y asegurar el control d
 
 ## 1. Justificación de Arquitectura (Sin Framework)
 
-El desarrollo del backend fue construido utilizando **Java Estándar puro** (`com.sun.net.httpserver.HttpServer` nativo del JDK) y persistencia mediante **JDBC puro** sobre una base de datos **H2 en modo archivo** (`./data/sicadb`).
+El desarrollo del backend fue construido utilizando **Java Estándar puro** (`com.sun.net.httpserver.HttpServer` nativo del JDK) y persistencia mediante **JDBC puro** sobre una base de datos **MySQL 8.3** (vía Docker) con fallback a **H2 en modo archivo**.
 
 ### ¿Por qué no se usó Spring Boot / JPA?
 - **Control Total y Transparencia**: En lugar de depender de "magia" o configuración automática de Spring (`@RestController`, `@Autowired`, `@Entity`), la aplicación construye a mano el servidor HTTP, el enrutador de peticiones, el manejo de hilos concurrentes, la inyección de dependencias por constructor y las consultas SQL mediante `PreparedStatement` y `ResultSet`.
@@ -22,33 +22,44 @@ El desarrollo del backend fue construido utilizando **Java Estándar puro** (`co
 
 ```
 com.acme.sica
-├── domain/                      (CAPA DE DOMINIO PURA)
-│   ├── model/                   (Usuario, Persona, Visita, Incidente, Bitacora, etc.)
-│   ├── enums/                   (EstadoAcceso, EstadoVisita, TipoVisita, etc.)
-│   └── port/                    (Interfaces / Puertos: UsuarioRepository, VisitaRepository, etc.)
+├── domain/                              (CAPA DE DOMINIO PURA - Sin dependencias externas)
+│   ├── model/                           (Entidades: Usuario, Persona, Visita, Empresa, Incidente, Bitacora, etc.)
+│   └── enums/                           (EstadoAcceso, EstadoVisita, TipoVisita, NivelGravedad, etc.)
 │
-├── usecase/                     (CAPA DE APLICACIÓN / CASOS DE USO)
-│   ├── auth/                    (AuthUseCase: login, logout, control de intentos)
-│   ├── personas/                (GestionarPersonaUseCase)
-│   ├── usuarios/                (GestionarUsuarioUseCase)
-│   ├── incidentes/              (RegistrarIncidenteUseCase)
-│   ├── visitas/                 (GestionarVisitaUseCase, VisitaFactory, Strategies)
-│   └── reportes/                (GenerarReporteUseCase)
+├── application/                         (CAPA DE APLICACIÓN / CASOS DE USO)
+│   ├── AuthenticatedUserContext.java    (Record del contexto de usuario autenticado)
+│   ├── dto/                             (DTOs de Petición y Respuesta)
+│   ├── port/
+│   │   └── out/                         (Puertos de Salida: Interfaces de Repositorios y AuditService)
+│   └── usecase/
+│       ├── auth/                        (AuthUseCase: login, logout, control de intentos)
+│       ├── empresas/                    (GestionarEmpresaUseCase)
+│       ├── personas/                    (GestionarPersonaUseCase)
+│       ├── usuarios/                    (GestionarUsuarioUseCase)
+│       ├── incidentes/                  (RegistrarIncidenteUseCase)
+│       ├── visitas/                     (GestionarVisitaUseCase, VisitaFactory, Strategies)
+│       └── reportes/                    (GenerarReporteUseCase)
 │
-└── infrastructure/              (CAPA DE INFRAESTRUCTURA Y ADAPTADORES)
+└── infrastructure/                      (CAPA DE INFRAESTRUCTURA Y ADAPTADORES)
     ├── adapter/
-    │   ├── in/http/             (ADAPTADORES DE ENTRADA HTTP / HANDLERS)
-    │   ├── in/dto/              (DTOs de Petición y Respuesta)
-    │   └── out/jdbc/            (ADAPTADORES DE SALIDA PERSISTENCIA JDBC)
-    ├── db/                      (H2ConnectionFactory, SchemaInitializer)
-    ├── http/                    (Router, Route, HttpUtils)
-    └── security/                (JwtUtil, PasswordHasher, AuthMiddleware, PermissionChecker)
+    │   ├── in/
+    │   │   ├── http/                    (ADAPTADORES DE ENTRADA HTTP)
+    │   │   │   ├── handlers/            (AuthHttpHandler, VisitaHttpHandler, EmpresaHttpHandler, etc.)
+    │   │   │   └── router/              (Router, Route, HttpUtils, RouteHandler)
+    │   │   └── gui/                     (ADAPTADOR DE ENTRADA SWING)
+    │   │       ├── client/              (SicaApiClient - Cliente HTTP que consume la API REST)
+    │   │       └── views/               (Paneles Swing: GuardiaPanel, FuncionarioPanel, etc.)
+    │   └── out/
+    │       └── persistence/jdbc/        (ADAPTADORES DE SALIDA - Implementaciones JDBC de los Repositorios)
+    ├── config/                          (DatabaseConfig)
+    ├── db/                              (SchemaInitializer, ConnectionFactory, DatabaseFactoryProvider)
+    └── security/                        (JwtUtil, PasswordHasher, AuthMiddleware, PermissionChecker)
 ```
 
 ### Patrones de Diseño Aplicados
-1. **Abstract Factory Pattern (`connection/`)**:
+1. **Abstract Factory Pattern (`db/connection/`)**:
    - `ConnectionFactory`: Interfaz del producto de conexiones JDBC.
-   - `MySqlConnectionFactory`: Fábrica concreta de conexiones MySQL (`jdbc:mysql://localhost:3306/sicadb`).
+   - `MySqlConnectionFactory`: Fábrica concreta de conexiones MySQL (`jdbc:mysql://localhost:3306/sica`).
    - `H2ConnectionFactory`: Fábrica concreta de conexiones H2 para pruebas/fallback.
    - `DatabaseFactoryProvider`: Proveedor que selecciona y retorna la fábrica de conexiones activa según las propiedades del sistema (`db.engine=MYSQL`).
 2. **Factory Pattern (`VisitaFactory`)**:
@@ -62,9 +73,37 @@ com.acme.sica
 
 ## 3. Modelo de Datos Relacional (E-R)
 
+```mermaid
+erDiagram
+    ROL ||--o{ ROL_PERMISO : tiene
+    PERMISO ||--o{ ROL_PERMISO : asignado_a
+    ROL ||--o{ USUARIO : asignado_a
+    EMPRESA ||--o{ USUARIO : emplea
+    EMPRESA ||--o{ PERSONA : pertenece
+    USUARIO ||--o{ VISITA : funcionario
+    USUARIO ||--o{ VISITA : guardia_ingreso
+    USUARIO ||--o{ VISITA : guardia_salida
+    PERSONA ||--o{ VISITA : visitante
+    PERSONA ||--o{ INCIDENTE : involucrado
+    USUARIO ||--o{ INCIDENTE : reportado_por
+    PUNTO_ACCESO ||--o{ VISITA : punto_ingreso
+    PUNTO_ACCESO ||--o{ VISITA : punto_salida
+    VISITA ||--o| CODIGO_QR : genera
+
+    ROL { bigint id PK; varchar nombre UK }
+    PERMISO { bigint id PK; varchar nombre UK }
+    EMPRESA { bigint id PK; varchar nit UK; varchar nombre; boolean activa }
+    USUARIO { bigint id PK; varchar username UK; varchar password_hash; bigint rol_id FK; bigint empresa_id FK; boolean bloqueado }
+    PERSONA { bigint id PK; varchar doc_identidad UK; varchar estado_acceso; bigint empresa_id FK }
+    VISITA { bigint id PK; bigint persona_id FK; varchar tipo_visita; varchar estado_visita; varchar tipo_cierre }
+    INCIDENTE { bigint id PK; bigint persona_id FK; varchar nivel_gravedad }
+    PUNTO_ACCESO { bigint id PK; varchar nombre UK }
+    BITACORA_AUDITORIA { bigint id PK; varchar accion; varchar username; text detalle }
+```
+
 Orden de creación relacional en `schema.sql`:
-1. `rol` $\leftrightarrow$ `permiso` $\rightarrow$ `rol_permiso` (Tabla intermedia RBAC).
-2. `empresa` $\rightarrow$ `usuario` (Conexión por `empresa_id`).
+1. `rol` ↔ `permiso` → `rol_permiso` (Tabla intermedia RBAC).
+2. `empresa` → `usuario` (Conexión por `empresa_id`).
 3. `token_revocado` (Lista negra para Logout JWT).
 4. `persona` (Doc. Identidad, Nombre, Apellido, `estado_acceso`: HABILITADO / RESTRINGIDO).
 5. `punto_acceso` (Puntos de control físico).
@@ -78,7 +117,7 @@ Orden de creación relacional en `schema.sql`:
 
 | Usuario | Contraseña | Rol | Permisos Principales | Empresa |
 |---|---|---|---|---|
-| `admin` | `admin123` | **ADMIN** | Todos los permisos (1 a 12), CRUD completo y auditoría | N/A |
+| `admin` | `admin123` | **ADMIN** | Todos los permisos (1 a 16), CRUD completo, auditoría y limpieza de historial | N/A |
 | `guardia1` | `guardia123` | **GUARDIA** | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente`, `generar_reporte` | Recepción |
 | `func1` | `func123` | **FUNCIONARIO** | `preregistrar_visita`, `aprobar_visita`, `generar_reporte` | Acme Corporation |
 
@@ -87,28 +126,32 @@ Orden de creación relacional en `schema.sql`:
 ## 5. Instrucciones de Compilación y Ejecución
 
 ### Requisitos
-- JDK 21 o superior.
-- No requiere tener instalado Maven ni PostgreSQL/MySQL (la BD H2 y Maven Wrapper están autocontenidos).
+- JDK 17 o superior.
+- Docker y Docker Compose (para la base de datos MySQL).
 
----
+### Base de Datos con Docker
 
-## 🧪 Matriz de Pruebas de QA (50 Casos de Prueba)
+```bash
+# 1. Levantar MySQL 8.3 en Docker
+docker-compose up -d
 
-El proyecto cuenta con una **Matriz de Pruebas de Control de Calidad** exhaustiva de **50 Casos de Prueba (CP-01 al CP-50)** estructurados en 9 módulos de prueba:
+# Verificar que el contenedor está corriendo
+docker ps
+```
 
-1. **Módulo 1: Autenticación, JWT, Logout y Sesiones (CP-01 al CP-10)**
-2. **Módulo 2: Flujo 1 — Invitado Pre-registrado (CP-11 al CP-16)**
-3. **Módulo 3: Flujo 2 — Invitado No Anunciado y Aprobaciones en Tiempo Real (CP-17 al CP-22)**
-4. **Módulo 4: Flujo 3 — Carnet Olvidado / Pase Temporal (CP-23 al CP-27)**
-5. **Módulo 5: Flujo 4 — Salida Olvidada y Regularización Automática (CP-28 al CP-32)**
-6. **Módulo 6: Gestión de Incidentes y Restricciones de Acceso (CP-33 al CP-38)**
-7. **Módulo 7: Control de Acceso Basado en Roles (RBAC Granular) (CP-39 al CP-43)**
-8. **Módulo 8: Bitácora Inmutable de Auditoría y Reportes (CP-44 al CP-47)**
-9. **Módulo 9: Conexión BD, Abstract Factory & Concurrencia (CP-48 al CP-50)**
+### Conexión desde DBeaver
+| Parámetro | Valor |
+|---|---|
+| Host | `localhost` |
+| Puerto | `3306` |
+| Base de datos | `sica` |
+| Usuario (root) | `root` / `-3ta9}OK`4[Y` |
+| Usuario (app) | `sica_user` / `sica_pass_2026` |
+| Driver | MySQL 8 |
 
----
+> **Nota:** En las propiedades del driver de DBeaver, establece `allowPublicKeyRetrieval=true` y `useSSL=false`.
 
-## 🚀 Instrucciones de Instalación y Ejecución
+### Compilar y Ejecutar
 
 ```bash
 # 1. Compilar y empaquetar el proyecto
@@ -116,17 +159,10 @@ El proyecto cuenta con una **Matriz de Pruebas de Control de Calidad** exhaustiv
 
 # 2. Ejecutar la aplicación (Backend HTTP + GUI Swing FlatLaf)
 java -jar target/sica.jar
+
+# 3. Ejecutar solo backend (sin GUI)
+java -jar target/sica.jar --headless
 ```
-
-### Credenciales de Prueba Preconfiguradas:
-- 👑 **ADMIN**: `admin` / `admin123`
-- 🛡️ **GUARDIA**: `guardia1` / `guardia123`
-- 👔 **FUNCIONARIO**: `func1` / `func123`
-
-=================================================
- Servidor SICA iniciado exitosamente en puerto 8080
- Endpoint base: http://localhost:8080
-=================================================
 
 ---
 
@@ -134,6 +170,10 @@ java -jar target/sica.jar
 
 - `POST /auth/login` - Autenticación y obtención de JWT.
 - `POST /auth/logout` - Cierre de sesión y revocación del token.
+- `GET /empresas` - Listar empresas registradas.
+- `POST /empresas` - Registrar nueva empresa (requiere permiso `crear_empresa`).
+- `PUT /empresas/{id}` - Actualizar empresa (requiere permiso `modificar_empresa`).
+- `DELETE /empresas/{id}` - Eliminar empresa (requiere permiso `eliminar_empresa`).
 - `POST /visitas/preregistrar` - Pre-registro por funcionario.
 - `POST /visitas/no-anunciada` - Registro de visitante inesperado por guardia.
 - `POST /visitas/pase-temporal` - Ingreso puntual por carnet olvidado.
@@ -143,3 +183,4 @@ java -jar target/sica.jar
 - `POST /incidentes` - Registro de incidente (restringe inmediatamente a la persona).
 - `GET /reportes/personas-dentro` - Listado de personas actualmente en el complejo.
 - `GET /reportes/auditoria` - Consulta de bitácora de auditoría inmutable.
+- `DELETE /visitas` - Limpiar historial de visitas (requiere permiso `limpiar_historial`).

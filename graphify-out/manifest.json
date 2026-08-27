@@ -1,0 +1,512 @@
+{
+  "build_and_push_git.ps1": {
+    "mtime": 1787786001.5224037,
+    "seen": 1787786030.3741968,
+    "ast_hash": "177d48bc00112f08b4c93353fa5721f4",
+    "semantic_hash": "177d48bc00112f08b4c93353fa5721f4"
+  },
+  "build_git_repo.ps1": {
+    "mtime": 1787786001.5224037,
+    "seen": 1787786030.3741968,
+    "ast_hash": "59f0cdada396277b605e68a6f49c0de9",
+    "semantic_hash": "59f0cdada396277b605e68a6f49c0de9"
+  },
+  "mvnw": {
+    "mtime": 1787786001.5224037,
+    "seen": 1787786030.3741968,
+    "ast_hash": "f3d01215c060aaec5edc2f619efe5b12",
+    "semantic_hash": "f3d01215c060aaec5edc2f619efe5b12"
+  },
+  "pom.xml": {
+    "mtime": 1787786162.619804,
+    "seen": 1787788123.6860392,
+    "ast_hash": "e3bbc9159dbee13064e426af0b213793",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/SicaApplication.java": {
+    "mtime": 1787787988.8369598,
+    "seen": 1787788123.6860392,
+    "ast_hash": "17270eeab95aac1048a25590593c7051",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/domain/enums/EstadoAcceso.java": {
+    "mtime": 1787787988.8678572,
+    "seen": 1787788123.6868935,
+    "ast_hash": "662aa9d7a5c0e0279905953d8974e8a3",
+    "semantic_hash": "662aa9d7a5c0e0279905953d8974e8a3"
+  },
+  "src/main/java/com/acme/sica/domain/enums/EstadoVisita.java": {
+    "mtime": 1787787988.8678572,
+    "seen": 1787788123.6868935,
+    "ast_hash": "79fe63e0166a8ce3df9021420f683860",
+    "semantic_hash": "79fe63e0166a8ce3df9021420f683860"
+  },
+  "src/main/java/com/acme/sica/domain/enums/NivelGravedad.java": {
+    "mtime": 1787787988.870402,
+    "seen": 1787788123.6868935,
+    "ast_hash": "e7270a5eeda0ab1248af6b690e10350a",
+    "semantic_hash": "e7270a5eeda0ab1248af6b690e10350a"
+  },
+  "src/main/java/com/acme/sica/domain/enums/TipoCierreVisita.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "0c5d190b4ad77ce4a7717e4303266d77",
+    "semantic_hash": "0c5d190b4ad77ce4a7717e4303266d77"
+  },
+  "src/main/java/com/acme/sica/domain/enums/TipoVisita.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "52596fd54a428b71069189f5b9887ea9",
+    "semantic_hash": "52596fd54a428b71069189f5b9887ea9"
+  },
+  "src/main/java/com/acme/sica/domain/model/BitacoraAuditoria.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "3f31cff0b8bba900d698f79a3bfdfc7d",
+    "semantic_hash": "3f31cff0b8bba900d698f79a3bfdfc7d"
+  },
+  "src/main/java/com/acme/sica/domain/model/Empresa.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "e60c22b70d6824891982efe8ad8556e1",
+    "semantic_hash": "e60c22b70d6824891982efe8ad8556e1"
+  },
+  "src/main/java/com/acme/sica/domain/model/Incidente.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "eaa4c8ec439881eba59892c77c77c1b3",
+    "semantic_hash": "eaa4c8ec439881eba59892c77c77c1b3"
+  },
+  "src/main/java/com/acme/sica/domain/model/Permiso.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "1d5eca6142e0873a1328a3e02859138d",
+    "semantic_hash": "1d5eca6142e0873a1328a3e02859138d"
+  },
+  "src/main/java/com/acme/sica/domain/model/Persona.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "b4a0798bb94f64dfabd7088e3c0e6613",
+    "semantic_hash": "b4a0798bb94f64dfabd7088e3c0e6613"
+  },
+  "src/main/java/com/acme/sica/domain/model/PuntoAcceso.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "ab811995b076eab717e0e56b5688712b",
+    "semantic_hash": "ab811995b076eab717e0e56b5688712b"
+  },
+  "src/main/java/com/acme/sica/domain/model/Rol.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "ab5930bba69b4a1a869b1929f26f7196",
+    "semantic_hash": "ab5930bba69b4a1a869b1929f26f7196"
+  },
+  "src/main/java/com/acme/sica/domain/model/Usuario.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "48a0016f969ccff0e843e033eecc5d9f",
+    "semantic_hash": "48a0016f969ccff0e843e033eecc5d9f"
+  },
+  "src/main/java/com/acme/sica/domain/model/Visita.java": {
+    "mtime": 1787787988.8718011,
+    "seen": 1787788123.6868935,
+    "ast_hash": "5b2d5951ee1e6634de7780b073c5da67",
+    "semantic_hash": "5b2d5951ee1e6634de7780b073c5da67"
+  },
+  "src/main/java/com/acme/sica/infrastructure/config/DatabaseConfig.java": {
+    "mtime": 1787787988.8857756,
+    "seen": 1787788123.6868935,
+    "ast_hash": "f3325bc7dda47502fe1590a35e7b748b",
+    "semantic_hash": "f3325bc7dda47502fe1590a35e7b748b"
+  },
+  "src/main/java/com/acme/sica/infrastructure/db/H2ConnectionFactory.java": {
+    "mtime": 1787787988.887784,
+    "seen": 1787788123.6868935,
+    "ast_hash": "471a210e142eff8678509ff10d75afcb",
+    "semantic_hash": "471a210e142eff8678509ff10d75afcb"
+  },
+  "src/main/java/com/acme/sica/infrastructure/db/SchemaInitializer.java": {
+    "mtime": 1787787988.887784,
+    "seen": 1787788123.6868935,
+    "ast_hash": "6311c9f427a56d7b6f23228ffebbada2",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/db/connection/ConnectionFactory.java": {
+    "mtime": 1787787988.887784,
+    "seen": 1787788123.6868935,
+    "ast_hash": "d1ee3fce1d58fc2d5b5c086316dd5dc1",
+    "semantic_hash": "d1ee3fce1d58fc2d5b5c086316dd5dc1"
+  },
+  "src/main/java/com/acme/sica/infrastructure/db/connection/DatabaseFactoryProvider.java": {
+    "mtime": 1787787988.887784,
+    "seen": 1787788123.6868935,
+    "ast_hash": "c04e6b78873af3f1afd11cee748053ef",
+    "semantic_hash": "c04e6b78873af3f1afd11cee748053ef"
+  },
+  "src/main/java/com/acme/sica/infrastructure/db/connection/H2ConnectionFactory.java": {
+    "mtime": 1787787988.887784,
+    "seen": 1787788123.6868935,
+    "ast_hash": "852f94404079661c59de2aa8b562d127",
+    "semantic_hash": "852f94404079661c59de2aa8b562d127"
+  },
+  "src/main/java/com/acme/sica/infrastructure/db/connection/MySqlConnectionFactory.java": {
+    "mtime": 1787787988.887784,
+    "seen": 1787788123.6868935,
+    "ast_hash": "82983ede03fdd83a4b5f9487906b642c",
+    "semantic_hash": "82983ede03fdd83a4b5f9487906b642c"
+  },
+  "src/main/java/com/acme/sica/infrastructure/security/AuthMiddleware.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "e494188118aae993e60d080585f72550",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/security/AuthenticatedUserContext.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "d0c38ee53c290d62636e6fd8f417d613",
+    "semantic_hash": "d0c38ee53c290d62636e6fd8f417d613"
+  },
+  "src/main/java/com/acme/sica/infrastructure/security/JwtUtil.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "ea093d7a62fc37f172f6c2b6a9218473",
+    "semantic_hash": "ea093d7a62fc37f172f6c2b6a9218473"
+  },
+  "src/main/java/com/acme/sica/infrastructure/security/PasswordHasher.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "696ce47211921477a1938387bbb80b8d",
+    "semantic_hash": "696ce47211921477a1938387bbb80b8d"
+  },
+  "src/main/java/com/acme/sica/infrastructure/security/PermissionChecker.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "f75d2e02c1c1ecf0e08d218fc4ae93ba",
+    "semantic_hash": ""
+  },
+  "refactor_mvc.py": {
+    "mtime": 1787786568.7223291,
+    "seen": 1787788123.6860392,
+    "ast_hash": "a5b7d85fc34643613ae8b2a169d40280",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/CheckInDTO.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6860392,
+    "ast_hash": "a853900a63b1fec3a67321f634e0d1c9",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/EmpresaDTO.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6860392,
+    "ast_hash": "7487bde7d67bd55a4d370afb9eeabace",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/IncidenteDTO.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6860392,
+    "ast_hash": "ea37b4f78a76a0cbd2a3f3944478a6e1",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/LoginRequestDTO.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6860392,
+    "ast_hash": "6a4b08b31994d37635a134b6f49a8908",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/LoginResponseDTO.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6860392,
+    "ast_hash": "839e53cf85364aaf16f8c7fcf5b19505",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/PaseTemporalDTO.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "b045f3bff98fd59e4090a19c00f19dc1",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/PersonaDTO.java": {
+    "mtime": 1787787988.9235277,
+    "seen": 1787788123.6868935,
+    "ast_hash": "db49ccc7e5e2784dfa09d63b41cb3598",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/PreregistroVisitaDTO.java": {
+    "mtime": 1787787988.9235277,
+    "seen": 1787788123.6868935,
+    "ast_hash": "8c372221220705cbfb579220c7f758c7",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/UsuarioDTO.java": {
+    "mtime": 1787787988.9247775,
+    "seen": 1787788123.6868935,
+    "ast_hash": "06a8257d35543a77bf04f6496ededc65",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/dto/VisitaNoAnunciadaDTO.java": {
+    "mtime": 1787787988.92606,
+    "seen": 1787788123.6868935,
+    "ast_hash": "7a99e409b7685e71acb1f5d855a53145",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/GestionarEmpresaUseCase.java": {
+    "mtime": 1787787988.8987782,
+    "seen": 1787788123.6868935,
+    "ast_hash": "50e3e509e72966dbb6312b6142c6f082",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/auth/AuthUseCase.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "b39c7a43792e4424024bb6df4a710020",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/incidentes/RegistrarIncidenteUseCase.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "37e26f5752ee278e19dbe915ee0a3ecb",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/personas/GestionarPersonaUseCase.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "043bbce7875dad08e7229408b1ac6e4a",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/reportes/GenerarReporteUseCase.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "b67a009a435c8c10100c3889b5f6f626",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/usuarios/GestionarUsuarioUseCase.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "f9174be3af2c278a52783519983e1104",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/visitas/GestionarVisitaUseCase.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "70416ba02965c4f29e76bfc4c0d1abff",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/visitas/VisitaFactory.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "8794578d74d44b3b123df59f442285ef",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/visitas/strategy/AccessValidationStrategy.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "f48a1949b01ce42e130c21d1942ffbe2",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/visitas/strategy/PreRegisteredValidationStrategy.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "c27706fa63ceb4019eb2c5dbfd9f1160",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/visitas/strategy/RestrictedPersonValidationStrategy.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "233bf736398c9eabb00762c14623c752",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/application/usecase/visitas/strategy/UnannouncedValidationStrategy.java": {
+    "mtime": 1787787988.9066553,
+    "seen": 1787788123.6868935,
+    "ast_hash": "d0cbbaaf0757951649c5185ee8c71881",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/gui/SicaGuiMain.java": {
+    "mtime": 1787787988.92606,
+    "seen": 1787788123.6868935,
+    "ast_hash": "c2b59006235c79f94b6d5409093f3cd7",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/gui/client/SessionContext.java": {
+    "mtime": 1787787988.92606,
+    "seen": 1787788123.6868935,
+    "ast_hash": "4ddd5a78c6399dcb63706253f18795a8",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/gui/client/SicaApiClient.java": {
+    "mtime": 1787787988.9309537,
+    "seen": 1787788123.6868935,
+    "ast_hash": "88bc0744c4afd9db0bb2c4104f12f26b",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/gui/views/AuditoriaPanel.java": {
+    "mtime": 1787787988.9330063,
+    "seen": 1787788123.6868935,
+    "ast_hash": "b8412c4334a94b1f9a632ab99e2256b8",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/gui/views/FuncionarioPanel.java": {
+    "mtime": 1787787988.9350116,
+    "seen": 1787788123.6868935,
+    "ast_hash": "fc9222f05d866d86d508e79a275546ad",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/gui/views/GuardiaPanel.java": {
+    "mtime": 1787787988.942954,
+    "seen": 1787788123.6868935,
+    "ast_hash": "d1feacfd3f5cd0912d3b89d50fe9ad8f",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/gui/views/IncidentesPanel.java": {
+    "mtime": 1787787988.946767,
+    "seen": 1787788123.6868935,
+    "ast_hash": "b1e8cdf4ae003db384a37abaff3b2c6a",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/gui/views/LoginFrame.java": {
+    "mtime": 1787787988.946767,
+    "seen": 1787788123.6868935,
+    "ast_hash": "32c9c4dfc5c7835d7156769a1eb35db8",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/gui/views/MainDashboardFrame.java": {
+    "mtime": 1787787988.946767,
+    "seen": 1787788123.6868935,
+    "ast_hash": "c48984135cc3cf0dd2e5ffd416f5124a",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/handlers/AuthHttpHandler.java": {
+    "mtime": 1787787988.8495557,
+    "seen": 1787788123.6868935,
+    "ast_hash": "758eb0d8c90779c6672d3ca84f55ead9",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/handlers/EmpresaHttpHandler.java": {
+    "mtime": 1787787988.851166,
+    "seen": 1787788123.6868935,
+    "ast_hash": "b0e882b7ea6f8523cd86c7f9621cca24",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/handlers/IncidenteHttpHandler.java": {
+    "mtime": 1787787988.851166,
+    "seen": 1787788123.6868935,
+    "ast_hash": "18906a1307ca0da87ef20790362e5aaf",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/handlers/PersonaHttpHandler.java": {
+    "mtime": 1787787988.851166,
+    "seen": 1787788123.6868935,
+    "ast_hash": "6538e7e4c3963dc961f09a4989b1ffdd",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/handlers/ReportesHttpHandler.java": {
+    "mtime": 1787787988.8549595,
+    "seen": 1787788123.6868935,
+    "ast_hash": "246f75268f9f4b2cce13bac3a22bc1ac",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/handlers/UsuarioHttpHandler.java": {
+    "mtime": 1787787988.8549595,
+    "seen": 1787788123.6868935,
+    "ast_hash": "d0997813851c92010a48842984689a3b",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/handlers/VisitaHttpHandler.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "02edd9ae0f488951aa543cae09b3cf68",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/router/HttpUtils.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "dfa08afc4fb6986ea60a7a5fd9b2194d",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/router/Route.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "a85501013c3138aa0ecb3544a7b4edc4",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/router/RouteHandler.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "e1bca08ef2c0c987e52d9cb27ced34b4",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/acme/sica/infrastructure/adapter/in/http/router/Router.java": {
+    "mtime": 1787787988.8580663,
+    "seen": 1787788123.6868935,
+    "ast_hash": "2a2ed9e00ad24930836ceb1637071f12",
+    "semantic_hash": ""
+  },
+  "src/test/java/com/acme/sica/application/usecase/visitas/factory/VisitaFactoryTest.java": {
+    "mtime": 1787787988.946767,
+    "seen": 1787788123.6868935,
+    "ast_hash": "17516a83a257ebff652cae6b73b6a801",
+    "semantic_hash": ""
+  },
+  "src/test/java/com/acme/sica/application/usecase/visitas/service/SalidaOlvidadaTest.java": {
+    "mtime": 1787787988.955411,
+    "seen": 1787788123.6868935,
+    "ast_hash": "697d1575251abec131be8c1a188a7384",
+    "semantic_hash": ""
+  },
+  "src/test/java/com/acme/sica/infrastructure/security/PermissionCheckerTest.java": {
+    "mtime": 1787787988.946767,
+    "seen": 1787788123.6868935,
+    "ast_hash": "9d7b8cddead393dd93081ddbc380f160",
+    "semantic_hash": ""
+  },
+  ".agents/rules/graphify.md": {
+    "mtime": 1787785798.4537482,
+    "seen": 1787788123.6868935,
+    "ast_hash": "a0e4d192b9e2e17256124dbfc8e24e6a",
+    "semantic_hash": ""
+  },
+  ".agents/rules/pure-java-standards.md": {
+    "mtime": 1787785822.8234103,
+    "seen": 1787788123.6868935,
+    "ast_hash": "a9abede5cb2a6aaa2e904ba91960ef40",
+    "semantic_hash": ""
+  },
+  ".agents/skills/pure-java-architecture/SKILL.md": {
+    "mtime": 1787785816.4002748,
+    "seen": 1787788123.6868935,
+    "ast_hash": "6deddd3f0505d437df4d602a601346cb",
+    "semantic_hash": ""
+  },
+  ".agents/workflows/graphify.md": {
+    "mtime": 1787785798.4537482,
+    "seen": 1787788123.6868935,
+    "ast_hash": "a831cf3669f1e6ab85d8a80ebe655f99",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1787786001.5224037,
+    "seen": 1787788123.6868935,
+    "ast_hash": "4e91240cf4f6228ebf519a00cbb3276b",
+    "semantic_hash": ""
+  },
+  "docker-compose.yml": {
+    "mtime": 1787786535.1087203,
+    "seen": 1787788123.6868935,
+    "ast_hash": "44a70cee7d269f49374d7a71efa0aaff",
+    "semantic_hash": ""
+  },
+  "openapi.yaml": {
+    "mtime": 1787786001.5224037,
+    "seen": 1787788123.6868935,
+    "ast_hash": "ea2eb9c9173cbdb6eab3669180ed80f2",
+    "semantic_hash": ""
+  },
+  "requerimientos.txt": {
+    "mtime": 1787785950.068505,
+    "seen": 1787788123.6868935,
+    "ast_hash": "e8b9b898a1965e9f2d0999a6ddc1ed38",
+    "semantic_hash": ""
+  }
+}
