@@ -26,6 +26,8 @@ public class GuardiaPanel extends JPanel {
     private JLabel lblPersonaFoto;
     private JLabel lblVisitaTarget;
     private JLabel lblVisitaEstado;
+    private com.acme.sica.infrastructure.adapter.in.gui.components.EstadoSicaGradientCard gradientCardRef;
+
 
     private JTable tblPersonas;
     private DefaultTableModel tableModelPersonas;
@@ -66,33 +68,30 @@ public class GuardiaPanel extends JPanel {
         bannerPanel.setBackground(new Color(30, 41, 59));
         bannerPanel.setBorder(new EmptyBorder(8, 12, 8, 12));
         JLabel lblHelp = new JLabel(
-                "💡 MÓDULO DE GUARDIA: Selecciona una persona de la lista izquierda o ingresa su documento para consultar su estado (VERDE = Habilitado / ROJO = Restringido). Haz Check-In para autorizar el ingreso físico.");
-        lblHelp.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                "[i] MÓDULO DE PORTERÍA (Avanzado): Selecciona una persona de la lista izquierda o ingresa su documento para consultar su estado en tiempo real.");
+        lblHelp.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblHelp.setForeground(new Color(226, 232, 240));
         bannerPanel.add(lblHelp, BorderLayout.CENTER);
         add(bannerPanel, BorderLayout.NORTH);
 
-        // --- CONTAINER SPLIT: Izquierda (Personas BD) | Derecha (Tarjeta + Visitas)
-        // ---
+        // --- CONTAINER SPLIT: Izquierda (Personas BD + Incidentes + Gráfica) | Derecha (Consulta + Estado + Visitas)
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        mainSplit.setDividerLocation(360);
+        mainSplit.setDividerLocation(380);
         mainSplit.setResizeWeight(0.35);
 
         // ==================== PANEL IZQUIERDO: Personas en BD ====================
         JPanel leftPanel = new JPanel(new BorderLayout(5, 5));
-        leftPanel.setBorder(new TitledBorder("👥 Personas Registradas en Base de Datos"));
+        leftPanel.setBorder(new TitledBorder("LISTA DE PERSONAS"));
 
-        String[] colsPersonas = { "ID", "Documento", "Nombre Completo", "Estado" };
+        String[] colsPersonas = { "ID", "DOCUMENTO", "NOMBRE COM", "ESTADO" };
         tableModelPersonas = new DefaultTableModel(colsPersonas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int col) {
-                return false;
-            }
+            @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         tblPersonas = new JTable(tableModelPersonas);
-        tblPersonas.setRowHeight(24);
+        tblPersonas.setRowHeight(26);
         tblPersonas.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         tblPersonas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tblPersonas.getColumnModel().getColumn(3).setCellRenderer(new StatusPillCellRenderer());
         tblPersonas.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && tblPersonas.getSelectedRow() != -1) {
                 int row = tblPersonas.getSelectedRow();
@@ -103,96 +102,85 @@ public class GuardiaPanel extends JPanel {
         });
 
         JScrollPane scrollPersonas = new JScrollPane(tblPersonas);
-        JLabel lblClickHint = new JLabel(" 👆 Haz clic en una persona para cargar su estado ", SwingConstants.CENTER);
-        lblClickHint.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        lblClickHint.setForeground(Color.GRAY);
 
-        JSplitPane leftSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        leftSplit.setDividerLocation(250);
-        leftSplit.setResizeWeight(0.6);
-
-        JPanel topHalf = new JPanel(new BorderLayout(5, 5));
-        topHalf.add(scrollPersonas, BorderLayout.CENTER);
-        topHalf.add(lblClickHint, BorderLayout.SOUTH);
-
-        JPanel bottomHalf = new JPanel(new BorderLayout(5, 5));
-        bottomHalf.setBorder(new TitledBorder("🚨 Incidentes de la Persona Seleccionada"));
-        String[] colsIncidentes = {"ID", "Gravedad", "Título", "Fecha"};
+        JPanel bottomIncidentContainer = new JPanel(new BorderLayout(4, 4));
+        bottomIncidentContainer.setBorder(new TitledBorder("Incidentes de la Persona Seleccionada"));
+        String[] colsIncidentes = {"ID", "Gravedad", "Título resumido", "Fecha"};
         tableModelPersonaIncidentes = new DefaultTableModel(colsIncidentes, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         tblPersonaIncidentes = new JTable(tableModelPersonaIncidentes);
-        tblPersonaIncidentes.setRowHeight(24);
-        tblPersonaIncidentes.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tblPersonaIncidentes.setRowHeight(22);
+        tblPersonaIncidentes.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         JScrollPane scrollIncidentes = new JScrollPane(tblPersonaIncidentes);
-        bottomHalf.add(scrollIncidentes, BorderLayout.CENTER);
+        scrollIncidentes.setPreferredSize(new Dimension(340, 110));
+        bottomIncidentContainer.add(scrollIncidentes, BorderLayout.CENTER);
 
-        leftSplit.setTopComponent(topHalf);
-        leftSplit.setBottomComponent(bottomHalf);
+        // Gráfica Sparkline de tendencia abajo
+        com.acme.sica.infrastructure.adapter.in.gui.components.SparklineChartPanel sparklinePanel = new com.acme.sica.infrastructure.adapter.in.gui.components.SparklineChartPanel();
+        sparklinePanel.setPreferredSize(new Dimension(340, 95));
+        bottomIncidentContainer.add(sparklinePanel, BorderLayout.SOUTH);
+
+        JSplitPane leftSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        leftSplit.setDividerLocation(230);
+        leftSplit.setTopComponent(scrollPersonas);
+        leftSplit.setBottomComponent(bottomIncidentContainer);
 
         leftPanel.add(leftSplit, BorderLayout.CENTER);
-
         mainSplit.setLeftComponent(leftPanel);
 
-        // ==================== PANEL DERECHO: Estado + Visitas ====================
-        JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
+        // ==================== PANEL DERECHO: Consulta + Estado Degradado + Visitas ====================
+        JPanel rightPanel = new JPanel(new BorderLayout(8, 8));
 
-        // Subpanel Superior Derecho: Buscador + Tarjeta Estado
-        JPanel topRight = new JPanel(new BorderLayout(8, 8));
+        // Subpanel Superior Derecho: Consulta + Tarjeta Degradada SICA
+        JPanel topRight = new JPanel(new GridLayout(1, 2, 8, 8));
 
-        JPanel searchBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
-        searchBar.setBorder(new TitledBorder("🔍 Búsqueda Directa por Documento"));
-        txtSearchDoc = new JTextField("1010101010", 12);
+        JPanel searchBoxPanel = new JPanel(new BorderLayout(6, 6));
+        searchBoxPanel.setBorder(new TitledBorder("CONSULTA DE PERSONA"));
+
+        JPanel searchForm = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+        txtSearchDoc = new JTextField("1010101010", 14);
         txtSearchDoc.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        btnSearch = new JButton("Consultar Estado");
+        btnSearch = new JButton("[Q] CONSULTAR");
         btnSearch.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnSearch.addActionListener(e -> searchPersona());
 
-        searchBar.add(new JLabel("Documento:"));
-        searchBar.add(txtSearchDoc);
-        searchBar.add(btnSearch);
+        searchForm.add(txtSearchDoc);
+        searchForm.add(btnSearch);
 
-        // Tarjeta Visual de Estado
-        JPanel cardPersona = new JPanel(new GridLayout(6, 1, 4, 4));
-        cardPersona.setBorder(BorderFactory.createCompoundBorder(
-                new TitledBorder("Tarjeta de Estado SICA"),
-                new EmptyBorder(4, 10, 4, 10)));
-        lblPersonaNombre = new JLabel("Persona: (Selecciona una persona de la lista)");
-        lblPersonaNombre.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        JPanel detailsGrid = new JPanel(new GridLayout(4, 1, 4, 4));
+        lblPersonaNombre = new JLabel("Persona: (Selecciona una persona)");
+        lblPersonaNombre.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        lblPersonaDoc = new JLabel("Documento: -");
+        lblPersonaDoc = new JLabel("Doc: -");
         lblPersonaDoc.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        
-        lblPersonaFoto = new JLabel("📷 Foto: [URL de foto no disponible]");
-        lblPersonaFoto.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        lblPersonaFoto.setForeground(Color.GRAY);
-        
-        lblVisitaTarget = new JLabel("🏢 Visita a: -");
+
+        lblVisitaTarget = new JLabel("Visita a: Ninguna");
         lblVisitaTarget.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        
-        lblVisitaEstado = new JLabel("🎫 Estado Visita: -");
+
+        lblVisitaEstado = new JLabel("Estado Visita: -");
         lblVisitaEstado.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        lblPersonaEstado = new JLabel(" ESTADO SICA: SELECCIONE PERSONA ", SwingConstants.CENTER);
-        lblPersonaEstado.setOpaque(true);
-        lblPersonaEstado.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblPersonaEstado.setBackground(new Color(100, 116, 139));
-        lblPersonaEstado.setForeground(Color.WHITE);
+        detailsGrid.add(lblPersonaNombre);
+        detailsGrid.add(lblPersonaDoc);
+        detailsGrid.add(lblVisitaTarget);
+        detailsGrid.add(lblVisitaEstado);
 
-        cardPersona.add(lblPersonaNombre);
-        cardPersona.add(lblPersonaDoc);
-        cardPersona.add(lblPersonaFoto);
-        cardPersona.add(lblVisitaTarget);
-        cardPersona.add(lblVisitaEstado);
-        cardPersona.add(lblPersonaEstado);
+        searchBoxPanel.add(searchForm, BorderLayout.NORTH);
+        searchBoxPanel.add(detailsGrid, BorderLayout.CENTER);
 
-        topRight.add(searchBar, BorderLayout.WEST);
-        topRight.add(cardPersona, BorderLayout.CENTER);
+        // Tarjeta Degradada ESTADO SICA
+        com.acme.sica.infrastructure.adapter.in.gui.components.EstadoSicaGradientCard gradientCard = new com.acme.sica.infrastructure.adapter.in.gui.components.EstadoSicaGradientCard();
+        this.gradientCardRef = gradientCard;
+
+        topRight.add(searchBoxPanel);
+        topRight.add(gradientCard);
 
         rightPanel.add(topRight, BorderLayout.NORTH);
 
         // Subpanel Central Derecho: Tabla de Visitas y Control de Accesos
         JPanel visitsPanel = new JPanel(new BorderLayout(5, 5));
+
         visitsPanel.setBorder(new TitledBorder("🚪 Registro de Visitas y Control de Accesos Físicos"));
 
         String[] colsVisitas = { "ID", "Persona / Visitante", "Documento", "Tipo Visita", "Estado",
@@ -418,13 +406,19 @@ public class GuardiaPanel extends JPanel {
                         lblVisitaEstado.setText("🎫 Estado Visita: -");
                     }
 
+                    if (gradientCardRef != null) {
+                        String target = activeVisita != null ? activeVisita.getFuncionarioNombreCompleto() : "Ninguna visita activa";
+                        gradientCardRef.updateState(p.getNombre() + " " + p.getApellido(), p.getDocIdentidad(), target, p.getEstadoAcceso().name());
+                    }
+
                     if ("RESTRINGIDO".equals(p.getEstadoAcceso().name())) {
-                        lblPersonaEstado.setText(" 🚨 ALERTA: ACCESO DENEGADO (PERSONA RESTRINGIDA) ");
+                        lblPersonaEstado.setText(" [!] ALERTA: ACCESO DENEGADO (PERSONA RESTRINGIDA) ");
                         lblPersonaEstado.setBackground(new Color(220, 38, 38));
                     } else {
-                        lblPersonaEstado.setText(" ✅ ACCESO AUTORIZADO - HABILITADO EN SICA ");
+                        lblPersonaEstado.setText(" [+] ACCESO AUTORIZADO - HABILITADO EN SICA ");
                         lblPersonaEstado.setBackground(new Color(34, 197, 94));
                     }
+
                     
                     tableModelPersonaIncidentes.setRowCount(0);
                     SwingWorker<List<Incidente>, Void> incWorker = new SwingWorker<>() {
