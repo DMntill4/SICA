@@ -268,7 +268,7 @@ public class AuditoriaPanel extends JPanel {
             return;
         }
 
-        Long userId = (Long) tableModelUsuarios.getValueAt(row, 0);
+        Long userId = Long.valueOf(tableModelUsuarios.getValueAt(row, 0).toString());
         String username = (String) tableModelUsuarios.getValueAt(row, 1);
 
         int confirm = JOptionPane.showConfirmDialog(this,
@@ -306,9 +306,10 @@ public class AuditoriaPanel extends JPanel {
             return;
         }
 
-        Long userId = (Long) tableModelUsuarios.getValueAt(row, 0);
+        Long userId = Long.valueOf(tableModelUsuarios.getValueAt(row, 0).toString());
         String username = (String) tableModelUsuarios.getValueAt(row, 1);
         String estadoActual = (String) tableModelUsuarios.getValueAt(row, 4);
+
 
         boolean esBloqueadoActualmente = estadoActual.contains("BLOQUEADO");
         String accionMsg = esBloqueadoActualmente ? "DESBLOQUEAR" : "BLOQUEAR";
