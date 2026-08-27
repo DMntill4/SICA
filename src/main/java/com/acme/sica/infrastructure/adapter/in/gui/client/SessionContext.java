@@ -13,6 +13,7 @@ public class SessionContext {
     private Long roleId;
     private String roleName;
     private Long empresaId;
+    private java.util.Set<String> permissions = new java.util.HashSet<>();
 
     private SessionContext() {}
 
@@ -31,6 +32,11 @@ public class SessionContext {
         this.roleId = response.roleId();
         this.roleName = response.roleName();
         this.empresaId = response.empresaId();
+        if (response.permissions() != null) {
+            this.permissions = new java.util.HashSet<>(response.permissions());
+        } else {
+            this.permissions = new java.util.HashSet<>();
+        }
     }
 
     public void clear() {
@@ -41,6 +47,7 @@ public class SessionContext {
         this.roleId = null;
         this.roleName = null;
         this.empresaId = null;
+        this.permissions.clear();
     }
 
     public boolean isAuthenticated() {
@@ -54,9 +61,17 @@ public class SessionContext {
     public Long getRoleId() { return roleId; }
     public String getRoleName() { return roleName; }
     public Long getEmpresaId() { return empresaId; }
+    public java.util.Set<String> getPermissions() { return permissions; }
+
+    public boolean hasPermission(String requiredPermission) {
+        if (isAdmin()) {
+            return true;
+        }
+        return permissions.contains(requiredPermission);
+    }
 
     public boolean isAdmin() {
-        return "ADMIN".equalsIgnoreCase(roleName);
+        return "ADMIN".equalsIgnoreCase(roleName) || (roleId != null && roleId == 1L);
     }
 
     public boolean isGuardia() {
@@ -66,4 +81,5 @@ public class SessionContext {
     public boolean isFuncionario() {
         return "FUNCIONARIO".equalsIgnoreCase(roleName) || isAdmin();
     }
+
 }

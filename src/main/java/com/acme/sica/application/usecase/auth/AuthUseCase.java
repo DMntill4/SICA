@@ -44,21 +44,27 @@ public class AuthUseCase {
         if (!passwordEncoderPort.verifyPassword(request.password(), usuario.getPasswordHash())) {
             int nuevosIntentos = usuario.getIntentosFallidos() + 1;
             usuario.setIntentosFallidos(nuevosIntentos);
-            if (nuevosIntentos >= 3) {
+            if (nuevosIntentos >= 3 && !"admin".equalsIgnoreCase(usuario.getUsername())) {
                 usuario.setBloqueado(true);
                 auditService.log(usuario.getId(), usuario.getUsername(), "ACCOUNT_LOCKED", "Cuenta bloqueada tras 3 intentos fallidos de contrasenia", ipOrigen);
+                usuarioRepository.update(usuario);
+                throw new SecurityException("La cuenta se encuentra bloqueada por multiples intentos fallidos");
             } else {
                 auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_FAILED", "Contrasenia incorrecta. Intento " + nuevosIntentos + "/3", ipOrigen);
+                usuarioRepository.update(usuario);
+                throw new SecurityException("Credenciales invalidas. Intento " + nuevosIntentos + " de 3");
             }
-            usuarioRepository.update(usuario);
-            throw new SecurityException("Credenciales invalidas");
         }
+
+
 
         usuario.setIntentosFallidos(0);
         usuarioRepository.update(usuario);
 
         String token = jwtPort.generateToken(usuario);
         auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_SUCCESS", "Inicio de sesion exitoso", ipOrigen);
+
+        java.util.Set<String> permisos = usuarioRepository.findPermissionsByRoleId(usuario.getRolId());
 
         return new LoginResponseDTO(
                 token,
@@ -68,9 +74,11 @@ public class AuthUseCase {
                 usuario.getNombreCompleto(),
                 usuario.getRolId(),
                 usuario.getRolNombre(),
-                usuario.getEmpresaId()
+                usuario.getEmpresaId(),
+                permisos
         );
     }
+
 
     public void logout(AuthenticatedUserContext userContext, String tokenJti, String ipOrigen) {
         if (userContext != null && tokenJti != null) {

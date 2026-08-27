@@ -23,12 +23,12 @@ class PermissionCheckerTest {
     }
 
     @Test
-    @DisplayName("Debe retornar true si el rol posee el permiso requerido")
+    @DisplayName("Debe retornar true si el rol posee el permiso requerido en BD")
     void testHasPermission_Success() {
-        Long roleId = 1L; // ADMIN
-        when(usuarioRepository.findPermissionsByRoleId(roleId)).thenReturn(Set.of("crear_usuario", "consultar_auditoria"));
+        Long roleId = 2L; // GUARDIA
+        when(usuarioRepository.findPermissionsByRoleId(roleId)).thenReturn(Set.of("crear_persona", "checkin_visita"));
 
-        boolean result = permissionChecker.hasPermission(roleId, "crear_usuario");
+        boolean result = permissionChecker.hasPermission(roleId, "crear_persona");
 
         assertTrue(result);
         verify(usuarioRepository, times(1)).findPermissionsByRoleId(roleId);
@@ -48,12 +48,23 @@ class PermissionCheckerTest {
     @Test
     @DisplayName("Debe usar el cache en subsecuentes llamadas sin volver a consultar el repositorio")
     void testHasPermission_CacheHit() {
-        Long roleId = 1L;
-        when(usuarioRepository.findPermissionsByRoleId(roleId)).thenReturn(Set.of("crear_usuario"));
+        Long roleId = 3L; // FUNCIONARIO
+        when(usuarioRepository.findPermissionsByRoleId(roleId)).thenReturn(Set.of("preregistrar_visita"));
 
-        permissionChecker.hasPermission(roleId, "crear_usuario");
-        permissionChecker.hasPermission(roleId, "crear_usuario");
+        permissionChecker.hasPermission(roleId, "preregistrar_visita");
+        permissionChecker.hasPermission(roleId, "preregistrar_visita");
 
         verify(usuarioRepository, times(1)).findPermissionsByRoleId(roleId);
     }
+
+    @Test
+    @DisplayName("ROL ADMIN (roleId 1) posee autorizacion automatica para todos los permisos")
+    void testAdminTieneTodosLosPermisos() {
+        Long roleId = 1L; // ADMIN
+
+        assertTrue(permissionChecker.hasPermission(roleId, "crear_usuario"));
+        assertTrue(permissionChecker.hasPermission(roleId, "gestionar_roles"));
+        assertTrue(permissionChecker.hasPermission(roleId, "cualquier_permiso_futuro"));
+    }
 }
+

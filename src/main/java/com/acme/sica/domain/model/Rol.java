@@ -1,13 +1,14 @@
 package com.acme.sica.domain.model;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Rol {
     private Long id;
     private String nombre;
     private String descripcion;
-    private Set<Permiso> permisos = new HashSet<>();
+    private List<Long> permisoIds = new ArrayList<>();
+    private List<String> permisoCodigos = new ArrayList<>();
 
     public Rol() {}
 
@@ -17,35 +18,18 @@ public class Rol {
         this.descripcion = descripcion;
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public String getNombre() {
-        return nombre;
-    }
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
+    public List<Long> getPermisoIds() { return permisoIds; }
+    public void setPermisoIds(List<Long> permisoIds) { this.permisoIds = permisoIds; }
 
-    public String getDescripcion() {
-        return descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public Set<Permiso> getPermisos() {
-        return permisos;
-    }
-
-    public void setPermisos(Set<Permiso> permisos) {
-        this.permisos = permisos;
-    }
+    public List<String> getPermisoCodigos() { return permisoCodigos; }
+    public void setPermisoCodigos(List<String> permisoCodigos) { this.permisoCodigos = permisoCodigos; }
 }

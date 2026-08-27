@@ -77,4 +77,66 @@ class AuthUseCaseTest {
 
         assertEquals(1, admin.getIntentosFallidos());
     }
+
+    @Test
+    @DisplayName("AUTH-06: Debe denegar el acceso cuando la cuenta se encuentra bloqueada/inactiva")
+    void testLoginCuentaBloqueada() {
+        Usuario admin = new Usuario();
+        admin.setId(1L);
+        admin.setUsername("bloqueado");
+        admin.setPasswordHash(passwordEncoderPort.hashPassword("admin123"));
+        admin.setBloqueado(true);
+        admin.setIntentosFallidos(3);
+
+        when(usuarioRepository.findByUsername("bloqueado")).thenReturn(Optional.of(admin));
+
+        SecurityException ex = assertThrows(SecurityException.class, () -> {
+            authUseCase.login(new LoginRequestDTO("bloqueado", "admin123"), "127.0.0.1");
+        });
+
+        assertTrue(ex.getMessage().contains("bloqueada"));
+    }
+
+    @Test
+    @DisplayName("Debe bloquear a usuario regular inmediatamente al cumplir 3 intentos fallidos")
+    void testLoginTercerIntentoBloqueaCuenta() {
+        Usuario guardia = new Usuario();
+        guardia.setId(2L);
+        guardia.setUsername("guardia1");
+        guardia.setPasswordHash(passwordEncoderPort.hashPassword("guardia123"));
+        guardia.setBloqueado(false);
+        guardia.setIntentosFallidos(2); // ya llevaba 2 intentos
+
+        when(usuarioRepository.findByUsername("guardia1")).thenReturn(Optional.of(guardia));
+
+        SecurityException ex = assertThrows(SecurityException.class, () -> {
+            authUseCase.login(new LoginRequestDTO("guardia1", "wrongpass"), "127.0.0.1");
+        });
+
+        assertTrue(guardia.isBloqueado());
+        assertTrue(ex.getMessage().contains("bloqueada"));
+    }
+
+    @Test
+    @DisplayName("El usuario admin NUNCA debe ser bloqueado por intentos fallidos de contrasenia")
+    void testAdminInmuneABloqueo() {
+        Usuario admin = new Usuario();
+        admin.setId(1L);
+        admin.setUsername("admin");
+        admin.setPasswordHash(passwordEncoderPort.hashPassword("admin123"));
+        admin.setBloqueado(false);
+        admin.setIntentosFallidos(2);
+
+        when(usuarioRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+
+        SecurityException ex = assertThrows(SecurityException.class, () -> {
+            authUseCase.login(new LoginRequestDTO("admin", "wrongpass"), "127.0.0.1");
+        });
+
+        assertFalse(admin.isBloqueado());
+        assertTrue(ex.getMessage().contains("Credenciales invalidas"));
+    }
 }
+
+
+

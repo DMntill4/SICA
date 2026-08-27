@@ -49,6 +49,7 @@ public class SicaApplication {
             VisitaJdbcAdapter visitaRepo = new VisitaJdbcAdapter(connectionFactory);
             IncidenteJdbcAdapter incidenteRepo = new IncidenteJdbcAdapter(connectionFactory);
             EmpresaJdbcAdapter empresaRepo = new EmpresaJdbcAdapter(connectionFactory);
+            com.acme.sica.infrastructure.adapter.out.persistence.jdbc.RolJdbcAdapter rolRepo = new com.acme.sica.infrastructure.adapter.out.persistence.jdbc.RolJdbcAdapter(connectionFactory);
 
             // 3. Security & Infrastructure Services
             JwtUtil jwtUtil = new JwtUtil();
@@ -65,6 +66,7 @@ public class SicaApplication {
             GestionarVisitaUseCase visitaUseCase = new GestionarVisitaUseCase(visitaRepo, personaRepo, auditService);
             GenerarReporteUseCase reporteUseCase = new GenerarReporteUseCase(visitaRepo, incidenteRepo, auditRepo);
             GestionarEmpresaUseCase empresaUseCase = new GestionarEmpresaUseCase(empresaRepo, auditService);
+            com.acme.sica.application.usecase.roles.GestionarRolUseCase rolUseCase = new com.acme.sica.application.usecase.roles.GestionarRolUseCase(rolRepo, auditService);
 
             // 5. Input Adapters (HTTP Handlers)
             AuthHttpHandler authHandler = new AuthHttpHandler(authUseCase);
@@ -74,6 +76,7 @@ public class SicaApplication {
             VisitaHttpHandler visitaHandler = new VisitaHttpHandler(visitaUseCase);
             ReportesHttpHandler reportesHandler = new ReportesHttpHandler(reporteUseCase);
             EmpresaHttpHandler empresaHandler = new EmpresaHttpHandler(empresaUseCase);
+            com.acme.sica.infrastructure.adapter.in.http.handlers.RolHttpHandler rolHandler = new com.acme.sica.infrastructure.adapter.in.http.handlers.RolHttpHandler(rolUseCase);
 
             // 6. HTTP Router Configuration
             Router router = new Router();
@@ -94,7 +97,17 @@ public class SicaApplication {
             router.get("/usuarios/{id}", usuarioHandler::handleFindById, null);
             router.post("/usuarios", usuarioHandler::handleCreate, "crear_usuario");
             router.put("/usuarios/{id}", usuarioHandler::handleUpdate, "modificar_usuario");
+            router.put("/usuarios/{id}/toggle-bloqueo", usuarioHandler::handleToggleBloqueo, "modificar_usuario");
             router.delete("/usuarios/{id}", usuarioHandler::handleDelete, "eliminar_usuario");
+
+            // Rutas Roles y Permisos (RBAC)
+            router.get("/roles", rolHandler::handleFindAllRoles, "gestionar_roles");
+            router.post("/roles", rolHandler::handleCreateRol, "gestionar_roles");
+            router.put("/roles/{id}/permisos", rolHandler::handleUpdatePermisos, "gestionar_roles");
+            router.delete("/roles/{id}", rolHandler::handleDeleteRol, "gestionar_roles");
+            router.get("/permisos", rolHandler::handleFindAllPermisos, "gestionar_roles");
+
+
 
             // Rutas Empresas
             router.get("/empresas", empresaHandler::handleFindAll, null);
