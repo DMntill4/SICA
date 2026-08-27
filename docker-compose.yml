@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  sicadb:
+    image: mysql:8.3
+    container_name: sicadb
+    environment:
+      MYSQL_ROOT_PASSWORD: '-3ta9}OK`4[Y'
+      MYSQL_DATABASE: sica
+      MYSQL_USER: sica_user
+      MYSQL_PASSWORD: sica_pass_2026
+    ports:
+      - "3306:3306"
+    volumes:
+      - sicadb_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p-3ta9}OK`4[Y"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sicadb_data:
