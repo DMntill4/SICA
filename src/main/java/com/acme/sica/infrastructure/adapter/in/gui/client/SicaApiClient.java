@@ -4,7 +4,9 @@ import com.acme.sica.domain.enums.NivelGravedad;
 
 import com.acme.sica.domain.model.Incidente;
 import com.acme.sica.domain.model.Persona;
+import com.acme.sica.domain.model.Usuario;
 import com.acme.sica.domain.model.Visita;
+
 import com.acme.sica.application.dto.*;
 import com.acme.sica.infrastructure.adapter.in.http.router.HttpUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
