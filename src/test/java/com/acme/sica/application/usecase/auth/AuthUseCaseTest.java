@@ -96,5 +96,26 @@ class AuthUseCaseTest {
 
         assertTrue(ex.getMessage().contains("bloqueada"));
     }
+
+    @Test
+    @DisplayName("Debe bloquear la cuenta inmediatamente al cumplir 3 intentos fallidos consecutivas")
+    void testLoginTercerIntentoBloqueaCuenta() {
+        Usuario admin = new Usuario();
+        admin.setId(1L);
+        admin.setUsername("admin");
+        admin.setPasswordHash(passwordEncoderPort.hashPassword("admin123"));
+        admin.setBloqueado(false);
+        admin.setIntentosFallidos(2); // ya llevaba 2 intentos
+
+        when(usuarioRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+
+        SecurityException ex = assertThrows(SecurityException.class, () -> {
+            authUseCase.login(new LoginRequestDTO("admin", "wrongpass"), "127.0.0.1");
+        });
+
+        assertTrue(admin.isBloqueado());
+        assertTrue(ex.getMessage().contains("bloqueada"));
+    }
 }
+
 
