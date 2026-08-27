@@ -92,19 +92,19 @@ public class AuditoriaPanel extends JPanel {
         btnToggleBloqueo.setForeground(Color.WHITE);
         btnToggleBloqueo.addActionListener(e -> executeToggleBloqueoUsuario());
 
-        JButton btnGestionarRoles = new JButton("🛡️ Roles & Permisos");
+        JButton btnGestionarRoles = new JButton("[◆] Roles & Permisos");
         btnGestionarRoles.setFont(new Font("Segoe UI", Font.BOLD, 11));
         btnGestionarRoles.setBackground(new Color(99, 102, 241));
         btnGestionarRoles.setForeground(Color.WHITE);
         btnGestionarRoles.addActionListener(e -> openRolesDialog());
 
-        JButton btnEmpresas = new JButton("🏢 Empresas");
+        JButton btnEmpresas = new JButton("[◆] Empresas");
         btnEmpresas.setFont(new Font("Segoe UI", Font.BOLD, 11));
         btnEmpresas.setBackground(new Color(245, 158, 11));
         btnEmpresas.setForeground(Color.WHITE);
         btnEmpresas.addActionListener(e -> openEmpresasDialog());
 
-        JButton btnEliminarUsuario = new JButton("🗑️ Eliminar");
+        JButton btnEliminarUsuario = new JButton("[x] Eliminar");
         btnEliminarUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         btnEliminarUsuario.addActionListener(e -> executeEliminarUsuario());
 
@@ -120,7 +120,7 @@ public class AuditoriaPanel extends JPanel {
 
         // DERECHA: Bitácora de Auditoría
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
-        rightPanel.setBorder(new TitledBorder("📜 Bitácora Inmutable de Auditoría (Trazabilidad SICA)"));
+        rightPanel.setBorder(new TitledBorder("[📜] Bitácora Inmutable de Auditoría (Trazabilidad SICA)"));
 
         String[] colsAudit = {"ID", "Usuario", "Acción Realizada", "Detalle Técnico", "IP Origen", "Fecha / Hora"};
         tableModelAuditoria = new DefaultTableModel(colsAudit, 0) {
@@ -135,14 +135,15 @@ public class AuditoriaPanel extends JPanel {
         rightPanel.add(scrollAudit, BorderLayout.CENTER);
 
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
-        btnRefresh = new JButton("🔄 Actualizar Auditoría");
+        btnRefresh = new JButton("[R] Actualizar Auditoría");
         btnRefresh.addActionListener(e -> loadData());
 
-        JButton btnExportarCSV = new JButton("📥 Exportar Reporte CSV");
+        JButton btnExportarCSV = new JButton("[↓] Exportar Reporte CSV");
         btnExportarCSV.setFont(new Font("Segoe UI", Font.BOLD, 11));
         btnExportarCSV.setBackground(new Color(16, 185, 129));
         btnExportarCSV.setForeground(Color.WHITE);
         btnExportarCSV.addActionListener(e -> executeExportarCSV());
+
 
         actionPanel.add(btnExportarCSV);
         actionPanel.add(btnRefresh);

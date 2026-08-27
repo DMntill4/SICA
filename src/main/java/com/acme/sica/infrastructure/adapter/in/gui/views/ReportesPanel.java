@@ -54,16 +54,16 @@ public class ReportesPanel extends JPanel {
 
         // --- TOP: PANEL DE FILTROS ---
         JPanel filterPanel = new JPanel(new GridBagLayout());
-        filterPanel.setBorder(new TitledBorder("📊 Filtros de Reportes e Históricos (Stream API - REP-01 a REP-08)"));
+        filterPanel.setBorder(new TitledBorder("[📊] Filtros de Reportes e Históricos (Stream API)"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 8, 6, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         comboTipoReporte = new JComboBox<>(new String[]{
-                "1. 🟢 Aforo Actual (Personas Dentro) [REP-01]",
-                "2. 👤 Histórico de Accesos por Persona [REP-02]",
-                "3. 🏢 Histórico de Accesos por Empresa [REP-03]",
-                "4. 🚨 Reporte de Incidentes de Seguridad [REP-06]"
+                "1. [●] Aforo Actual (Personas Dentro)",
+                "2. [+] Histórico de Accesos por Persona",
+                "3. [◆] Histórico de Accesos por Empresa",
+                "4. [!] Reporte de Incidentes de Seguridad"
         });
         comboTipoReporte.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
@@ -71,17 +71,18 @@ public class ReportesPanel extends JPanel {
         txtFechaFin = new JTextField(LocalDateTime.now().plusDays(1).format(formatter), 12);
         txtFiltroTexto = new JTextField("", 15);
 
-        btnGenerar = new JButton("🔍 Generar Reporte");
+        btnGenerar = new JButton("[▶] Generar Reporte");
         btnGenerar.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnGenerar.setBackground(new Color(14, 165, 233));
         btnGenerar.setForeground(Color.WHITE);
         btnGenerar.addActionListener(e -> executeGenerarReporte());
 
-        btnExportarCSV = new JButton("📥 Exportar CSV / Excel [REP-07]");
+        btnExportarCSV = new JButton("[↓] Exportar CSV / Excel");
         btnExportarCSV.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnExportarCSV.setBackground(new Color(16, 185, 129));
         btnExportarCSV.setForeground(Color.WHITE);
         btnExportarCSV.addActionListener(e -> executeExportarCSV());
+
 
         gbc.gridx = 0; gbc.gridy = 0; filterPanel.add(new JLabel("Tipo de Reporte:"), gbc);
         gbc.gridx = 1; gbc.gridy = 0; filterPanel.add(comboTipoReporte, gbc);

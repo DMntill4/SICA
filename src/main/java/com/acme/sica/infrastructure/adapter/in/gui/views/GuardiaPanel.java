@@ -208,24 +208,24 @@ public class GuardiaPanel extends JPanel {
         tblVisitas.setRowHeight(26);
         tblVisitas.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         tblVisitas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tblVisitas.getColumnModel().getColumn(4).setCellRenderer(new StatusPillCellRenderer());
         JScrollPane scrollVisitas = new JScrollPane(tblVisitas);
 
         visitsPanel.add(scrollVisitas, BorderLayout.CENTER);
 
-        // Botonera de Acciones (Organizada en 3 Filas independientes para CERO
-        // recortes)
+        // Botonera de Acciones (Organizada en 3 Filas independientes para CERO recortes)
         JPanel actionPanel = new JPanel(new GridLayout(3, 1, 4, 4));
 
         // Fila 1: Novedades de Registro y Pruebas
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-        btnAutoSeed = new JButton("⚡ Visita de Prueba Rápida");
+        btnAutoSeed = new JButton("[▶] Visita Rápida de Prueba");
         btnAutoSeed.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnAutoSeed.setBackground(new Color(139, 92, 246));
         btnAutoSeed.setForeground(Color.WHITE);
 
-        btnNoAnunciada = new JButton("➕ Visitante No Anunciado");
-        btnPaseTemporal = new JButton("🪪 Pase Temporal");
-        btnRefresh = new JButton("🔄 Actualizar Tabla");
+        btnNoAnunciada = new JButton("[+] Visitante No Anunciado");
+        btnPaseTemporal = new JButton("[+] Pase Temporal");
+        btnRefresh = new JButton("[R] Actualizar Tabla");
 
         row1.add(btnAutoSeed);
         row1.add(btnNoAnunciada);
@@ -234,16 +234,16 @@ public class GuardiaPanel extends JPanel {
 
         // Fila 2: Gestión de Personas y Limpieza de Historial
         JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-        JButton btnCrearPersona = new JButton("👤 Registrar Nueva Persona");
+        JButton btnCrearPersona = new JButton("[+] Registrar Persona");
         btnCrearPersona.setBackground(new Color(14, 165, 233));
         btnCrearPersona.setForeground(Color.WHITE);
         btnCrearPersona.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnCrearPersona.addActionListener(e -> openCrearPersonaDialog());
 
-        JButton btnEliminarPersona = new JButton("🗑️ Eliminar Persona");
+        JButton btnEliminarPersona = new JButton("[x] Eliminar Persona");
         btnEliminarPersona.addActionListener(e -> executeEliminarPersona());
 
-        JButton btnLimpiarVisitas = new JButton("🧹 Limpiar Historial de Visitas (Admin)");
+        JButton btnLimpiarVisitas = new JButton("[!] Limpiar Historial (Admin)");
         btnLimpiarVisitas.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnLimpiarVisitas.setBackground(new Color(225, 29, 72));
         btnLimpiarVisitas.setForeground(Color.WHITE);
@@ -255,13 +255,13 @@ public class GuardiaPanel extends JPanel {
 
         // Fila 3: Acciones Principales de Check-In y Check-Out destacados
         JPanel row3 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
-        btnCheckIn = new JButton("➡️ REALIZAR CHECK-IN (ENTRADA)");
+        btnCheckIn = new JButton("[▶] CHECK-IN (ENTRADA)");
         btnCheckIn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnCheckIn.setBackground(new Color(16, 185, 129));
         btnCheckIn.setForeground(Color.WHITE);
         btnCheckIn.setPreferredSize(new Dimension(240, 30));
 
-        btnCheckOut = new JButton("⬅️ REALIZAR CHECK-OUT (SALIDA)");
+        btnCheckOut = new JButton("[■] CHECK-OUT (SALIDA)");
         btnCheckOut.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnCheckOut.setBackground(new Color(239, 68, 68));
         btnCheckOut.setForeground(Color.WHITE);
@@ -834,4 +834,45 @@ public class GuardiaPanel extends JPanel {
             worker.execute();
         }
     }
+
+    private static class StatusPillCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+            label.setFont(new Font("Segoe UI", Font.BOLD, 11));
+
+            String str = value != null ? value.toString() : "";
+            if ("DENTRO".equalsIgnoreCase(str)) {
+                label.setText("[●] DENTRO");
+                label.setBackground(new Color(16, 185, 129));
+                label.setForeground(Color.WHITE);
+            } else if ("FINALIZADO".equalsIgnoreCase(str) || "CERRADO_POR_SISTEMA".equalsIgnoreCase(str)) {
+                label.setText("[○] CERRADO");
+                label.setBackground(new Color(71, 85, 105));
+                label.setForeground(Color.WHITE);
+            } else if ("RESTRINGIDO".equalsIgnoreCase(str) || "BLOQUEADO".equalsIgnoreCase(str)) {
+                label.setText("[!] RESTRINGIDO");
+                label.setBackground(new Color(225, 29, 72));
+                label.setForeground(Color.WHITE);
+            } else if ("HABILITADO".equalsIgnoreCase(str) || "APROBADO".equalsIgnoreCase(str) || "ACTIVO".equalsIgnoreCase(str)) {
+                label.setText("[+] " + str);
+                label.setBackground(new Color(14, 165, 233));
+                label.setForeground(Color.WHITE);
+            } else if ("PENDIENTE_APROBACION".equalsIgnoreCase(str) || "PENDIENTE".equalsIgnoreCase(str)) {
+                label.setText("[?] PENDIENTE");
+                label.setBackground(new Color(245, 158, 11));
+                label.setForeground(Color.WHITE);
+            } else {
+                label.setText(str);
+                if (!isSelected) {
+                    label.setBackground(table.getBackground());
+                    label.setForeground(table.getForeground());
+                }
+            }
+            label.setOpaque(true);
+            return label;
+        }
+    }
 }
+
