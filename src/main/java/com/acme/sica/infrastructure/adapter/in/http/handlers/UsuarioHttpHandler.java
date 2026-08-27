@@ -58,7 +58,17 @@ public class UsuarioHttpHandler {
         HttpUtils.sendJsonResponse(exchange, 200, Map.of("message", "Usuario eliminado correctamente"));
     }
 
+    public void handleToggleBloqueo(HttpExchange exchange) throws IOException {
+        AuthenticatedUserContext actor = (AuthenticatedUserContext) exchange.getAttribute("userContext");
+        String ipOrigen = getRemoteIp(exchange);
+        Map<String, String> pathVars = (Map<String, String>) exchange.getAttribute("pathVariables");
+        Long id = Long.parseLong(pathVars.get("id"));
+        Usuario actualizado = usuarioUseCase.toggleBloqueoUsuario(id, actor, ipOrigen);
+        HttpUtils.sendJsonResponse(exchange, 200, actualizado);
+    }
+
     private String getRemoteIp(HttpExchange exchange) {
         return exchange.getRemoteAddress() != null ? exchange.getRemoteAddress().getAddress().getHostAddress() : "127.0.0.1";
     }
 }
+

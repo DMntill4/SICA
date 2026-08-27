@@ -347,7 +347,21 @@ public class SicaApiClient {
         }
     }
 
+    public Usuario toggleBloqueoUsuario(Long id) throws Exception {
+        HttpRequest request = buildAuthRequest("/usuarios/" + id + "/toggle-bloqueo")
+                .PUT(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), Usuario.class);
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
     public Map<String, Object> getPersonasDentro() throws Exception {
+
         HttpRequest request = buildAuthRequest("/reportes/personas-dentro")
                 .GET()
                 .build();
