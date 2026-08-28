@@ -84,12 +84,5 @@ VALUES (2, 'guardia1', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17
 INSERT INTO usuario (id, username, password_hash, nombre_completo, email, rol_id, empresa_id)
 VALUES (3, 'func1', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Ana Funcionario', 'afuncionario@acme.com', 3, 1);
 
--- 7. Personas de Prueba
-INSERT INTO persona (id, doc_identidad, tipo_documento, nombre, apellido, email, telefono, empresa_id, estado_acceso)
-VALUES (1, '1010101010', 'CC', 'Juan', 'Pérez', 'juan.perez@example.com', '555-0101', 1, 'HABILITADO');
+-- 7. Personas de Prueba (Vacio para registro 100% biometrico real)
 
-INSERT INTO persona (id, doc_identidad, tipo_documento, nombre, apellido, email, telefono, empresa_id, estado_acceso)
-VALUES (2, '2020202020', 'CC', 'María', 'Gómez', 'maria.gomez@example.com', '555-0202', NULL, 'HABILITADO');
-
-INSERT INTO persona (id, doc_identidad, tipo_documento, nombre, apellido, email, telefono, empresa_id, estado_acceso)
-VALUES (3, '3030303030', 'CE', 'Carlos', 'Restrepo', 'carlos.restrepo@example.com', '555-0303', NULL, 'RESTRINGIDO');

@@ -3,14 +3,16 @@ package com.acme.sica.infrastructure.adapter.in.gui.views;
 import com.acme.sica.domain.model.Permiso;
 import com.acme.sica.domain.model.Rol;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
+import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
 import com.fasterxml.jackson.core.type.TypeReference;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.util.List;
 import java.util.Map;
@@ -38,17 +40,19 @@ public class AuditoriaPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(12, 12));
         setBorder(new EmptyBorder(12, 12, 12, 12));
+        setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.BG_DARK);
 
         // BANNER GUÍA
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 8));
-        topPanel.setBorder(new TitledBorder("📊 Módulo de Auditoría, Usuarios y Métricas del Sistema"));
+        topPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG_ALT);
+        topPanel.setBorder(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.createCardBorder("Módulo de Auditoría y Usuarios del Sistema"));
 
         lblTotalDentro = new JLabel(" 🏢 Ocupación Actual: Consultando... ", SwingConstants.CENTER);
-        lblTotalDentro.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblTotalDentro.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BOLD);
         lblTotalDentro.setOpaque(true);
-        lblTotalDentro.setBackground(new Color(14, 165, 233));
-        lblTotalDentro.setForeground(Color.WHITE);
-        lblTotalDentro.setBorder(new EmptyBorder(6, 12, 6, 12));
+        lblTotalDentro.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_CYAN);
+        lblTotalDentro.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.BG_DARK);
+        lblTotalDentro.setBorder(new EmptyBorder(6, 14, 6, 14));
 
         topPanel.add(lblTotalDentro);
         add(topPanel, BorderLayout.NORTH);
@@ -60,7 +64,8 @@ public class AuditoriaPanel extends JPanel {
 
         // IZQUIERDA: Usuarios del Sistema
         JPanel leftPanel = new JPanel(new BorderLayout(5, 5));
-        leftPanel.setBorder(new TitledBorder("👤 Usuarios del Sistema (Cuentas Activas)"));
+        leftPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG);
+        leftPanel.setBorder(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.createCardBorder("Usuarios del Sistema (Cuentas Activas)"));
 
         String[] colsUsers = {"ID", "Username", "Nombre Completo", "Rol", "Estado"};
         tableModelUsuarios = new DefaultTableModel(colsUsers, 0) {
@@ -68,45 +73,36 @@ public class AuditoriaPanel extends JPanel {
         };
 
         tblUsuarios = new JTable(tableModelUsuarios);
-        tblUsuarios.setRowHeight(24);
-        tblUsuarios.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblUsuarios);
         JScrollPane scrollUsers = new JScrollPane(tblUsuarios);
         leftPanel.add(scrollUsers, BorderLayout.CENTER);
 
         JPanel userActionPanel = new JPanel(new GridLayout(2, 3, 4, 4));
-        JButton btnCrearUsuario = new JButton("👤 Crear Usuario");
-        btnCrearUsuario.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnCrearUsuario.setBackground(new Color(16, 185, 129));
-        btnCrearUsuario.setForeground(Color.WHITE);
+        userActionPanel.setOpaque(false);
+        JButton btnCrearUsuario = new JButton("Crear Usuario");
+        SicaTheme.styleButton(btnCrearUsuario, SicaTheme.ACCENT_CYAN, Color.WHITE);
         btnCrearUsuario.addActionListener(e -> openCrearUsuarioDialog());
 
-        JButton btnEditarUsuario = new JButton("✏️ Editar Usuario");
-        btnEditarUsuario.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnEditarUsuario.setBackground(new Color(14, 165, 233));
-        btnEditarUsuario.setForeground(Color.WHITE);
+        JButton btnEditarUsuario = new JButton("Editar Usuario");
+        SicaTheme.styleButton(btnEditarUsuario, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MAIN);
         btnEditarUsuario.addActionListener(e -> executeEditarUsuario());
 
-        JButton btnToggleBloqueo = new JButton("🔒 Bloquear/Desbloq");
-        btnToggleBloqueo.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnToggleBloqueo.setBackground(new Color(239, 68, 68));
-        btnToggleBloqueo.setForeground(Color.WHITE);
+        JButton btnToggleBloqueo = new JButton("Bloquear / Desbloquear");
+        SicaTheme.styleButton(btnToggleBloqueo, SicaTheme.STATUS_DENIED_TEXT, Color.WHITE);
         btnToggleBloqueo.addActionListener(e -> executeToggleBloqueoUsuario());
 
-        JButton btnGestionarRoles = new JButton("[◆] Roles & Permisos");
-        btnGestionarRoles.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnGestionarRoles.setBackground(new Color(99, 102, 241));
-        btnGestionarRoles.setForeground(Color.WHITE);
+        JButton btnGestionarRoles = new JButton("Roles & Permisos");
+        SicaTheme.styleButton(btnGestionarRoles, SicaTheme.CARD_BG_ALT, SicaTheme.ACCENT_NAVY);
         btnGestionarRoles.addActionListener(e -> openRolesDialog());
 
-        JButton btnEmpresas = new JButton("[◆] Empresas");
-        btnEmpresas.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnEmpresas.setBackground(new Color(245, 158, 11));
-        btnEmpresas.setForeground(Color.WHITE);
+        JButton btnEmpresas = new JButton("Empresas");
+        SicaTheme.styleButton(btnEmpresas, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MAIN);
         btnEmpresas.addActionListener(e -> openEmpresasDialog());
 
-        JButton btnEliminarUsuario = new JButton("[x] Eliminar");
-        btnEliminarUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        JButton btnEliminarUsuario = new JButton("Eliminar Usuario");
+        SicaTheme.styleButton(btnEliminarUsuario, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MUTED);
         btnEliminarUsuario.addActionListener(e -> executeEliminarUsuario());
+
 
         userActionPanel.add(btnCrearUsuario);
         userActionPanel.add(btnEditarUsuario);
@@ -120,7 +116,8 @@ public class AuditoriaPanel extends JPanel {
 
         // DERECHA: Bitácora de Auditoría
         JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
-        rightPanel.setBorder(new TitledBorder("[📜] Bitácora Inmutable de Auditoría (Trazabilidad SICA)"));
+        rightPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG);
+        rightPanel.setBorder(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.createCardBorder("Bitácora Inmutable de Auditoría"));
 
         String[] colsAudit = {"ID", "Usuario", "Acción Realizada", "Detalle Técnico", "IP Origen", "Fecha / Hora"};
         tableModelAuditoria = new DefaultTableModel(colsAudit, 0) {
@@ -128,24 +125,17 @@ public class AuditoriaPanel extends JPanel {
         };
 
         tblAuditoria = new JTable(tableModelAuditoria);
-        tblAuditoria.setRowHeight(24);
-        tblAuditoria.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblAuditoria);
         JScrollPane scrollAudit = new JScrollPane(tblAuditoria);
 
         rightPanel.add(scrollAudit, BorderLayout.CENTER);
 
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
+        actionPanel.setOpaque(false);
         btnRefresh = new JButton("[R] Actualizar Auditoría");
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleButton(btnRefresh, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG_ALT, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_CYAN);
         btnRefresh.addActionListener(e -> loadData());
 
-        JButton btnExportarCSV = new JButton("[↓] Exportar Reporte CSV");
-        btnExportarCSV.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnExportarCSV.setBackground(new Color(16, 185, 129));
-        btnExportarCSV.setForeground(Color.WHITE);
-        btnExportarCSV.addActionListener(e -> executeExportarCSV());
-
-
-        actionPanel.add(btnExportarCSV);
         actionPanel.add(btnRefresh);
         rightPanel.add(actionPanel, BorderLayout.SOUTH);
         splitPane.setRightComponent(rightPanel);
@@ -154,6 +144,7 @@ public class AuditoriaPanel extends JPanel {
     }
 
     public void loadData() {
+
         // Cargar Ocupación
         SwingWorker<Map<String, Object>, Void> workerOccupancy = new SwingWorker<>() {
             @Override

@@ -4,49 +4,55 @@ import com.acme.sica.domain.model.Incidente;
 import com.acme.sica.domain.model.Persona;
 import com.acme.sica.domain.model.Visita;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
+import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
+import com.acme.sica.infrastructure.adapter.in.gui.components.CriticalConfirmationDialog;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Panel de Control de Accesos en Vivo en Portería (Sin Emojis).
+ */
 public class GuardiaPanel extends JPanel {
 
     private final SicaApiClient apiClient;
+
+    private JTable tblPersonas;
+    private DefaultTableModel tableModelPersonas;
+
+    private JTable tblPersonaIncidentes;
+    private DefaultTableModel tableModelPersonaIncidentes;
 
     private JTextField txtSearchDoc;
     private JButton btnSearch;
     private JLabel lblPersonaNombre;
     private JLabel lblPersonaDoc;
-    private JLabel lblPersonaEstado;
-    private JLabel lblPersonaFoto;
     private JLabel lblVisitaTarget;
     private JLabel lblVisitaEstado;
-    private com.acme.sica.infrastructure.adapter.in.gui.components.EstadoSicaGradientCard gradientCardRef;
-
-
-    private JTable tblPersonas;
-    private DefaultTableModel tableModelPersonas;
-    private List<Persona> listaPersonasCache;
-
-    private JTable tblPersonaIncidentes;
-    private DefaultTableModel tableModelPersonaIncidentes;
-
-    private List<Map<String, Object>> listaUsuariosCache;
 
     private JTable tblVisitas;
     private DefaultTableModel tableModelVisitas;
+
     private JButton btnCheckIn;
     private JButton btnCheckOut;
-    private JButton btnRefresh;
+
+    private JButton btnAutoSeed;
     private JButton btnNoAnunciada;
     private JButton btnPaseTemporal;
-    private JButton btnAutoSeed;
+    private JButton btnRefresh;
 
+    private JLabel lblHeroAccesosActivos;
+    private JLabel lblKpiTotalPersonas;
+    private JLabel lblKpiTotalIncidentes;
+
+    private com.acme.sica.infrastructure.adapter.in.gui.components.EstadoSicaGradientCard gradientCardRef;
+
+    private List<Persona> currentPersonas;
     private List<Visita> currentVisitas;
 
     public GuardiaPanel(SicaApiClient apiClient) {
@@ -54,42 +60,68 @@ public class GuardiaPanel extends JPanel {
         initUI();
         loadAllData();
 
-        // Timer para actualización en tiempo real (cada 3 segundos)
         Timer timer = new Timer(3000, e -> loadVisitas());
         timer.start();
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(12, 12));
-        setBorder(new EmptyBorder(12, 12, 12, 12));
+        setLayout(new BorderLayout(10, 10));
+        setBorder(new EmptyBorder(12, 14, 12, 14));
+        setBackground(SicaTheme.BG_MAIN);
 
-        // --- BANNER DE GUÍA ---
-        JPanel bannerPanel = new JPanel(new BorderLayout());
-        bannerPanel.setBackground(new Color(30, 41, 59));
-        bannerPanel.setBorder(new EmptyBorder(8, 12, 8, 12));
-        JLabel lblHelp = new JLabel(
-                "[i] MÓDULO DE PORTERÍA (Avanzado): Selecciona una persona de la lista izquierda o ingresa su documento para consultar su estado en tiempo real.");
-        lblHelp.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblHelp.setForeground(new Color(226, 232, 240));
-        bannerPanel.add(lblHelp, BorderLayout.CENTER);
-        add(bannerPanel, BorderLayout.NORTH);
+        // SECCIÓN SUPERIOR: MÉTRICA HERO PROTAGONISTA & KPIS
+        JPanel topHeaderGrid = new JPanel(new BorderLayout(12, 0));
+        topHeaderGrid.setOpaque(false);
 
-        // --- CONTAINER SPLIT: Izquierda (Personas BD + Incidentes + Gráfica) | Derecha (Consulta + Estado + Visitas)
+        JPanel heroCard = new JPanel(new BorderLayout(12, 0));
+        heroCard.setBackground(SicaTheme.ACCENT_CYAN_LIGHT);
+        heroCard.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(SicaTheme.ACCENT_CYAN, 1, true),
+                new EmptyBorder(10, 16, 10, 16)
+        ));
+
+        JPanel heroLeft = new JPanel(new GridLayout(2, 1, 2, 2));
+        heroLeft.setOpaque(false);
+
+        JLabel lblHeroTitle = new JLabel("● ACCESOS ACTIVOS EN INSTALACIONES (EN VIVO)");
+        lblHeroTitle.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblHeroTitle.setForeground(SicaTheme.STATUS_GRANTED_TEXT);
+
+        lblHeroAccesosActivos = new JLabel("0");
+        lblHeroAccesosActivos.setFont(SicaTheme.FONT_HERO);
+        lblHeroAccesosActivos.setForeground(SicaTheme.ACCENT_NAVY);
+
+        heroLeft.add(lblHeroTitle);
+        heroLeft.add(lblHeroAccesosActivos);
+
+        heroCard.add(heroLeft, BorderLayout.CENTER);
+
+        JPanel secondaryKpis = new JPanel(new GridLayout(1, 2, 8, 0));
+        secondaryKpis.setOpaque(false);
+
+        JPanel kpi1 = createCompactKpiCard("PERSONAS EN BD", lblKpiTotalPersonas = new JLabel("0"));
+        JPanel kpi2 = createCompactKpiCard("INCIDENTES REGISTRADOS", lblKpiTotalIncidentes = new JLabel("0"));
+
+        secondaryKpis.add(kpi1);
+        secondaryKpis.add(kpi2);
+
+        topHeaderGrid.add(heroCard, BorderLayout.CENTER);
+        topHeaderGrid.add(secondaryKpis, BorderLayout.EAST);
+
+        add(topHeaderGrid, BorderLayout.NORTH);
+
+        // CONTAINER SPLIT CENTRAL
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         mainSplit.setDividerLocation(380);
         mainSplit.setResizeWeight(0.35);
 
-        // ==================== PANEL IZQUIERDO: Personas en BD ====================
-        JPanel leftPanel = new JPanel(new BorderLayout(5, 5));
-        leftPanel.setBorder(new TitledBorder("LISTA DE PERSONAS"));
-
-        String[] colsPersonas = { "ID", "DOCUMENTO", "NOMBRE COM", "ESTADO" };
+        // PANEL IZQUIERDO: Personas & Incidentes
+        String[] colsPersonas = { "ID", "DOCUMENTO", "NOMBRE", "ESTADO" };
         tableModelPersonas = new DefaultTableModel(colsPersonas, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         tblPersonas = new JTable(tableModelPersonas);
-        tblPersonas.setRowHeight(26);
-        tblPersonas.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        SicaTheme.styleTable(tblPersonas);
         tblPersonas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tblPersonas.getColumnModel().getColumn(3).setCellRenderer(new StatusPillCellRenderer());
         tblPersonas.getSelectionModel().addListSelectionListener(e -> {
@@ -102,158 +134,152 @@ public class GuardiaPanel extends JPanel {
         });
 
         JScrollPane scrollPersonas = new JScrollPane(tblPersonas);
+        JPanel cardPersonas = SicaTheme.createHeaderCard("Personas Registradas", scrollPersonas);
 
-        JPanel bottomIncidentContainer = new JPanel(new BorderLayout(4, 4));
-        bottomIncidentContainer.setBorder(new TitledBorder("Incidentes de la Persona Seleccionada"));
-        String[] colsIncidentes = {"ID", "Gravedad", "Título resumido", "Fecha"};
+        String[] colsIncidentes = {"ID", "Gravedad", "Título Incidente", "Fecha"};
         tableModelPersonaIncidentes = new DefaultTableModel(colsIncidentes, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
         tblPersonaIncidentes = new JTable(tableModelPersonaIncidentes);
-        tblPersonaIncidentes.setRowHeight(22);
-        tblPersonaIncidentes.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        SicaTheme.styleTable(tblPersonaIncidentes);
         JScrollPane scrollIncidentes = new JScrollPane(tblPersonaIncidentes);
-        scrollIncidentes.setPreferredSize(new Dimension(340, 110));
-        bottomIncidentContainer.add(scrollIncidentes, BorderLayout.CENTER);
-
-        // Gráfica Sparkline de tendencia abajo
-        com.acme.sica.infrastructure.adapter.in.gui.components.SparklineChartPanel sparklinePanel = new com.acme.sica.infrastructure.adapter.in.gui.components.SparklineChartPanel();
-        sparklinePanel.setPreferredSize(new Dimension(340, 95));
-        bottomIncidentContainer.add(sparklinePanel, BorderLayout.SOUTH);
+        scrollIncidentes.setPreferredSize(new Dimension(340, 130));
+        JPanel cardIncidentes = SicaTheme.createHeaderCard("Historial de Incidentes", scrollIncidentes);
 
         JSplitPane leftSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        leftSplit.setDividerLocation(230);
-        leftSplit.setTopComponent(scrollPersonas);
-        leftSplit.setBottomComponent(bottomIncidentContainer);
+        leftSplit.setDividerLocation(240);
+        leftSplit.setTopComponent(cardPersonas);
+        leftSplit.setBottomComponent(cardIncidentes);
 
-        leftPanel.add(leftSplit, BorderLayout.CENTER);
-        mainSplit.setLeftComponent(leftPanel);
+        mainSplit.setLeftComponent(leftSplit);
 
-        // ==================== PANEL DERECHO: Consulta + Estado Degradado + Visitas ====================
+        // PANEL DERECHO: Consulta + Estado Real-Time + Visitas
         JPanel rightPanel = new JPanel(new BorderLayout(8, 8));
+        rightPanel.setOpaque(false);
 
-        // Subpanel Superior Derecho: Consulta + Tarjeta Degradada SICA
         JPanel topRight = new JPanel(new GridLayout(1, 2, 8, 8));
-
-        JPanel searchBoxPanel = new JPanel(new BorderLayout(6, 6));
-        searchBoxPanel.setBorder(new TitledBorder("CONSULTA DE PERSONA"));
+        topRight.setOpaque(false);
 
         JPanel searchForm = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        txtSearchDoc = new JTextField("1010101010", 14);
-        txtSearchDoc.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        btnSearch = new JButton("[Q] CONSULTAR");
-        btnSearch.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        searchForm.setOpaque(false);
+        txtSearchDoc = new JTextField("98765432", 12);
+        txtSearchDoc.setFont(SicaTheme.FONT_BODY);
+        txtSearchDoc.setBackground(SicaTheme.CARD_BG);
+        txtSearchDoc.setForeground(SicaTheme.TEXT_MAIN);
+        txtSearchDoc.setCaretColor(SicaTheme.ACCENT_CYAN);
+        txtSearchDoc.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true),
+                new EmptyBorder(6, 10, 6, 10)
+        ));
+
+        btnSearch = new JButton("Buscar");
+        SicaTheme.styleButton(btnSearch, SicaTheme.ACCENT_CYAN, Color.WHITE);
         btnSearch.addActionListener(e -> searchPersona());
 
         searchForm.add(txtSearchDoc);
         searchForm.add(btnSearch);
 
-        JPanel detailsGrid = new JPanel(new GridLayout(4, 1, 4, 4));
+        JPanel detailsGrid = new JPanel(new GridLayout(4, 1, 3, 3));
+        detailsGrid.setOpaque(false);
+
         lblPersonaNombre = new JLabel("Persona: (Selecciona una persona)");
-        lblPersonaNombre.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblPersonaNombre.setFont(SicaTheme.FONT_BOLD);
+        lblPersonaNombre.setForeground(SicaTheme.TEXT_MAIN);
 
         lblPersonaDoc = new JLabel("Doc: -");
-        lblPersonaDoc.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblPersonaDoc.setFont(SicaTheme.FONT_BODY);
+        lblPersonaDoc.setForeground(SicaTheme.TEXT_MUTED);
 
         lblVisitaTarget = new JLabel("Visita a: Ninguna");
-        lblVisitaTarget.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblVisitaTarget.setFont(SicaTheme.FONT_BODY);
+        lblVisitaTarget.setForeground(SicaTheme.TEXT_MUTED);
 
         lblVisitaEstado = new JLabel("Estado Visita: -");
-        lblVisitaEstado.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblVisitaEstado.setFont(SicaTheme.FONT_BOLD);
+        lblVisitaEstado.setForeground(SicaTheme.ACCENT_CYAN);
 
         detailsGrid.add(lblPersonaNombre);
         detailsGrid.add(lblPersonaDoc);
         detailsGrid.add(lblVisitaTarget);
         detailsGrid.add(lblVisitaEstado);
 
-        searchBoxPanel.add(searchForm, BorderLayout.NORTH);
-        searchBoxPanel.add(detailsGrid, BorderLayout.CENTER);
+        JPanel searchContent = new JPanel(new BorderLayout(4, 4));
+        searchContent.setOpaque(false);
+        searchContent.add(searchForm, BorderLayout.NORTH);
+        searchContent.add(detailsGrid, BorderLayout.CENTER);
 
-        // Tarjeta Degradada ESTADO SICA
+        JPanel cardSearch = SicaTheme.createHeaderCard("Consulta de Visitante", searchContent);
+
         com.acme.sica.infrastructure.adapter.in.gui.components.EstadoSicaGradientCard gradientCard = new com.acme.sica.infrastructure.adapter.in.gui.components.EstadoSicaGradientCard();
         this.gradientCardRef = gradientCard;
 
-        topRight.add(searchBoxPanel);
+        topRight.add(cardSearch);
         topRight.add(gradientCard);
 
         rightPanel.add(topRight, BorderLayout.NORTH);
 
-        // Subpanel Central Derecho: Tabla de Visitas y Control de Accesos
-        JPanel visitsPanel = new JPanel(new BorderLayout(5, 5));
-
-        visitsPanel.setBorder(new TitledBorder("🚪 Registro de Visitas y Control de Accesos Físicos"));
-
-        String[] colsVisitas = { "ID", "Persona / Visitante", "Documento", "Tipo Visita", "Estado",
-                "Motivo / Detalle" };
+        String[] colsVisitas = { "ID", "Persona / Visitante", "Documento", "Tipo Visita", "Estado", "Motivo / Detalle" };
         tableModelVisitas = new DefaultTableModel(colsVisitas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int col) {
-                return false;
-            }
+            @Override public boolean isCellEditable(int row, int col) { return false; }
         };
 
         tblVisitas = new JTable(tableModelVisitas);
-        tblVisitas.setRowHeight(26);
-        tblVisitas.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        SicaTheme.styleTable(tblVisitas);
         tblVisitas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tblVisitas.getColumnModel().getColumn(4).setCellRenderer(new StatusPillCellRenderer());
         JScrollPane scrollVisitas = new JScrollPane(tblVisitas);
 
-        visitsPanel.add(scrollVisitas, BorderLayout.CENTER);
+        JPanel visitsCard = SicaTheme.createHeaderCard("Registro de Visitas y Control de Accesos Físicos", scrollVisitas);
 
-        // Botonera de Acciones (Organizada en 3 Filas independientes para CERO recortes)
         JPanel actionPanel = new JPanel(new GridLayout(3, 1, 4, 4));
+        actionPanel.setOpaque(false);
 
-        // Fila 1: Novedades de Registro y Pruebas
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-        btnAutoSeed = new JButton("[▶] Visita Rápida de Prueba");
-        btnAutoSeed.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnAutoSeed.setBackground(new Color(139, 92, 246));
-        btnAutoSeed.setForeground(Color.WHITE);
+        row1.setOpaque(false);
+        btnAutoSeed = new JButton("+ Visita Rápida");
+        SicaTheme.styleButton(btnAutoSeed, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MAIN);
 
-        btnNoAnunciada = new JButton("[+] Visitante No Anunciado");
-        btnPaseTemporal = new JButton("[+] Pase Temporal");
-        btnRefresh = new JButton("[R] Actualizar Tabla");
+        btnNoAnunciada = new JButton("+ No Anunciado");
+        SicaTheme.styleButton(btnNoAnunciada, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MAIN);
+
+        btnPaseTemporal = new JButton("+ Pase Temporal");
+        SicaTheme.styleButton(btnPaseTemporal, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MAIN);
+
+        btnRefresh = new JButton("Actualizar Tabla");
+        SicaTheme.styleButton(btnRefresh, SicaTheme.CARD_BG_ALT, SicaTheme.ACCENT_CYAN);
 
         row1.add(btnAutoSeed);
         row1.add(btnNoAnunciada);
         row1.add(btnPaseTemporal);
         row1.add(btnRefresh);
 
-        // Fila 2: Gestión de Personas y Limpieza de Historial
         JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-        JButton btnCrearPersona = new JButton("[+] Registrar Persona");
-        btnCrearPersona.setBackground(new Color(14, 165, 233));
-        btnCrearPersona.setForeground(Color.WHITE);
-        btnCrearPersona.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        row2.setOpaque(false);
+        JButton btnCrearPersona = new JButton("+ Registrar Persona");
+        SicaTheme.styleButton(btnCrearPersona, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MAIN);
         btnCrearPersona.addActionListener(e -> openCrearPersonaDialog());
 
-        JButton btnEliminarPersona = new JButton("[x] Eliminar Persona");
+        JButton btnEliminarPersona = new JButton("Eliminar Persona");
+        SicaTheme.styleButton(btnEliminarPersona, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MUTED);
         btnEliminarPersona.addActionListener(e -> executeEliminarPersona());
 
-        JButton btnLimpiarVisitas = new JButton("[!] Limpiar Historial (Admin)");
-        btnLimpiarVisitas.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnLimpiarVisitas.setBackground(new Color(225, 29, 72));
-        btnLimpiarVisitas.setForeground(Color.WHITE);
+        JButton btnLimpiarVisitas = new JButton("Limpiar Historial");
+        SicaTheme.styleButton(btnLimpiarVisitas, SicaTheme.CARD_BG_ALT, SicaTheme.STATUS_DENIED_TEXT);
         btnLimpiarVisitas.addActionListener(e -> executeLimpiarVisitas());
 
         row2.add(btnCrearPersona);
         row2.add(btnEliminarPersona);
         row2.add(btnLimpiarVisitas);
 
-        // Fila 3: Acciones Principales de Check-In y Check-Out destacados
         JPanel row3 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
-        btnCheckIn = new JButton("[▶] CHECK-IN (ENTRADA)");
-        btnCheckIn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnCheckIn.setBackground(new Color(16, 185, 129));
-        btnCheckIn.setForeground(Color.WHITE);
-        btnCheckIn.setPreferredSize(new Dimension(240, 30));
+        row3.setOpaque(false);
+        btnCheckIn = new JButton("CHECK-IN (ENTRADA)");
+        SicaTheme.styleButton(btnCheckIn, SicaTheme.STATUS_GRANTED_TEXT, Color.WHITE);
+        btnCheckIn.setPreferredSize(new Dimension(220, 34));
 
-        btnCheckOut = new JButton("[■] CHECK-OUT (SALIDA)");
-        btnCheckOut.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnCheckOut.setBackground(new Color(239, 68, 68));
-        btnCheckOut.setForeground(Color.WHITE);
-        btnCheckOut.setPreferredSize(new Dimension(240, 30));
+        btnCheckOut = new JButton("CHECK-OUT (SALIDA)");
+        SicaTheme.styleButton(btnCheckOut, SicaTheme.STATUS_DENIED_TEXT, Color.WHITE);
+        btnCheckOut.setPreferredSize(new Dimension(220, 34));
 
         row3.add(btnCheckIn);
         row3.add(btnCheckOut);
@@ -262,45 +288,50 @@ public class GuardiaPanel extends JPanel {
         actionPanel.add(row2);
         actionPanel.add(row3);
 
-        btnAutoSeed.addActionListener(e -> quickSeedVisita());
-        btnRefresh.addActionListener(e -> loadAllData());
+        JPanel centerRight = new JPanel(new BorderLayout(0, 6));
+        centerRight.setOpaque(false);
+        centerRight.add(visitsCard, BorderLayout.CENTER);
+        centerRight.add(actionPanel, BorderLayout.SOUTH);
+
+        rightPanel.add(centerRight, BorderLayout.CENTER);
+        mainSplit.setRightComponent(rightPanel);
+
+        add(mainSplit, BorderLayout.CENTER);
+
         btnCheckIn.addActionListener(e -> executeCheckIn());
         btnCheckOut.addActionListener(e -> executeCheckOut());
-        btnNoAnunciada.addActionListener(e -> openNoAnunciadaDialog());
+        btnAutoSeed.addActionListener(e -> executeVisitaRapidaPrueba());
+        btnNoAnunciada.addActionListener(e -> openVisitaNoAnunciadaDialog());
         btnPaseTemporal.addActionListener(e -> openPaseTemporalDialog());
+        btnRefresh.addActionListener(e -> loadAllData());
+    }
 
-        visitsPanel.add(actionPanel, BorderLayout.SOUTH);
-        rightPanel.add(visitsPanel, BorderLayout.CENTER);
+    private JPanel createCompactKpiCard(String title, JLabel valueLabel) {
+        JPanel p = new JPanel(new BorderLayout(4, 2));
+        p.setBackground(SicaTheme.CARD_BG);
+        p.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true),
+                new EmptyBorder(8, 12, 8, 12)
+        ));
 
-        mainSplit.setRightComponent(rightPanel);
-        add(mainSplit, BorderLayout.CENTER);
+        JLabel t = new JLabel(title);
+        t.setFont(SicaTheme.FONT_SMALL);
+        t.setForeground(SicaTheme.TEXT_MUTED);
+
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        valueLabel.setForeground(SicaTheme.ACCENT_NAVY);
+
+        p.add(t, BorderLayout.NORTH);
+        p.add(valueLabel, BorderLayout.CENTER);
+        return p;
     }
 
     public void loadAllData() {
         loadPersonas();
         loadVisitas();
-        loadUsuarios();
     }
 
-    private void loadUsuarios() {
-        SwingWorker<List<Map<String, Object>>, Void> worker = new SwingWorker<>() {
-            @Override
-            protected List<Map<String, Object>> doInBackground() throws Exception {
-                return apiClient.listarUsuarios();
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    listaUsuariosCache = get();
-                } catch (Exception ignored) {
-                }
-            }
-        };
-        worker.execute();
-    }
-
-    private void loadPersonas() {
+    public void loadPersonas() {
         SwingWorker<List<Persona>, Void> worker = new SwingWorker<>() {
             @Override
             protected List<Persona> doInBackground() throws Exception {
@@ -310,24 +341,26 @@ public class GuardiaPanel extends JPanel {
             @Override
             protected void done() {
                 try {
-                    listaPersonasCache = get();
+                    currentPersonas = get();
                     tableModelPersonas.setRowCount(0);
-                    for (Persona p : listaPersonasCache) {
+                    if (lblKpiTotalPersonas != null) {
+                        lblKpiTotalPersonas.setText(String.valueOf(currentPersonas.size()));
+                    }
+                    for (Persona p : currentPersonas) {
                         tableModelPersonas.addRow(new Object[] {
                                 p.getId(),
                                 p.getDocIdentidad(),
-                                p.getNombre() + " " + p.getApellido(),
-                                p.getEstadoAcceso()
+                                p.getNombreCompleto(),
+                                p.getEstadoAcceso() != null ? p.getEstadoAcceso().name() : "HABILITADO"
                         });
                     }
-                } catch (Exception ignored) {
-                }
+                } catch (Exception ignored) {}
             }
         };
         worker.execute();
     }
 
-    private void loadVisitas() {
+    public void loadVisitas() {
         SwingWorker<List<Visita>, Void> worker = new SwingWorker<>() {
             @Override
             protected List<Visita> doInBackground() throws Exception {
@@ -338,34 +371,25 @@ public class GuardiaPanel extends JPanel {
             protected void done() {
                 try {
                     currentVisitas = get();
-                    int selectedRow = tblVisitas.getSelectedRow();
-                    Long selectedId = null;
-                    if (selectedRow != -1) {
-                        selectedId = (Long) tableModelVisitas.getValueAt(selectedRow, 0);
-                    }
-
                     tableModelVisitas.setRowCount(0);
+                    int activosCount = 0;
                     for (Visita v : currentVisitas) {
+                        if ("DENTRO".equalsIgnoreCase(v.getEstadoVisita() != null ? v.getEstadoVisita().name() : "")) {
+                            activosCount++;
+                        }
                         tableModelVisitas.addRow(new Object[] {
                                 v.getId(),
-                                v.getPersonaNombreCompleto(),
-                                v.getPersonaDocIdentidad(),
-                                v.getTipoVisita(),
-                                v.getEstadoVisita(),
-                                v.getMotivo()
+                                v.getNombrePersona(),
+                                v.getDocPersona(),
+                                v.getTipoVisita() != null ? v.getTipoVisita().name() : "ESTANDAR",
+                                v.getEstadoVisita() != null ? v.getEstadoVisita().name() : "PRE_REGISTRADA",
+                                v.getMotivo() != null ? v.getMotivo() : "-"
                         });
                     }
-
-                    if (selectedId != null) {
-                        for (int i = 0; i < tableModelVisitas.getRowCount(); i++) {
-                            if (tableModelVisitas.getValueAt(i, 0).equals(selectedId)) {
-                                tblVisitas.setRowSelectionInterval(i, i);
-                                break;
-                            }
-                        }
+                    if (lblHeroAccesosActivos != null) {
+                        lblHeroAccesosActivos.setText(String.valueOf(activosCount));
                     }
-                } catch (Exception ignored) {
-                }
+                } catch (Exception ignored) {}
             }
         };
         worker.execute();
@@ -373,8 +397,7 @@ public class GuardiaPanel extends JPanel {
 
     private void searchPersona() {
         String doc = txtSearchDoc.getText().trim();
-        if (doc.isEmpty())
-            return;
+        if (doc.isEmpty()) return;
 
         SwingWorker<Persona, Void> worker = new SwingWorker<>() {
             @Override
@@ -386,95 +409,50 @@ public class GuardiaPanel extends JPanel {
             protected void done() {
                 try {
                     Persona p = get();
-                    lblPersonaNombre.setText("Persona: " + p.getNombre() + " " + p.getApellido());
-                    lblPersonaDoc.setText("Doc: " + p.getDocIdentidad() + " | Tipo: " + p.getTipoDocumento());
-                    
-                    // TODO: The backend doesn't support photo URL yet. We simulate it for now.
-                    lblPersonaFoto.setText("📷 Foto: [URL https://sica.local/fotos/" + p.getDocIdentidad() + ".jpg]");
-
-                    Visita activeVisita = currentVisitas != null ? currentVisitas.stream()
-                            .filter(v -> v.getPersonaDocIdentidad() != null && v.getPersonaDocIdentidad().equals(p.getDocIdentidad()))
-                            .filter(v -> "PRE_REGISTRADA".equals(v.getEstadoVisita().name()) || "APROBADA".equals(v.getEstadoVisita().name()) || "EN_CURSO".equals(v.getEstadoVisita().name()))
-                            .findFirst().orElse(null) : null;
-
-                    if (activeVisita != null) {
-                        String target = activeVisita.getFuncionarioNombreCompleto() != null ? activeVisita.getFuncionarioNombreCompleto() : "N/A";
-                        lblVisitaTarget.setText("🏢 Visita a: " + target);
-                        lblVisitaEstado.setText("🎫 Estado Visita: " + activeVisita.getEstadoVisita().name());
-                    } else {
-                        lblVisitaTarget.setText("🏢 Visita a: Ninguna visita activa");
-                        lblVisitaEstado.setText("🎫 Estado Visita: -");
-                    }
+                    lblPersonaNombre.setText("Persona: " + p.getNombreCompleto());
+                    lblPersonaDoc.setText("Doc: " + p.getDocIdentidad() + " | Email: " + p.getEmail());
+                    lblVisitaEstado.setText("Estado: " + p.getEstadoAcceso());
 
                     if (gradientCardRef != null) {
-                        String target = activeVisita != null ? activeVisita.getFuncionarioNombreCompleto() : "Ninguna visita activa";
-                        gradientCardRef.updateState(p.getNombre() + " " + p.getApellido(), p.getDocIdentidad(), target, p.getEstadoAcceso().name());
+                        gradientCardRef.updateState(p.getNombreCompleto(), p.getDocIdentidad(), "", p.getEstadoAcceso() != null ? p.getEstadoAcceso().name() : "HABILITADO");
                     }
 
-                    if ("RESTRINGIDO".equals(p.getEstadoAcceso().name())) {
-                        lblPersonaEstado.setText(" [!] ALERTA: ACCESO DENEGADO (PERSONA RESTRINGIDA) ");
-                        lblPersonaEstado.setBackground(new Color(220, 38, 38));
-                    } else {
-                        lblPersonaEstado.setText(" [+] ACCESO AUTORIZADO - HABILITADO EN SICA ");
-                        lblPersonaEstado.setBackground(new Color(34, 197, 94));
-                    }
+                    loadIncidentesDePersona(p.getId());
 
-                    
-                    tableModelPersonaIncidentes.setRowCount(0);
-                    SwingWorker<List<Incidente>, Void> incWorker = new SwingWorker<>() {
-                        @Override protected List<Incidente> doInBackground() throws Exception {
-                            return apiClient.listarIncidentes().stream()
-                                    .filter(inc -> inc.getPersonaId().equals(p.getId()))
-                                    .toList();
-                        }
-                        @Override protected void done() {
-                            try {
-                                List<Incidente> incs = get();
-                                for (Incidente i : incs) {
-                                    tableModelPersonaIncidentes.addRow(new Object[]{ i.getId(), i.getNivelGravedad(), i.getTitulo(), i.getFechaHora() });
-                                }
-                            } catch(Exception ignored) {}
-                        }
-                    };
-                    incWorker.execute();
-                    
                 } catch (Exception e) {
-                    lblPersonaNombre.setText("Persona: No encontrada en BD");
-                    lblPersonaDoc.setText("Documento: " + doc);
-                    lblPersonaFoto.setText("📷 Foto: [No Disponible]");
-                    lblVisitaTarget.setText("🏢 Visita a: -");
-                    lblVisitaEstado.setText("🎫 Estado Visita: -");
-                    lblPersonaEstado.setText(" ⚠️ PERSONA NO REGISTRADA ");
-                    lblPersonaEstado.setBackground(new Color(234, 179, 8));
-                    if (tableModelPersonaIncidentes != null) {
-                        tableModelPersonaIncidentes.setRowCount(0);
-                    }
+                    lblPersonaNombre.setText("Persona: No encontrada");
+                    lblPersonaDoc.setText("Doc: " + doc);
+                    lblVisitaEstado.setText("Estado: -");
                 }
             }
         };
         worker.execute();
     }
 
-    private void quickSeedVisita() {
-        SwingWorker<Visita, Void> worker = new SwingWorker<>() {
+    private void loadIncidentesDePersona(Long personaId) {
+        SwingWorker<List<Incidente>, Void> worker = new SwingWorker<>() {
             @Override
-            protected Visita doInBackground() throws Exception {
-                return apiClient.preregistrarVisita(1L, "Visita de Prueba Rápida QA", LocalDateTime.now().plusHours(1));
+            protected List<Incidente> doInBackground() throws Exception {
+                return apiClient.listarIncidentesPorPersona(personaId);
             }
 
             @Override
             protected void done() {
                 try {
-                    Visita v = get();
-                    JOptionPane.showMessageDialog(GuardiaPanel.this,
-                            "✨ Se ha creado una visita de prueba rápida para Juan Pérez (ID #" + v.getId()
-                                    + " - APROBADO).\nAhora puedes hacerle Check-In directo.",
-                            "Visita de Prueba Creada", JOptionPane.INFORMATION_MESSAGE);
-                    loadVisitas();
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + e.getMessage(), "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                }
+                    List<Incidente> incs = get();
+                    tableModelPersonaIncidentes.setRowCount(0);
+                    if (lblKpiTotalIncidentes != null) {
+                        lblKpiTotalIncidentes.setText(String.valueOf(incs.size()));
+                    }
+                    for (Incidente inc : incs) {
+                        tableModelPersonaIncidentes.addRow(new Object[]{
+                                inc.getId(),
+                                inc.getNivelGravedad() != null ? inc.getNivelGravedad().name() : "ALTO",
+                                inc.getTitulo(),
+                                inc.getFechaHora()
+                        });
+                    }
+                } catch (Exception ignored) {}
             }
         };
         worker.execute();
@@ -483,39 +461,30 @@ public class GuardiaPanel extends JPanel {
     private void executeCheckIn() {
         int selectedRow = tblVisitas.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Por favor selecciona una visita de la tabla para realizar el Check-In",
-                    "Aviso", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecciona una visita de la tabla de accesos para realizar Check-In.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         Long visitaId = (Long) tableModelVisitas.getValueAt(selectedRow, 0);
 
-        SwingWorker<Visita, Void> worker = new SwingWorker<>() {
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
-            protected Visita doInBackground() throws Exception {
-                return apiClient.checkIn(visitaId, 1L);
+            protected Void doInBackground() throws Exception {
+                apiClient.checkInVisita(visitaId);
+                return null;
             }
 
             @Override
             protected void done() {
                 try {
-                    Visita updated = get();
+                    get();
                     com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(GuardiaPanel.this,
-                            "[+] Check-In Exitoso para " + updated.getPersonaNombreCompleto(),
+                            "[+] CHECK-IN REALIZADO EXITOSAMENTE",
                             com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
-                    JOptionPane.showMessageDialog(GuardiaPanel.this,
-                            "Check-In Exitoso para " + updated.getPersonaNombreCompleto() + "\nEstado actual: "
-                                    + updated.getEstadoVisita(),
-                            "Ingreso Registrado", JOptionPane.INFORMATION_MESSAGE);
                     loadVisitas();
                 } catch (Exception e) {
                     Throwable cause = e.getCause() != null ? e.getCause() : e;
-                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(GuardiaPanel.this,
-                            "[x] Acceso Denegado: " + cause.getMessage(),
-                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
-                    JOptionPane.showMessageDialog(GuardiaPanel.this,
-                            "Error realizando Check-In:\n" + cause.getMessage(),
-                            "Acceso Denegado", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + cause.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         };
@@ -525,270 +494,102 @@ public class GuardiaPanel extends JPanel {
     private void executeCheckOut() {
         int selectedRow = tblVisitas.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Selecciona una visita activa para registrar su Check-Out", "Aviso",
-                    JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecciona una visita activa para realizar Check-Out.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         Long visitaId = (Long) tableModelVisitas.getValueAt(selectedRow, 0);
 
-        SwingWorker<Visita, Void> worker = new SwingWorker<>() {
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
-            protected Visita doInBackground() throws Exception {
-                return apiClient.checkOut(visitaId);
+            protected Void doInBackground() throws Exception {
+                apiClient.checkOutVisita(visitaId);
+                return null;
             }
 
             @Override
             protected void done() {
                 try {
-                    Visita updated = get();
+                    get();
                     com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(GuardiaPanel.this,
-                            "[+] Check-Out Exitoso para " + updated.getPersonaNombreCompleto(),
+                            "[+] CHECK-OUT REALIZADO EXITOSAMENTE",
                             com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
-                    JOptionPane.showMessageDialog(GuardiaPanel.this,
-                            "Check-Out exitoso para " + updated.getPersonaNombreCompleto() + "\nVisita finalizada.",
-                            "Salida Registrada", JOptionPane.INFORMATION_MESSAGE);
                     loadVisitas();
                 } catch (Exception e) {
                     Throwable cause = e.getCause() != null ? e.getCause() : e;
-                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(GuardiaPanel.this,
-                            "[x] Error en Check-Out: " + cause.getMessage(),
-                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
-                    JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + cause.getMessage(), "Error",
-                            JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + cause.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         };
         worker.execute();
     }
 
-
-    private void openNoAnunciadaDialog() {
-        if (listaPersonasCache == null || listaPersonasCache.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Cargando lista de personas...", "Espera",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        JComboBox<String> comboPersonas = new JComboBox<>();
-        for (Persona p : listaPersonasCache) {
-            comboPersonas.addItem(
-                    p.getId() + " - " + p.getNombre() + " " + p.getApellido() + " (" + p.getDocIdentidad() + ")");
-        }
-        JComboBox<String> comboFuncionarios = new JComboBox<>();
-        if (listaUsuariosCache != null && !listaUsuariosCache.isEmpty()) {
-            for (Map<String, Object> u : listaUsuariosCache) {
-                comboFuncionarios
-                        .addItem(u.get("id") + " - " + u.get("nombreCompleto") + " (" + u.get("username") + ")");
+    private void executeVisitaRapidaPrueba() {
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                apiClient.crearVisitaRapidaPrueba();
+                return null;
             }
-        } else {
-            comboFuncionarios.addItem("1 - Administrador General (admin)");
-            comboFuncionarios.addItem("2 - Carlos Guardia (guardia1)");
-            comboFuncionarios.addItem("3 - Ana Funcionario (func1)");
-        }
-        JTextField txtMotivo = new JTextField("Reunión imprevista", 20);
 
-        JPanel panel = new JPanel(new GridLayout(3, 2, 6, 6));
-        panel.add(new JLabel("Seleccionar Visitante:"));
-        panel.add(comboPersonas);
-        panel.add(new JLabel("Funcionario Anfitrión:"));
-        panel.add(comboFuncionarios);
-        panel.add(new JLabel("Motivo de Visita:"));
-        panel.add(txtMotivo);
-
-        int option = JOptionPane.showConfirmDialog(this, panel, "Registrar Visitante No Anunciado",
-                JOptionPane.OK_CANCEL_OPTION);
-        if (option == JOptionPane.OK_OPTION) {
-            try {
-                String sel = (String) comboPersonas.getSelectedItem();
-                Long pId = Long.parseLong(sel.split(" - ")[0]);
-                String selFunc = (String) comboFuncionarios.getSelectedItem();
-                Long fId = Long.parseLong(selFunc.split(" - ")[0]);
-                String mot = txtMotivo.getText().trim();
-
-                SwingWorker<Visita, Void> worker = new SwingWorker<>() {
-                    @Override
-                    protected Visita doInBackground() throws Exception {
-                        return apiClient.registrarNoAnunciada(pId, fId, mot);
-                    }
-
-                    @Override
-                    protected void done() {
-                        try {
-                            get();
-                            JOptionPane.showMessageDialog(GuardiaPanel.this,
-                                    "Visita No Anunciada registrada (Estado: PENDIENTE_APROBACION).\nNotificado a la pantalla del funcionario.",
-                                    "Registrado", JOptionPane.INFORMATION_MESSAGE);
-                            loadVisitas();
-                        } catch (Exception e) {
-                            JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + e.getMessage(), "Error",
-                                    JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
-                };
-                worker.execute();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Datos inválidos: " + ex.getMessage(), "Error",
-                        JOptionPane.ERROR_MESSAGE);
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    loadAllData();
+                } catch (Exception ignored) {}
             }
-        }
-    }
-
-    private void openPaseTemporalDialog() {
-        if (listaPersonasCache == null || listaPersonasCache.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Cargando lista de personas...", "Espera",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-
-        JComboBox<String> comboPersonas = new JComboBox<>();
-        for (Persona p : listaPersonasCache) {
-            comboPersonas.addItem(
-                    p.getId() + " - " + p.getNombre() + " " + p.getApellido() + " (" + p.getDocIdentidad() + ")");
-        }
-        JComboBox<String> comboFuncionarios = new JComboBox<>();
-        if (listaUsuariosCache != null && !listaUsuariosCache.isEmpty()) {
-            for (Map<String, Object> u : listaUsuariosCache) {
-                comboFuncionarios
-                        .addItem(u.get("id") + " - " + u.get("nombreCompleto") + " (" + u.get("username") + ")");
-            }
-        } else {
-            comboFuncionarios.addItem("1 - Administrador General (admin)");
-            comboFuncionarios.addItem("2 - Carlos Guardia (guardia1)");
-            comboFuncionarios.addItem("3 - Ana Funcionario (func1)");
-        }
-        JTextField txtMotivo = new JTextField("Olvido de carnet físico", 20);
-
-        JPanel panel = new JPanel(new GridLayout(3, 2, 6, 6));
-        panel.add(new JLabel("Empleado / Persona:"));
-        panel.add(comboPersonas);
-        panel.add(new JLabel("Jefe / Anfitrión:"));
-        panel.add(comboFuncionarios);
-        panel.add(new JLabel("Observación:"));
-        panel.add(txtMotivo);
-
-        int option = JOptionPane.showConfirmDialog(this, panel, "Registrar Pase Temporal (Carnet Olvidado)",
-                JOptionPane.OK_CANCEL_OPTION);
-        if (option == JOptionPane.OK_OPTION) {
-            try {
-                String sel = (String) comboPersonas.getSelectedItem();
-                Long pId = Long.parseLong(sel.split(" - ")[0]);
-                String selFunc = (String) comboFuncionarios.getSelectedItem();
-                Long fId = Long.parseLong(selFunc.split(" - ")[0]);
-                String mot = txtMotivo.getText().trim();
-
-                SwingWorker<Visita, Void> worker = new SwingWorker<>() {
-                    @Override
-                    protected Visita doInBackground() throws Exception {
-                        return apiClient.registrarPaseTemporal(pId, fId, mot);
-                    }
-
-                    @Override
-                    protected void done() {
-                        try {
-                            get();
-                            JOptionPane.showMessageDialog(GuardiaPanel.this,
-                                    "Pase Temporal registrado (Estado: PENDIENTE_APROBACION_OLVIDO).\nEsperando aprobación del funcionario.",
-                                    "Registrado", JOptionPane.INFORMATION_MESSAGE);
-                            loadVisitas();
-                        } catch (Exception e) {
-                            JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + e.getMessage(), "Error",
-                                    JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
-                };
-                worker.execute();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Datos inválidos: " + ex.getMessage(), "Error",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-        }
+        };
+        worker.execute();
     }
 
     private void openCrearPersonaDialog() {
-        JTextField txtDoc = new JTextField(12);
-        JComboBox<String> comboTipoDoc = new JComboBox<>(new String[] { "CC", "CE", "PASAPORTE", "TI" });
-        JTextField txtNombre = new JTextField(15);
-        JTextField txtApellido = new JTextField(15);
-        JTextField txtEmail = new JTextField(15);
-        JTextField txtTel = new JTextField(15);
+        JTextField txtNom = new JTextField();
+        JTextField txtApe = new JTextField();
+        JTextField txtDoc = new JTextField();
+        JTextField txtMail = new JTextField();
 
-        JPanel panel = new JPanel(new GridLayout(6, 2, 6, 6));
-        panel.add(new JLabel("Documento:"));
-        panel.add(txtDoc);
-        panel.add(new JLabel("Tipo Documento:"));
-        panel.add(comboTipoDoc);
-        panel.add(new JLabel("Nombre:"));
-        panel.add(txtNombre);
-        panel.add(new JLabel("Apellido:"));
-        panel.add(txtApellido);
-        panel.add(new JLabel("Email:"));
-        panel.add(txtEmail);
-        panel.add(new JLabel("Teléfono:"));
-        panel.add(txtTel);
+        JPanel panel = new JPanel(new GridLayout(4, 2, 6, 6));
+        panel.add(new JLabel("Nombre:")); panel.add(txtNom);
+        panel.add(new JLabel("Apellido:")); panel.add(txtApe);
+        panel.add(new JLabel("Documento:")); panel.add(txtDoc);
+        panel.add(new JLabel("Email:")); panel.add(txtMail);
 
-        int option = JOptionPane.showConfirmDialog(this, panel, "👤 Registrar Nueva Persona en SICA",
-                JOptionPane.OK_CANCEL_OPTION);
-        if (option == JOptionPane.OK_OPTION) {
+        int res = JOptionPane.showConfirmDialog(this, panel, "Registrar Nueva Persona", JOptionPane.OK_CANCEL_OPTION);
+        if (res == JOptionPane.OK_OPTION) {
+            String nom = txtNom.getText().trim();
+            String ape = txtApe.getText().trim();
             String doc = txtDoc.getText().trim();
-            String tipo = (String) comboTipoDoc.getSelectedItem();
-            String nom = txtNombre.getText().trim();
-            String ape = txtApellido.getText().trim();
-            String email = txtEmail.getText().trim();
-            String tel = txtTel.getText().trim();
+            String mail = txtMail.getText().trim();
 
-            if (doc.isEmpty() || nom.isEmpty() || ape.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Documento, Nombre y Apellido son obligatorios", "Aviso",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            SwingWorker<Persona, Void> worker = new SwingWorker<>() {
-                @Override
-                protected Persona doInBackground() throws Exception {
-                    return apiClient.crearPersona(doc, tipo, nom, ape, email, tel);
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        Persona p = get();
-                        JOptionPane.showMessageDialog(GuardiaPanel.this,
-                                "✅ Persona registrada exitosamente en SICA:\n" + p.getNombre() + " " + p.getApellido()
-                                        + " (Doc: " + p.getDocIdentidad() + ")",
-                                "Registro Éxitoso", JOptionPane.INFORMATION_MESSAGE);
-                        loadPersonas();
-                    } catch (Exception e) {
-                        Throwable cause = e.getCause() != null ? e.getCause() : e;
-                        JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + cause.getMessage(), "Error",
-                                JOptionPane.ERROR_MESSAGE);
+            if (!nom.isEmpty() && !doc.isEmpty()) {
+                SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected Void doInBackground() throws Exception {
+                        apiClient.crearPersona(nom, ape, doc, mail);
+                        return null;
                     }
-                }
-            };
-            worker.execute();
+
+                    @Override
+                    protected void done() {
+                        try {
+                            get();
+                            loadPersonas();
+                        } catch (Exception ignored) {}
+                    }
+                };
+                worker.execute();
+            }
         }
     }
 
-    private void executeEliminarPersona() {
-        int selectedRow = tblPersonas.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Selecciona una persona de la tabla izquierda para eliminar", "Aviso",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        Long personaId = (Long) tableModelPersonas.getValueAt(selectedRow, 0);
-        String nombre = (String) tableModelPersonas.getValueAt(selectedRow, 2);
-
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "¿Estás seguro de eliminar a " + nombre + " (ID #" + personaId + ") de la base de datos?",
-                "Confirmar Eliminación", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-
-        if (confirm == JOptionPane.YES_OPTION) {
+    private void openVisitaNoAnunciadaDialog() {
+        String doc = JOptionPane.showInputDialog(this, "Ingresa el Documento del Visitante No Anunciado:");
+        if (doc != null && !doc.trim().isEmpty()) {
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 @Override
                 protected Void doInBackground() throws Exception {
-                    apiClient.eliminarPersona(personaId);
+                    apiClient.registrarVisitaNoAnunciada(doc.trim(), "Visita No Anunciada en Porteria");
                     return null;
                 }
 
@@ -796,14 +597,59 @@ public class GuardiaPanel extends JPanel {
                 protected void done() {
                     try {
                         get();
-                        JOptionPane.showMessageDialog(GuardiaPanel.this, "Persona eliminada correctamente", "Eliminado",
-                                JOptionPane.INFORMATION_MESSAGE);
+                        loadVisitas();
+                    } catch (Exception ignored) {}
+                }
+            };
+            worker.execute();
+        }
+    }
+
+    private void openPaseTemporalDialog() {
+        String doc = JOptionPane.showInputDialog(this, "Ingresa el Documento para emitir Pase Temporal:");
+        if (doc != null && !doc.trim().isEmpty()) {
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    apiClient.emitirPaseTemporal(doc.trim());
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        loadVisitas();
+                    } catch (Exception ignored) {}
+                }
+            };
+            worker.execute();
+        }
+    }
+
+    private void executeEliminarPersona() {
+        int row = tblPersonas.getSelectedRow();
+        if (row == -1) return;
+        Long id = (Long) tableModelPersonas.getValueAt(row, 0);
+
+        boolean conf = CriticalConfirmationDialog.showConfirm(SwingUtilities.getWindowAncestor(this),
+                "ELIMINAR PERSONA",
+                "¿Estás seguro de eliminar a la persona seleccionada del registro?",
+                "ELIMINAR");
+        if (conf) {
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    apiClient.eliminarPersona(id);
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
                         loadPersonas();
-                    } catch (Exception e) {
-                        Throwable cause = e.getCause() != null ? e.getCause() : e;
-                        JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + cause.getMessage(), "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                    }
+                    } catch (Exception ignored) {}
                 }
             };
             worker.execute();
@@ -811,11 +657,11 @@ public class GuardiaPanel extends JPanel {
     }
 
     private void executeLimpiarVisitas() {
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "¿Estás seguro de vaciar y limpiar TODO el historial de visitas registradas en el sistema?",
-                "Limpiar Historial de Visitas", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-
-        if (confirm == JOptionPane.YES_OPTION) {
+        boolean confirm = CriticalConfirmationDialog.showConfirm(SwingUtilities.getWindowAncestor(this),
+                "LIMPIAR HISTORIAL",
+                "¿Estás seguro de vaciar todo el historial de visitas registradas?",
+                "VACIAR REGISTROS");
+        if (confirm) {
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 @Override
                 protected Void doInBackground() throws Exception {
@@ -827,22 +673,15 @@ public class GuardiaPanel extends JPanel {
                 protected void done() {
                     try {
                         get();
-                        JOptionPane.showMessageDialog(GuardiaPanel.this,
-                                "✨ Historial de visitas limpiado correctamente.", "Limpieza Éxitosa",
-                                JOptionPane.INFORMATION_MESSAGE);
                         loadVisitas();
-                    } catch (Exception e) {
-                        Throwable cause = e.getCause() != null ? e.getCause() : e;
-                        JOptionPane.showMessageDialog(GuardiaPanel.this, "Error: " + cause.getMessage(), "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                    }
+                    } catch (Exception ignored) {}
                 }
             };
             worker.execute();
         }
     }
 
-    private static class StatusPillCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+    private static class StatusPillCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -851,25 +690,25 @@ public class GuardiaPanel extends JPanel {
 
             String str = value != null ? value.toString() : "";
             if ("DENTRO".equalsIgnoreCase(str)) {
-                label.setText("[●] DENTRO");
-                label.setBackground(new Color(16, 185, 129));
-                label.setForeground(Color.WHITE);
+                label.setText("ACCESO CONCEDIDO");
+                label.setBackground(SicaTheme.STATUS_GRANTED_BG);
+                label.setForeground(SicaTheme.STATUS_GRANTED_TEXT);
             } else if ("FINALIZADO".equalsIgnoreCase(str) || "CERRADO_POR_SISTEMA".equalsIgnoreCase(str)) {
-                label.setText("[○] CERRADO");
-                label.setBackground(new Color(71, 85, 105));
-                label.setForeground(Color.WHITE);
+                label.setText("CERRADO");
+                label.setBackground(SicaTheme.CARD_BG_ALT);
+                label.setForeground(SicaTheme.TEXT_MUTED);
             } else if ("RESTRINGIDO".equalsIgnoreCase(str) || "BLOQUEADO".equalsIgnoreCase(str)) {
-                label.setText("[!] RESTRINGIDO");
-                label.setBackground(new Color(225, 29, 72));
-                label.setForeground(Color.WHITE);
+                label.setText("ACCESO DENEGADO");
+                label.setBackground(SicaTheme.STATUS_DENIED_BG);
+                label.setForeground(SicaTheme.STATUS_DENIED_TEXT);
             } else if ("HABILITADO".equalsIgnoreCase(str) || "APROBADO".equalsIgnoreCase(str) || "ACTIVO".equalsIgnoreCase(str)) {
-                label.setText("[+] " + str);
-                label.setBackground(new Color(14, 165, 233));
-                label.setForeground(Color.WHITE);
-            } else if ("PENDIENTE_APROBACION".equalsIgnoreCase(str) || "PENDIENTE".equalsIgnoreCase(str)) {
-                label.setText("[?] PENDIENTE");
-                label.setBackground(new Color(245, 158, 11));
-                label.setForeground(Color.WHITE);
+                label.setText(str);
+                label.setBackground(SicaTheme.STATUS_GRANTED_BG);
+                label.setForeground(SicaTheme.STATUS_GRANTED_TEXT);
+            } else if ("PENDIENTE_APROBACION".equalsIgnoreCase(str) || "PENDIENTE".equalsIgnoreCase(str) || "PRE_REGISTRADA".equalsIgnoreCase(str)) {
+                label.setText("PENDIENTE");
+                label.setBackground(SicaTheme.STATUS_WARNING_BG);
+                label.setForeground(SicaTheme.STATUS_WARNING_TEXT);
             } else {
                 label.setText(str);
                 if (!isSelected) {
@@ -882,4 +721,3 @@ public class GuardiaPanel extends JPanel {
         }
     }
 }
-

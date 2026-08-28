@@ -147,17 +147,29 @@ public class SicaApplication {
             router.get("/reportes/incidentes", reportesHandler::handleIncidentes, "generar_reporte");
             router.get("/reportes/auditoria", reportesHandler::handleAuditoria, "consultar_auditoria");
 
+            // Handlers y Repositorios del Portal Autoservicio + Biometría IA
+            com.acme.sica.infrastructure.adapter.out.persistence.JdbcSolicitudPaseRepository solicitudRepo = new com.acme.sica.infrastructure.adapter.out.persistence.JdbcSolicitudPaseRepository(connectionFactory);
+            com.acme.sica.infrastructure.adapter.in.http.handlers.SolicitudPaseHttpHandler solicitudHandler = new com.acme.sica.infrastructure.adapter.in.http.handlers.SolicitudPaseHttpHandler(solicitudRepo, personaRepo, visitaRepo);
+            com.acme.sica.infrastructure.adapter.in.http.handlers.BiometriaHttpHandler biometriaHandler = new com.acme.sica.infrastructure.adapter.in.http.handlers.BiometriaHttpHandler(personaRepo);
+            com.acme.sica.infrastructure.adapter.in.http.handlers.StaticFileHttpHandler staticFileHandler = new com.acme.sica.infrastructure.adapter.in.http.handlers.StaticFileHttpHandler("/public/portal");
+
             // 7. HttpServer Concurrente
             int port = 8080;
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
             server.createContext("/", router);
+            server.createContext("/api/pases", solicitudHandler);
+            server.createContext("/api/biometria", biometriaHandler);
+            server.createContext("/portal", staticFileHandler);
+
             server.setExecutor(Executors.newFixedThreadPool(10));
             server.start();
 
             System.out.println("=================================================");
             System.out.println(" Servidor SICA iniciado exitosamente en puerto " + port);
-            System.out.println(" Endpoint base: http://localhost:" + port);
+            System.out.println(" Endpoint base API: http://localhost:" + port + "/api");
+            System.out.println(" Portal Autoservicio Visitantes: http://localhost:" + port + "/portal");
             System.out.println("=================================================");
+
 
             // 8. Lanzar Interfaz Gráfica GUI (Swing + FlatLaf) automáticamente
             boolean isHeadless = false;
@@ -169,14 +181,15 @@ public class SicaApplication {
             }
 
             if (!isHeadless && !java.awt.GraphicsEnvironment.isHeadless()) {
-                System.out.println("[GUI Launcher] Desplegando Interfaz Grafica Swing FlatLaf...");
-                com.formdev.flatlaf.FlatDarkLaf.setup();
+                System.out.println("[GUI Launcher] Desplegando Interfaz Grafica Swing SICA Theme...");
+                com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.applyGlobalDefaults();
                 com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient apiClient = new com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient();
                 javax.swing.SwingUtilities.invokeLater(() -> {
                     com.acme.sica.infrastructure.adapter.in.gui.views.LoginFrame loginFrame = new com.acme.sica.infrastructure.adapter.in.gui.views.LoginFrame(apiClient);
                     loginFrame.setVisible(true);
                 });
             } else {
+
                 System.out.println("[GUI Launcher] Modo headless detectado. Ejecutando unicamene backend HTTP.");
             }
 

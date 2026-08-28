@@ -3,12 +3,11 @@ package com.acme.sica.infrastructure.adapter.in.gui.views;
 import com.acme.sica.domain.model.Incidente;
 import com.acme.sica.domain.model.Visita;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
@@ -51,52 +50,56 @@ public class ReportesPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(12, 12, 12, 12));
+        setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.BG_DARK);
 
         // --- TOP: PANEL DE FILTROS ---
         JPanel filterPanel = new JPanel(new GridBagLayout());
-        filterPanel.setBorder(new TitledBorder("[📊] Filtros de Reportes e Históricos (Stream API)"));
+        filterPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG);
+        filterPanel.setBorder(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.createCardBorder("Filtros de Reportes e Históricos"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 8, 6, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         comboTipoReporte = new JComboBox<>(new String[]{
-                "1. [●] Aforo Actual (Personas Dentro)",
-                "2. [+] Histórico de Accesos por Persona",
-                "3. [◆] Histórico de Accesos por Empresa",
-                "4. [!] Reporte de Incidentes de Seguridad"
+                "1. Aforo Actual (Personas Dentro)",
+                "2. Histórico de Accesos por Persona",
+                "3. Histórico de Accesos por Empresa",
+                "4. Reporte de Incidentes de Seguridad"
         });
-        comboTipoReporte.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        comboTipoReporte.setFont(SicaTheme.FONT_BOLD);
 
         txtFechaInicio = new JTextField(LocalDateTime.now().minusDays(30).format(formatter), 12);
         txtFechaFin = new JTextField(LocalDateTime.now().plusDays(1).format(formatter), 12);
         txtFiltroTexto = new JTextField("", 15);
 
-        btnGenerar = new JButton("[▶] Generar Reporte");
-        btnGenerar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnGenerar.setBackground(new Color(14, 165, 233));
-        btnGenerar.setForeground(Color.WHITE);
+        btnGenerar = new JButton("Generar Reporte");
+        SicaTheme.styleButton(btnGenerar, SicaTheme.ACCENT_CYAN, Color.WHITE);
         btnGenerar.addActionListener(e -> executeGenerarReporte());
 
-        btnExportarCSV = new JButton("[↓] Exportar CSV / Excel");
-        btnExportarCSV.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnExportarCSV.setBackground(new Color(16, 185, 129));
-        btnExportarCSV.setForeground(Color.WHITE);
+        btnExportarCSV = new JButton("Exportar Excel / CSV");
+        SicaTheme.styleButton(btnExportarCSV, SicaTheme.STATUS_GRANTED_TEXT, Color.WHITE);
         btnExportarCSV.addActionListener(e -> executeExportarCSV());
 
 
-        gbc.gridx = 0; gbc.gridy = 0; filterPanel.add(new JLabel("Tipo de Reporte:"), gbc);
+        JLabel lblTipo = new JLabel("Tipo de Reporte:"); lblTipo.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+        JLabel lblFilt = new JLabel("Filtro Persona / Empresa:"); lblFilt.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+        JLabel lblIni = new JLabel("Fecha Inicio:"); lblIni.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+        JLabel lblFin = new JLabel("Fecha Fin:"); lblFin.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+
+        gbc.gridx = 0; gbc.gridy = 0; filterPanel.add(lblTipo, gbc);
         gbc.gridx = 1; gbc.gridy = 0; filterPanel.add(comboTipoReporte, gbc);
 
-        gbc.gridx = 2; gbc.gridy = 0; filterPanel.add(new JLabel("Filtro Persona / Empresa:"), gbc);
+        gbc.gridx = 2; gbc.gridy = 0; filterPanel.add(lblFilt, gbc);
         gbc.gridx = 3; gbc.gridy = 0; filterPanel.add(txtFiltroTexto, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; filterPanel.add(new JLabel("Fecha Inicio (yyyy-MM-dd HH:mm):"), gbc);
+        gbc.gridx = 0; gbc.gridy = 1; filterPanel.add(lblIni, gbc);
         gbc.gridx = 1; gbc.gridy = 1; filterPanel.add(txtFechaInicio, gbc);
 
-        gbc.gridx = 2; gbc.gridy = 1; filterPanel.add(new JLabel("Fecha Fin (yyyy-MM-dd HH:mm):"), gbc);
+        gbc.gridx = 2; gbc.gridy = 1; filterPanel.add(lblFin, gbc);
         gbc.gridx = 3; gbc.gridy = 1; filterPanel.add(txtFechaFin, gbc);
 
         JPanel btnBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        btnBar.setOpaque(false);
         btnBar.add(btnGenerar);
         btnBar.add(btnExportarCSV);
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 4; filterPanel.add(btnBar, gbc);
@@ -108,26 +111,25 @@ public class ReportesPanel extends JPanel {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tblReporte = new JTable(tableModel);
-        tblReporte.setRowHeight(26);
-        tblReporte.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblReporte);
 
         add(new JScrollPane(tblReporte), BorderLayout.CENTER);
 
         // --- SOUTH: BARRA DE MÉTRICAS KPI ---
         JPanel kpiPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 8));
-        kpiPanel.setBackground(new Color(15, 23, 42));
+        kpiPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG_ALT);
 
         lblTotalRegistros = new JLabel("📊 Total Registros: 0");
-        lblTotalRegistros.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblTotalRegistros.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BOLD);
         lblTotalRegistros.setForeground(Color.WHITE);
 
         lblVisitasDentro = new JLabel("🟢 Personas Dentro: 0");
-        lblVisitasDentro.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblVisitasDentro.setForeground(new Color(56, 189, 248));
+        lblVisitasDentro.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BOLD);
+        lblVisitasDentro.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_CYAN);
 
         lblIncidentesCriticos = new JLabel("🚨 Incidentes Registrados: 0");
-        lblIncidentesCriticos.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblIncidentesCriticos.setForeground(new Color(248, 113, 113));
+        lblIncidentesCriticos.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BOLD);
+        lblIncidentesCriticos.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_ROSE);
 
         kpiPanel.add(lblTotalRegistros);
         kpiPanel.add(lblVisitasDentro);
@@ -136,11 +138,13 @@ public class ReportesPanel extends JPanel {
         add(kpiPanel, BorderLayout.SOUTH);
     }
 
+
     private void executeGenerarReporte() {
-        int indexTipo = comboTipoReporte.getSelectedIndex();
-        String filtroText = txtFiltroTexto.getText().trim().toLowerCase();
+        final int indexTipo = comboTipoReporte.getSelectedIndex();
+        final String filtroText = txtFiltroTexto.getText().trim().toLowerCase();
 
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
+
             @Override
             protected Void doInBackground() throws Exception {
                 if (indexTipo == 0) {

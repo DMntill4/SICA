@@ -1,9 +1,15 @@
 package com.acme.sica.infrastructure.adapter.in.gui.components;
 
+import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 
+/**
+ * Tarjeta de Estado en Tiempo Real (Sin Emojis).
+ */
 public class EstadoSicaGradientCard extends JPanel {
 
     private final JLabel lblPersonaNombre;
@@ -14,31 +20,34 @@ public class EstadoSicaGradientCard extends JPanel {
 
     public EstadoSicaGradientCard() {
         setLayout(new BorderLayout(8, 8));
-        setOpaque(false);
-        setBorder(new EmptyBorder(12, 14, 12, 14));
+        setBackground(SicaTheme.CARD_BG);
+        setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true),
+                new EmptyBorder(14, 16, 14, 16)
+        ));
 
         JPanel contentPanel = new JPanel(new GridLayout(5, 1, 4, 4));
         contentPanel.setOpaque(false);
 
-        JLabel lblTitle = new JLabel("ESTADO SICA");
+        JLabel lblTitle = new JLabel("ESTADO EN TIEMPO REAL");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        lblTitle.setForeground(new Color(148, 163, 184));
+        lblTitle.setForeground(SicaTheme.ACCENT_NAVY);
 
         lblPersonaNombre = new JLabel("Persona: (Selecciona una persona)");
         lblPersonaNombre.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblPersonaNombre.setForeground(Color.WHITE);
+        lblPersonaNombre.setForeground(SicaTheme.TEXT_MAIN);
 
         lblPersonaDocInfo = new JLabel("Doc: - | Tipo: CC");
-        lblPersonaDocInfo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblPersonaDocInfo.setForeground(new Color(203, 213, 225));
+        lblPersonaDocInfo.setFont(SicaTheme.FONT_BODY);
+        lblPersonaDocInfo.setForeground(SicaTheme.TEXT_MUTED);
 
-        lblFotoUrlInfo = new JLabel("[i] Foto: Registrada en Sistema");
-        lblFotoUrlInfo.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        lblFotoUrlInfo.setForeground(new Color(148, 163, 184));
+        lblFotoUrlInfo = new JLabel("Foto: Registrada en Sistema");
+        lblFotoUrlInfo.setFont(SicaTheme.FONT_SMALL);
+        lblFotoUrlInfo.setForeground(SicaTheme.TEXT_MUTED);
 
         lblVisitaTarget = new JLabel("Visita a: Ninguna visita activa");
-        lblVisitaTarget.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblVisitaTarget.setForeground(new Color(203, 213, 225));
+        lblVisitaTarget.setFont(SicaTheme.FONT_BODY);
+        lblVisitaTarget.setForeground(SicaTheme.TEXT_MUTED);
 
         contentPanel.add(lblTitle);
         contentPanel.add(lblPersonaNombre);
@@ -46,11 +55,11 @@ public class EstadoSicaGradientCard extends JPanel {
         contentPanel.add(lblFotoUrlInfo);
         contentPanel.add(lblVisitaTarget);
 
-        lblEstadoBanner = new JLabel(" SELECCIONE PERSONA DE LA LISTA ", SwingConstants.CENTER);
+        lblEstadoBanner = new JLabel(" SELECCIONE PERSONA EN PORTERÍA ", SwingConstants.CENTER);
         lblEstadoBanner.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lblEstadoBanner.setOpaque(true);
-        lblEstadoBanner.setBackground(new Color(71, 85, 105));
-        lblEstadoBanner.setForeground(Color.WHITE);
+        lblEstadoBanner.setBackground(SicaTheme.STATUS_INFO_BG);
+        lblEstadoBanner.setForeground(SicaTheme.STATUS_INFO_TEXT);
         lblEstadoBanner.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
 
         add(contentPanel, BorderLayout.CENTER);
@@ -64,38 +73,16 @@ public class EstadoSicaGradientCard extends JPanel {
 
         if ("HABILITADO".equalsIgnoreCase(estadoAcceso) || "ACTIVO".equalsIgnoreCase(estadoAcceso)) {
             lblEstadoBanner.setText("ACCESO AUTORIZADO - HABILITADO");
-            lblEstadoBanner.setBackground(new Color(16, 185, 129));
-            lblEstadoBanner.setForeground(Color.WHITE);
+            lblEstadoBanner.setBackground(SicaTheme.STATUS_GRANTED_BG);
+            lblEstadoBanner.setForeground(SicaTheme.STATUS_GRANTED_TEXT);
         } else if ("RESTRINGIDO".equalsIgnoreCase(estadoAcceso) || "BLOQUEADO".equalsIgnoreCase(estadoAcceso)) {
             lblEstadoBanner.setText("ACCESO RESTRINGIDO - BLOQUEADO");
-            lblEstadoBanner.setBackground(new Color(225, 29, 72));
-            lblEstadoBanner.setForeground(Color.WHITE);
+            lblEstadoBanner.setBackground(SicaTheme.STATUS_DENIED_BG);
+            lblEstadoBanner.setForeground(SicaTheme.STATUS_DENIED_TEXT);
         } else {
-            lblEstadoBanner.setText("SELECCIONE PERSONA DE LA LISTA");
-            lblEstadoBanner.setBackground(new Color(71, 85, 105));
-            lblEstadoBanner.setForeground(Color.WHITE);
+            lblEstadoBanner.setText("SELECCIONE PERSONA EN PORTERÍA");
+            lblEstadoBanner.setBackground(SicaTheme.STATUS_INFO_BG);
+            lblEstadoBanner.setForeground(SicaTheme.STATUS_INFO_TEXT);
         }
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Degradado visual idéntico al diseño Figma
-        GradientPaint gp = new GradientPaint(
-                0, 0, new Color(15, 52, 67),
-                getWidth(), getHeight(), new Color(36, 59, 85)
-        );
-        g2d.setPaint(gp);
-        g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
-
-        // Borde redondeado fino
-        g2d.setColor(new Color(56, 189, 248, 80));
-        g2d.setStroke(new BasicStroke(1.2f));
-        g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
-
-        g2d.dispose();
-        super.paintComponent(g);
     }
 }

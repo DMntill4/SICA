@@ -69,11 +69,55 @@ public class SchemaInitializer {
                 stmt.executeUpdate("INSERT IGNORE INTO permiso (id, nombre, descripcion) VALUES (17, 'gestionar_roles', 'Permite crear roles, modificar permisos de un rol y eliminar roles')");
             } catch (Exception ignored) {}
             try {
-                stmt.executeUpdate("INSERT IGNORE INTO rol_permiso (rol_id, permiso_id) VALUES (1, 17)");
+                stmt.executeUpdate("ALTER TABLE persona ADD COLUMN vector_biometrico LONGTEXT NULL");
+            } catch (Exception ignored) {}
+            try {
+                stmt.executeUpdate("ALTER TABLE persona ADD COLUMN foto_url LONGTEXT NULL");
+            } catch (Exception ignored) {}
+            try {
+                stmt.executeUpdate("ALTER TABLE persona MODIFY COLUMN vector_biometrico LONGTEXT NULL");
+            } catch (Exception ignored) {}
+            try {
+                stmt.executeUpdate("ALTER TABLE persona MODIFY COLUMN foto_url LONGTEXT NULL");
             } catch (Exception ignored) {}
 
+            try {
+                stmt.executeUpdate("""
+                    CREATE TABLE IF NOT EXISTS solicitud_pase (
+                        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                        nombre_completo VARCHAR(100) NOT NULL,
+                        doc_identidad VARCHAR(30) NOT NULL,
+                        email VARCHAR(100) NOT NULL,
+                        telefono VARCHAR(20) NULL,
+                        empresa_destino VARCHAR(100) NULL,
+                        funcionario_destino_id BIGINT NULL,
+                        motivo VARCHAR(255) NOT NULL,
+                        fecha_hora_solicitada TIMESTAMP NOT NULL,
+                        vector_biometrico LONGTEXT NULL,
+                        foto_url LONGTEXT NULL,
+                        estado VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE_APROBACION',
+                        creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                        CONSTRAINT fk_solicitud_pase_funcionario FOREIGN KEY (funcionario_destino_id) REFERENCES usuario(id) ON DELETE SET NULL
+                    )
+                """);
+            } catch (Exception ignored) {}
+
+            // 1.5 Purga de seguridad: Limpiar personas, visitas y solicitudes de pase anteriores conservando únicamente usuarios (usuario)
+
+            try {
+                stmt.executeUpdate("DELETE FROM incidente");
+                stmt.executeUpdate("DELETE FROM codigo_qr");
+                stmt.executeUpdate("DELETE FROM visita");
+                stmt.executeUpdate("DELETE FROM solicitud_pase");
+                stmt.executeUpdate("DELETE FROM persona");
+                System.out.println("[DB Init] Purga de seguridad completada: Base de datos limpia de personas e historial. Usuarios (usuario) preservados 100%.");
+            } catch (Exception e) {
+                System.err.println("[DB Init Warning] No se pudo purgar datos anteriores: " + e.getMessage());
+            }
 
             // 2. Sembrar Usuarios (las contraseñas se hashean)
+
             PasswordHasher hasher = new PasswordHasher();
             try (PreparedStatement pst = conn.prepareStatement(
                     "INSERT IGNORE INTO usuario (id, username, password_hash, rol_id, empresa_id, bloqueado, nombre_completo, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {

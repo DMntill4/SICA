@@ -364,7 +364,65 @@ public class SicaApiClient {
         }
     }
 
+    public Persona crearPersona(String nombre, String apellido, String docIdentidad, String email) throws Exception {
+        return crearPersona(docIdentidad, "CC", nombre, apellido, email, "");
+    }
+
+    public Visita checkInVisita(Long visitaId) throws Exception {
+        return checkIn(visitaId, 1L);
+    }
+
+    public Visita checkOutVisita(Long visitaId) throws Exception {
+        return checkOut(visitaId);
+    }
+
+    public void crearVisitaRapidaPrueba() throws Exception {
+        Persona p = buscarPersonaPorDoc("1010101010");
+        if (p == null) {
+            p = crearPersona("Juan", "Pérez", "1010101010", "juan.perez@email.local");
+        }
+        preregistrarVisita(p.getId(), "Visita de Prueba Rápida", LocalDateTime.now().plusHours(1));
+    }
+
+    public Visita registrarVisitaNoAnunciada(String docIdentidad, String motivo) throws Exception {
+        Persona p = null;
+        try {
+            p = buscarPersonaPorDoc(docIdentidad);
+        } catch (Exception ignored) {}
+
+        if (p == null) {
+            p = crearPersona("Visitante", "No Anunciado", docIdentidad, "visitante@sica.local");
+        }
+        return registrarNoAnunciada(p.getId(), 1L, motivo);
+    }
+
+    public Visita emitirPaseTemporal(String docIdentidad) throws Exception {
+        Persona p = null;
+        try {
+            p = buscarPersonaPorDoc(docIdentidad);
+        } catch (Exception ignored) {}
+
+        if (p == null) {
+            p = crearPersona("Visitante", "Pase Temporal", docIdentidad, "temporal@sica.local");
+        }
+        return registrarPaseTemporal(p.getId(), 1L, "Pase Temporal Emitido en Porteria");
+    }
+
+    public List<Incidente> listarIncidentesPorPersona(Long personaId) throws Exception {
+        HttpRequest request = buildAuthRequest("/incidentes/persona/" + personaId)
+                .GET()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), new TypeReference<List<Incidente>>() {});
+        } else {
+            return List.of();
+        }
+    }
+
     public void limpiarVisitas() throws Exception {
+
         HttpRequest request = buildAuthRequest("/visitas")
                 .DELETE()
                 .build();
@@ -520,7 +578,44 @@ public class SicaApiClient {
         }
     }
 
+    public List<Map<String, Object>> listarSolicitudesPasePendientes() throws Exception {
+        HttpRequest request = buildAuthRequest("/pases/pendientes")
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), new TypeReference<List<Map<String, Object>>>() {});
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
+    public Map<String, Object> aprobarSolicitudPase(Long id) throws Exception {
+        HttpRequest request = buildAuthRequest("/pases/" + id + "/aprobar")
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
+    public Map<String, Object> rechazarSolicitudPase(Long id) throws Exception {
+        HttpRequest request = buildAuthRequest("/pases/" + id + "/rechazar")
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
     private HttpRequest.Builder buildAuthRequest(String path) {
+
 
         String token = SessionContext.getInstance().getToken();
         return HttpRequest.newBuilder()

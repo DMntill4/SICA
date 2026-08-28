@@ -3,16 +3,20 @@ package com.acme.sica.infrastructure.adapter.in.gui.views;
 import com.acme.sica.domain.model.Persona;
 import com.acme.sica.domain.model.Visita;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
+import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
 
 import javax.swing.*;
+
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public class FuncionarioPanel extends JPanel {
+
 
     private final SicaApiClient apiClient;
 
@@ -23,7 +27,10 @@ public class FuncionarioPanel extends JPanel {
 
     private JTable tblPendientes;
     private DefaultTableModel tableModel;
+    private JTable tblPasesWeb;
+    private DefaultTableModel tableModelPasesWeb;
     private JButton btnAprobar;
+
     private JButton btnRechazar;
     private JButton btnRefresh;
 
@@ -39,52 +46,58 @@ public class FuncionarioPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(10, 10, 10, 10));
+        setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.BG_DARK);
 
         // PANEL CONTENEDOR SUPERIOR: Banner + Formulario Pre-Registro
         JPanel topContainer = new JPanel(new BorderLayout(6, 6));
+        topContainer.setOpaque(false);
 
         // BANNER GUÍA
         JPanel bannerPanel = new JPanel(new BorderLayout());
-        bannerPanel.setBackground(new Color(30, 41, 59));
-        bannerPanel.setBorder(new EmptyBorder(8, 12, 8, 12));
+        bannerPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG_ALT);
+        bannerPanel.setBorder(new EmptyBorder(10, 16, 10, 16));
         JLabel lblHelp = new JLabel("[i] MÓDULO DE FUNCIONARIO: Pre-registra invitados para que su ingreso sea directo o aprueba/rechaza solicitudes de personas no anunciadas en tiempo real.");
-        lblHelp.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblHelp.setForeground(new Color(226, 232, 240));
+        lblHelp.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BOLD);
+        lblHelp.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MAIN);
         bannerPanel.add(lblHelp, BorderLayout.CENTER);
         topContainer.add(bannerPanel, BorderLayout.NORTH);
 
-        // FORMULARIO PRE-REGISTRO ORGANIZADO EN 2 FILAS INDEPENDIENTES (CERO RECORTES)
+        // FORMULARIO PRE-REGISTRO ORGANIZADO EN 2 FILAS INDEPENDIENTES
         JPanel formPanel = new JPanel(new GridLayout(2, 1, 6, 6));
-        formPanel.setBorder(new TitledBorder("[+] Pre-Registrar Invitado Aprobado"));
-
+        formPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG);
+        formPanel.setBorder(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.createCardBorder("Pre-Registrar Invitado Aprobado"));
 
         // Fila 1: Campos de Selección
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
+        row1.setOpaque(false);
         comboPersonas = new JComboBox<>();
-        comboPersonas.setPreferredSize(new Dimension(280, 26));
+        comboPersonas.setPreferredSize(new Dimension(280, 28));
 
         txtMotivo = new JTextField("Reunión de Negocios y Consultoría", 22);
-        txtMotivo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtMotivo.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BODY);
 
-        row1.add(new JLabel("Seleccionar Invitado:"));
+        JLabel lblInv = new JLabel("Seleccionar Invitado:");
+        lblInv.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+        JLabel lblMot = new JLabel("Motivo:");
+        lblMot.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+
+        row1.add(lblInv);
         row1.add(comboPersonas);
-        row1.add(new JLabel("Motivo:"));
+        row1.add(lblMot);
         row1.add(txtMotivo);
 
         // Fila 2: Botones de Acción
         JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
-        btnPreregistrar = new JButton("✨ Pre-Registrar Visita");
-        btnPreregistrar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnPreregistrar.setBackground(new Color(14, 165, 233));
-        btnPreregistrar.setForeground(Color.WHITE);
+        row2.setOpaque(false);
+        btnPreregistrar = new JButton("Pre-Registrar Visita");
+        SicaTheme.styleButton(btnPreregistrar, SicaTheme.ACCENT_CYAN, Color.WHITE);
 
-        btnCrearPersona = new JButton("👤 Registrar Nueva Persona");
-        btnCrearPersona.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnCrearPersona.setBackground(new Color(139, 92, 246));
-        btnCrearPersona.setForeground(Color.WHITE);
+        btnCrearPersona = new JButton("Registrar Nueva Persona");
+        SicaTheme.styleButton(btnCrearPersona, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MAIN);
 
         btnPreregistrar.addActionListener(e -> executePreregistro());
         btnCrearPersona.addActionListener(e -> openCrearPersonaDialog());
+
 
         row2.add(btnPreregistrar);
         row2.add(btnCrearPersona);
@@ -95,42 +108,52 @@ public class FuncionarioPanel extends JPanel {
         topContainer.add(formPanel, BorderLayout.CENTER);
         add(topContainer, BorderLayout.NORTH);
 
-        // --- PANEL CENTRAL: Solicitudes Pendientes ---
+        // --- PANEL CENTRAL: Solicitudes Pendientes (Internas + Portal Web IA) ---
         JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
-        centerPanel.setBorder(new TitledBorder("📋 Solicitudes Pendientes de Aprobación (En Tiempo Real)"));
+        centerPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG);
+        centerPanel.setBorder(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.createCardBorder("Solicitudes Pendientes de Aprobación"));
+
+        JTabbedPane tabbedPendientes = new JTabbedPane();
+        tabbedPendientes.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BOLD);
 
         String[] columns = {"ID Visita", "Persona / Visitante", "Documento", "Tipo Visita", "Estado", "Motivo / Detalle"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
-
         tblPendientes = new JTable(tableModel);
-        tblPendientes.setRowHeight(26);
-        tblPendientes.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        tblPendientes.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblPendientes);
         JScrollPane scrollPane = new JScrollPane(tblPendientes);
+        tabbedPendientes.addTab("[📋] Visitas Pendientes Internas", scrollPane);
 
-        centerPanel.add(scrollPane, BorderLayout.CENTER);
+        // Tabla Pases Web Biométricos
+        String[] colsWeb = {"ID Pase", "Nombre Completo", "Documento", "Empresa Destino", "Biometría IA", "Motivo"};
+        tableModelPasesWeb = new DefaultTableModel(colsWeb, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
+        tblPasesWeb = new JTable(tableModelPasesWeb);
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblPasesWeb);
+        JScrollPane scrollWeb = new JScrollPane(tblPasesWeb);
+        tabbedPendientes.addTab("[🌐] Solicitudes Portal Web (Biometría IA)", scrollWeb);
+
+        centerPanel.add(tabbedPendientes, BorderLayout.CENTER);
 
         // BOTONERA APROBACIONES
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 6));
-        btnRefresh = new JButton("🔄 Actualizar Tabla");
+        actionPanel.setOpaque(false);
+        btnRefresh = new JButton("[R] Actualizar Tabla");
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleButton(btnRefresh, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG_ALT, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_CYAN);
 
-        btnAprobar = new JButton("✅ APROBAR VISITA");
-        btnAprobar.setBackground(new Color(34, 197, 94));
-        btnAprobar.setForeground(Color.WHITE);
-        btnAprobar.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnAprobar.setPreferredSize(new Dimension(190, 30));
+        btnAprobar = new JButton("[+] APROBAR VISITA / PASE WEB");
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleButton(btnAprobar, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_EMERALD, Color.WHITE);
+        btnAprobar.setPreferredSize(new Dimension(240, 32));
 
-        btnRechazar = new JButton("❌ RECHAZAR VISITA");
-        btnRechazar.setBackground(new Color(239, 68, 68));
-        btnRechazar.setForeground(Color.WHITE);
-        btnRechazar.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btnRechazar.setPreferredSize(new Dimension(190, 30));
+        btnRechazar = new JButton("[x] RECHAZAR SOLICITUD");
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleButton(btnRechazar, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_ROSE, Color.WHITE);
+        btnRechazar.setPreferredSize(new Dimension(200, 32));
 
         btnRefresh.addActionListener(e -> loadAll());
-        btnAprobar.addActionListener(e -> executeAprobar());
-        btnRechazar.addActionListener(e -> executeRechazar());
+        btnAprobar.addActionListener(e -> executeAprobarGenerico());
+        btnRechazar.addActionListener(e -> executeRechazarGenerico());
 
         actionPanel.add(btnRefresh);
         actionPanel.add(btnAprobar);
@@ -139,6 +162,8 @@ public class FuncionarioPanel extends JPanel {
         centerPanel.add(actionPanel, BorderLayout.SOUTH);
         add(centerPanel, BorderLayout.CENTER);
     }
+
+
 
     public void loadAll() {
         loadPersonas();
@@ -194,7 +219,102 @@ public class FuncionarioPanel extends JPanel {
             }
         };
         worker.execute();
+
+        // Cargar Solicitudes de Pases Web (Biometría IA)
+        SwingWorker<List<Map<String, Object>>, Void> webWorker = new SwingWorker<>() {
+            @Override
+            protected List<Map<String, Object>> doInBackground() throws Exception {
+                return apiClient.listarSolicitudesPasePendientes();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    List<Map<String, Object>> pases = get();
+                    tableModelPasesWeb.setRowCount(0);
+                    for (Map<String, Object> p : pases) {
+                        String bioStatus = p.get("vectorBiometrico") != null ? "[✓] REGISTRADA (128-d Vector)" : "[x] SIN ROSTRO";
+                        tableModelPasesWeb.addRow(new Object[]{
+                                p.get("id"),
+                                p.get("nombreCompleto"),
+                                p.get("docIdentidad"),
+                                p.get("empresaDestino"),
+                                bioStatus,
+                                p.get("motivo")
+                        });
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        };
+        webWorker.execute();
     }
+
+    private void executeAprobarGenerico() {
+        if (tblPasesWeb.getSelectedRow() != -1) {
+            int row = tblPasesWeb.getSelectedRow();
+            Long paseId = Long.valueOf(tableModelPasesWeb.getValueAt(row, 0).toString());
+
+            SwingWorker<Map<String, Object>, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Map<String, Object> doInBackground() throws Exception {
+                    return apiClient.aprobarSolicitudPase(paseId);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(FuncionarioPanel.this,
+                                "[+] Pase Web Biométrico Aprobado para Portería",
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
+                        JOptionPane.showMessageDialog(FuncionarioPanel.this,
+                                "Pase Web Biométrico Aprobado Exitosamente.\nLa persona y visita han sido registradas en portería para Check-In.",
+                                "Pase Aprobado", JOptionPane.INFORMATION_MESSAGE);
+                        loadPendientes();
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(FuncionarioPanel.this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
+            worker.execute();
+            return;
+        }
+
+        executeAprobar();
+    }
+
+    private void executeRechazarGenerico() {
+        if (tblPasesWeb.getSelectedRow() != -1) {
+            int row = tblPasesWeb.getSelectedRow();
+            Long paseId = Long.valueOf(tableModelPasesWeb.getValueAt(row, 0).toString());
+
+            SwingWorker<Map<String, Object>, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Map<String, Object> doInBackground() throws Exception {
+                    return apiClient.rechazarSolicitudPase(paseId);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(FuncionarioPanel.this,
+                                "[x] Solicitud de Pase Web Rechazada",
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
+                        loadPendientes();
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(FuncionarioPanel.this, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
+            worker.execute();
+            return;
+        }
+
+        executeRechazar();
+    }
+
 
     private void executePreregistro() {
         if (comboPersonas.getSelectedItem() == null) return;

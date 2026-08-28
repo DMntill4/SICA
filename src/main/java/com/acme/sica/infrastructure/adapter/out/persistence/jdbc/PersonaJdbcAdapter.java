@@ -1,8 +1,8 @@
 package com.acme.sica.infrastructure.adapter.out.persistence.jdbc;
 
+import com.acme.sica.application.port.out.PersonaRepository;
 import com.acme.sica.domain.enums.EstadoAcceso;
 import com.acme.sica.domain.model.Persona;
-import com.acme.sica.application.port.out.PersonaRepository;
 import com.acme.sica.infrastructure.db.connection.ConnectionFactory;
 
 import java.sql.*;
@@ -22,7 +22,7 @@ public class PersonaJdbcAdapter implements PersonaRepository {
     public Optional<Persona> findByDocIdentidad(String docIdentidad) {
         String sql = """
             SELECT p.id, p.doc_identidad, p.tipo_documento, p.nombre, p.apellido, p.email, p.telefono,
-                   p.empresa_id, e.nombre AS empresa_nombre, p.estado_acceso, p.creado_en
+                   p.empresa_id, e.nombre AS empresa_nombre, p.estado_acceso, p.vector_biometrico, p.foto_url, p.creado_en
             FROM persona p
             LEFT JOIN empresa e ON p.empresa_id = e.id
             WHERE p.doc_identidad = ?
@@ -46,7 +46,7 @@ public class PersonaJdbcAdapter implements PersonaRepository {
     public Optional<Persona> findById(Long id) {
         String sql = """
             SELECT p.id, p.doc_identidad, p.tipo_documento, p.nombre, p.apellido, p.email, p.telefono,
-                   p.empresa_id, e.nombre AS empresa_nombre, p.estado_acceso, p.creado_en
+                   p.empresa_id, e.nombre AS empresa_nombre, p.estado_acceso, p.vector_biometrico, p.foto_url, p.creado_en
             FROM persona p
             LEFT JOIN empresa e ON p.empresa_id = e.id
             WHERE p.id = ?
@@ -68,12 +68,24 @@ public class PersonaJdbcAdapter implements PersonaRepository {
 
     @Override
     public Persona save(Persona persona) {
-        String sql = "INSERT INTO persona (doc_identidad, tipo_documento, nombre, apellido, email, telefono, empresa_id, estado_acceso) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        if (persona.getId() != null) {
+            update(persona);
+            return persona;
+        }
+
+        Optional<Persona> existente = findByDocIdentidad(persona.getDocIdentidad());
+        if (existente.isPresent()) {
+            persona.setId(existente.get().getId());
+            update(persona);
+            return persona;
+        }
+
+        String sql = "INSERT INTO persona (doc_identidad, tipo_documento, nombre, apellido, email, telefono, empresa_id, estado_acceso, vector_biometrico, foto_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = connectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
             ps.setString(1, persona.getDocIdentidad());
-            ps.setString(2, persona.getTipoDocumento());
+            ps.setString(2, persona.getTipoDocumento() != null ? persona.getTipoDocumento() : "CC");
             ps.setString(3, persona.getNombre());
             ps.setString(4, persona.getApellido());
             ps.setString(5, persona.getEmail());
@@ -83,7 +95,9 @@ public class PersonaJdbcAdapter implements PersonaRepository {
             } else {
                 ps.setNull(7, Types.BIGINT);
             }
-            ps.setString(8, persona.getEstadoAcceso().name());
+            ps.setString(8, persona.getEstadoAcceso() != null ? persona.getEstadoAcceso().name() : EstadoAcceso.HABILITADO.name());
+            ps.setString(9, persona.getVectorBiometrico());
+            ps.setString(10, persona.getFotoUrl());
 
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -99,11 +113,11 @@ public class PersonaJdbcAdapter implements PersonaRepository {
 
     @Override
     public void update(Persona persona) {
-        String sql = "UPDATE persona SET tipo_documento = ?, nombre = ?, apellido = ?, email = ?, telefono = ?, empresa_id = ?, estado_acceso = ? WHERE id = ?";
+        String sql = "UPDATE persona SET tipo_documento = ?, nombre = ?, apellido = ?, email = ?, telefono = ?, empresa_id = ?, estado_acceso = ?, vector_biometrico = ?, foto_url = ? WHERE id = ?";
         try (Connection conn = connectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setString(1, persona.getTipoDocumento());
+            ps.setString(1, persona.getTipoDocumento() != null ? persona.getTipoDocumento() : "CC");
             ps.setString(2, persona.getNombre());
             ps.setString(3, persona.getApellido());
             ps.setString(4, persona.getEmail());
@@ -113,8 +127,10 @@ public class PersonaJdbcAdapter implements PersonaRepository {
             } else {
                 ps.setNull(6, Types.BIGINT);
             }
-            ps.setString(7, persona.getEstadoAcceso().name());
-            ps.setLong(8, persona.getId());
+            ps.setString(7, persona.getEstadoAcceso() != null ? persona.getEstadoAcceso().name() : EstadoAcceso.HABILITADO.name());
+            ps.setString(8, persona.getVectorBiometrico());
+            ps.setString(9, persona.getFotoUrl());
+            ps.setLong(10, persona.getId());
 
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -131,44 +147,75 @@ public class PersonaJdbcAdapter implements PersonaRepository {
             ps.setLong(2, personaId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Error al actualizar estado de acceso en BD: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public void deleteById(Long id) {
-        String sql = "DELETE FROM persona WHERE id = ?";
-        try (Connection conn = connectionFactory.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al eliminar persona en BD: " + e.getMessage(), e);
+            System.err.println("[PersonaAdapter Error] error en updateEstadoAcceso: " + e.getMessage());
         }
     }
 
     @Override
     public List<Persona> findAll() {
-        List<Persona> list = new ArrayList<>();
         String sql = """
             SELECT p.id, p.doc_identidad, p.tipo_documento, p.nombre, p.apellido, p.email, p.telefono,
-                   p.empresa_id, e.nombre AS empresa_nombre, p.estado_acceso, p.creado_en
+                   p.empresa_id, e.nombre AS empresa_nombre, p.estado_acceso, p.vector_biometrico, p.foto_url, p.creado_en
             FROM persona p
             LEFT JOIN empresa e ON p.empresa_id = e.id
-            ORDER BY p.id ASC
+            ORDER BY p.id DESC
         """;
-
+        List<Persona> lista = new ArrayList<>();
         try (Connection conn = connectionFactory.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
             while (rs.next()) {
-                list.add(mapResultSetToPersona(rs));
+                lista.add(mapResultSetToPersona(rs));
             }
         } catch (SQLException e) {
             System.err.println("[PersonaAdapter Error] error en findAll: " + e.getMessage());
         }
-        return list;
+        return lista;
     }
+
+    @Override
+    public void deleteById(Long id) {
+        try (Connection conn = connectionFactory.getConnection()) {
+            boolean originalAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                // 1. Eliminar incidentes asociados
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM incidente WHERE persona_id = ?")) {
+                    ps.setLong(1, id);
+                    ps.executeUpdate();
+                }
+
+                // 2. Eliminar códigos QR asociados a las visitas de la persona
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM codigo_qr WHERE visita_id IN (SELECT id FROM visita WHERE persona_id = ?)")) {
+                    ps.setLong(1, id);
+                    ps.executeUpdate();
+                }
+
+                // 3. Eliminar visitas asociadas a la persona
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM visita WHERE persona_id = ?")) {
+                    ps.setLong(1, id);
+                    ps.executeUpdate();
+                }
+
+                // 4. Eliminar el registro principal de persona
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM persona WHERE id = ?")) {
+                    ps.setLong(1, id);
+                    ps.executeUpdate();
+                }
+
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(originalAutoCommit);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error al eliminar persona de BD: " + e.getMessage(), e);
+        }
+    }
+
 
     private Persona mapResultSetToPersona(ResultSet rs) throws SQLException {
         Persona p = new Persona();
@@ -179,18 +226,23 @@ public class PersonaJdbcAdapter implements PersonaRepository {
         p.setApellido(rs.getString("apellido"));
         p.setEmail(rs.getString("email"));
         p.setTelefono(rs.getString("telefono"));
-        
-        long eId = rs.getLong("empresa_id");
+
+        long empId = rs.getLong("empresa_id");
         if (!rs.wasNull()) {
-            p.setEmpresaId(eId);
-            p.setEmpresaNombre(rs.getString("empresa_nombre"));
+            p.setEmpresaId(empId);
         }
-        
-        p.setEstadoAcceso(EstadoAcceso.valueOf(rs.getString("estado_acceso")));
-        Timestamp ts = rs.getTimestamp("creado_en");
-        if (ts != null) {
-            p.setCreadoEn(ts.toLocalDateTime());
+        p.setEmpresaNombre(rs.getString("empresa_nombre"));
+
+        String estadoStr = rs.getString("estado_acceso");
+        if (estadoStr != null) {
+            p.setEstadoAcceso(EstadoAcceso.valueOf(estadoStr));
         }
+
+        try {
+            p.setVectorBiometrico(rs.getString("vector_biometrico"));
+            p.setFotoUrl(rs.getString("foto_url"));
+        } catch (Exception ignored) {}
+
         return p;
     }
 }

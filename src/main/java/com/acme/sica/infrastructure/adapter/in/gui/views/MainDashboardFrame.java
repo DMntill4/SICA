@@ -1,12 +1,16 @@
 package com.acme.sica.infrastructure.adapter.in.gui.views;
 
-import com.acme.sica.infrastructure.adapter.in.gui.client.SessionContext;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
+import com.acme.sica.infrastructure.adapter.in.gui.client.SessionContext;
+import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
+/**
+ * Dashboard Principal con Navegación Operativa (Sin Emojis).
+ */
 public class MainDashboardFrame extends JFrame {
 
     private final SicaApiClient apiClient;
@@ -14,8 +18,10 @@ public class MainDashboardFrame extends JFrame {
     private GuardiaPanel guardiaPanel;
     private FuncionarioPanel funcionarioPanel;
     private IncidentesPanel incidentesPanel;
-    private AuditoriaPanel auditoriaPanel;
     private ReportesPanel reportesPanel;
+    private AuditoriaPanel auditoriaPanel;
+
+    private JTabbedPane tabbedPane;
 
     public MainDashboardFrame(SicaApiClient apiClient) {
         this.apiClient = apiClient;
@@ -23,82 +29,75 @@ public class MainDashboardFrame extends JFrame {
     }
 
     private void initUI() {
-        SessionContext session = SessionContext.getInstance();
-
-        setTitle("SICA - Dashboard Principal [" + session.getRoleName() + "]");
+        setTitle("SICA - Plataforma de Control de Accesos (Zona Acme)");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1100, 720);
+        setSize(1280, 800);
+        setMinimumSize(new Dimension(1024, 700));
         setLocationRelativeTo(null);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(SicaTheme.BG_MAIN);
         setContentPane(mainPanel);
 
-        // --- ENCABEZADO DE NAVEGACION Y USUARIO ---
+        // ENCABEZADO PRINCIPAL (NAVY DE SEGURIDAD)
         JPanel headerContainer = new JPanel(new BorderLayout());
+        headerContainer.setBackground(SicaTheme.HEADER_BG);
 
-        // Banner de Alerta de Emergencia (Oculto por defecto)
+        // Banner de Alerta de Emergencia (Modo Lockdown)
         JPanel lockdownBanner = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 6));
-        lockdownBanner.setBackground(new Color(225, 29, 72));
-        JLabel lblLockdownAlert = new JLabel("[!] ATENCIÓN: SISTEMA EN MODO DE EMERGENCIA - TODOS LOS ACCESOS BLOQUEADOS POR DIRECCIÓN DE SEGURIDAD");
-        lblLockdownAlert.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lockdownBanner.setBackground(SicaTheme.STATUS_DENIED_TEXT);
+        JLabel lblLockdownAlert = new JLabel("! ATENCIÓN: SISTEMA EN MODO DE EMERGENCIA - TODOS LOS ACCESOS BLOQUEADOS POR DIRECCIÓN DE SEGURIDAD");
+        lblLockdownAlert.setFont(SicaTheme.FONT_BOLD);
         lblLockdownAlert.setForeground(Color.WHITE);
         lockdownBanner.add(lblLockdownAlert);
         lockdownBanner.setVisible(false);
         headerContainer.add(lockdownBanner, BorderLayout.NORTH);
 
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(15, 23, 42)); // Dark slate
+        headerPanel.setBackground(SicaTheme.HEADER_BG);
         headerPanel.setBorder(new EmptyBorder(12, 20, 12, 20));
 
-        JLabel titleLabel = new JLabel("SICA - Complejo Empresarial Zona Acme");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        titleLabel.setForeground(new Color(56, 189, 248));
+        // Isotipo e Identificación Institucional
+        JLabel titleLabel = new JLabel("SICA ZONA ACME");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(Color.WHITE);
 
-        JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         userPanel.setOpaque(false);
 
-        JLabel userLabel = new JLabel("[+] " + session.getNombreCompleto() + " (" + session.getRoleName() + ")");
-        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        userLabel.setForeground(Color.WHITE);
+        SessionContext session = SessionContext.getInstance();
+        JLabel userLabel = new JLabel("OPERADOR: " + session.getNombreCompleto() + " (" + session.getRoleName() + ")");
+        userLabel.setFont(SicaTheme.FONT_BOLD);
+        userLabel.setForeground(SicaTheme.ACCENT_CYAN_LIGHT);
 
-        // Botón exclusivo de Admin para Modo de Emergencia / Lockdown
         if (session.isAdmin()) {
-            JButton btnLockdown = new JButton("[!] MODO EMERGENCIA");
-            btnLockdown.setFont(new Font("Segoe UI", Font.BOLD, 11));
-            btnLockdown.setBackground(new Color(225, 29, 72));
-            btnLockdown.setForeground(Color.WHITE);
+            JButton btnLockdown = new JButton("EMERGENCIA");
+            SicaTheme.styleButton(btnLockdown, SicaTheme.STATUS_DENIED_TEXT, Color.WHITE);
             btnLockdown.addActionListener(e -> {
                 boolean active = com.acme.sica.infrastructure.adapter.in.gui.components.LockdownManager.getInstance().isLockdownActive();
                 if (!active) {
-                    int conf = JOptionPane.showConfirmDialog(this,
-                            "[!] ¿Estás seguro de activar el BLOQUEO TOTAL DE EMERGENCIA?\nSe inhabilitarán todos los accesos en portería.",
-                            "Confirmar Modo de Emergencia", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-                    if (conf == JOptionPane.YES_OPTION) {
+                    boolean conf = com.acme.sica.infrastructure.adapter.in.gui.components.CriticalConfirmationDialog.showConfirm(this,
+                            "MODO DE EMERGENCIA",
+                            "¿Estás seguro de activar el BLOQUEO TOTAL DE EMERGENCIA?\nSe inhabilitarán todos los accesos en portería.",
+                            "ACTIVAR BLOQUEO");
+                    if (conf) {
                         com.acme.sica.infrastructure.adapter.in.gui.components.LockdownManager.getInstance().setLockdownActive(true);
                         lockdownBanner.setVisible(true);
-                        btnLockdown.setText("[🔑] DESACTIVAR EMERGENCIA");
-                        btnLockdown.setBackground(new Color(16, 185, 129));
-                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(this,
-                                "[!] MODO DE EMERGENCIA ACTIVADO - Accesos Bloqueados",
-                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
+                        btnLockdown.setText("DESACTIVAR EMERGENCIA");
+                        btnLockdown.setBackground(SicaTheme.STATUS_GRANTED_TEXT);
                     }
                 } else {
                     com.acme.sica.infrastructure.adapter.in.gui.components.LockdownManager.getInstance().setLockdownActive(false);
                     lockdownBanner.setVisible(false);
-                    btnLockdown.setText("[!] MODO EMERGENCIA");
-                    btnLockdown.setBackground(new Color(225, 29, 72));
-                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(this,
-                            "[+] Operación Normal Restaurada",
-                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
+                    btnLockdown.setText("EMERGENCIA");
+                    btnLockdown.setBackground(SicaTheme.STATUS_DENIED_TEXT);
                 }
             });
             userPanel.add(btnLockdown);
         }
 
-        JButton btnLogout = new JButton("[x] Cerrar Sesión");
-        btnLogout.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnLogout.setBackground(new Color(239, 68, 68));
-        btnLogout.setForeground(Color.WHITE);
+        JButton btnLogout = new JButton("Cerrar Sesión");
+        SicaTheme.styleButton(btnLogout, new Color(40, 95, 135), Color.WHITE);
         btnLogout.addActionListener(e -> executeLogout());
 
         userPanel.add(userLabel);
@@ -110,57 +109,50 @@ public class MainDashboardFrame extends JFrame {
 
         mainPanel.add(headerContainer, BorderLayout.NORTH);
 
-        // --- CONTENEDOR CON PESTAÑAS (JTabbedPane) ---
-        JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        // PANEL CENTRAL DE NAVEGACIÓN Y MÓDULOS
+        tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tabbedPane.setBackground(SicaTheme.BG_MAIN);
 
-        // Inicializar paneles
+        // Inicializar Vistas
         guardiaPanel = new GuardiaPanel(apiClient);
         funcionarioPanel = new FuncionarioPanel(apiClient);
         incidentesPanel = new IncidentesPanel(apiClient);
-        auditoriaPanel = new AuditoriaPanel(apiClient);
         reportesPanel = new ReportesPanel(apiClient);
+        auditoriaPanel = new AuditoriaPanel(apiClient);
 
-        // Filtrar según el rol y/o permisos asignados al usuario (Soporte RBAC Dinámico)
-        boolean showGuardiaTab = session.isAdmin() || session.isGuardia() || session.hasPermission("checkin_visita") || session.hasPermission("checkout_visita") || session.hasPermission("crear_persona");
-        boolean showFuncionarioTab = session.isAdmin() || session.isFuncionario() || session.hasPermission("preregistrar_visita") || session.hasPermission("aprobar_visita");
-        boolean showIncidentesTab = session.isAdmin() || session.isGuardia() || session.hasPermission("registrar_incidente");
-        boolean showReportesTab = session.isAdmin() || session.hasPermission("generar_reporte");
-        boolean showAuditoriaTab = session.isAdmin() || session.hasPermission("consultar_auditoria") || session.hasPermission("gestionar_roles") || session.hasPermission("crear_usuario");
-
-        if (showGuardiaTab) {
-            tabbedPane.addTab("[◆] Control de Accesos (Portería)", guardiaPanel);
+        // Pestañas por Grupos Operativos sin Emojis
+        if (session.isAdmin() || session.isGuardia() || session.hasPermission("consultar_visitas")) {
+            tabbedPane.addTab("[MONITOREO] Accesos en Vivo", guardiaPanel);
         }
 
-        if (showFuncionarioTab) {
-            tabbedPane.addTab("[📋] Pre-Registro y Aprobaciones", funcionarioPanel);
+        if (session.isAdmin() || session.isFuncionario() || session.hasPermission("preregistrar_visita")) {
+            tabbedPane.addTab("[GESTIÓN] Pre-Registros", funcionarioPanel);
         }
 
-        if (showIncidentesTab) {
-            tabbedPane.addTab("[!] Gestión de Incidentes", incidentesPanel);
+        if (session.isAdmin() || session.isGuardia() || session.hasPermission("registrar_incidente")) {
+            tabbedPane.addTab("[GESTIÓN] Incidentes", incidentesPanel);
         }
 
-        if (showReportesTab) {
-            tabbedPane.addTab("[📊] Reportes & Estadísticas", reportesPanel);
+        if (session.isAdmin() || session.hasPermission("generar_reporte")) {
+            tabbedPane.addTab("[ANÁLISIS] Reportes", reportesPanel);
         }
 
-        if (showAuditoriaTab) {
-            tabbedPane.addTab("[📜] Bitácora & Auditoría", auditoriaPanel);
+        if (session.isAdmin() || session.hasPermission("consultar_auditoria")) {
+            tabbedPane.addTab("[SISTEMA] Auditoría & Usuarios", auditoriaPanel);
         }
 
         if (tabbedPane.getTabCount() == 0) {
-            tabbedPane.addTab("[◆] Control de Accesos", guardiaPanel);
-            tabbedPane.addTab("[📋] Pre-Registro", funcionarioPanel);
+            tabbedPane.addTab("[MONITOREO]", guardiaPanel);
+            tabbedPane.addTab("[GESTIÓN]", funcionarioPanel);
         }
-
-
 
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
     }
 
     private void executeLogout() {
-        int confirm = JOptionPane.showConfirmDialog(this, "¿Desea cerrar la sesión activa?", "Cerrar Sesión", JOptionPane.YES_NO_OPTION);
-        if (confirm == JOptionPane.YES_OPTION) {
+        int conf = JOptionPane.showConfirmDialog(this, "¿Desea cerrar la sesión actual?", "Cerrar Sesión", JOptionPane.YES_NO_OPTION);
+        if (conf == JOptionPane.YES_OPTION) {
             apiClient.logout();
             dispose();
             SwingUtilities.invokeLater(() -> {
