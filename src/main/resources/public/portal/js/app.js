@@ -1,0 +1,589 @@
+// Portal de Autoservicio de Visitantes SICA - Lógica de Selección de Caminos, Biometría Facial e Inserción Inteligente
+
+let selectedRoad = 'NUEVO'; // 'FRECUENTE' | 'NUEVO'
+let currentStep = 0; // 0: Road Select, 1: Datos, 2: Modalidad, 3: Biometría 5s, 'user-hub': Hub Usuario Frecuente, 4: Pase Emitido
+let selectedCategory = 'NEGOCIOS';
+let currentVector = null;
+let currentFotoRealBase64 = null;
+let lastGeneratedPassId = null;
+let authenticatedUser = null; // Guardar datos de usuario autenticado por rostro
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateWizardUI();
+});
+
+// SISTEMA DE NOTIFICACIONES Y CONFIRMACIONES CUSTOM HTML/CSS (SIN USAR BROWSER ALERTS NATIVOS)
+function mostrarNotificacionCustomSica(titulo, mensaje, icono = '🔒') {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('sica-custom-modal-overlay');
+        const iconDiv = document.getElementById('sica-modal-icon');
+        const titleEl = document.getElementById('sica-modal-title');
+        const msgEl = document.getElementById('sica-modal-message');
+        const btnConfirm = document.getElementById('sica-modal-btn-confirm');
+        const btnCancel = document.getElementById('sica-modal-btn-cancel');
+
+        if (!overlay) {
+            resolve(true);
+            return;
+        }
+
+        iconDiv.innerText = icono;
+        titleEl.innerText = titulo || "Notificación SICA";
+        msgEl.innerText = mensaje || "";
+        btnCancel.style.display = 'none';
+        btnConfirm.innerText = "Aceptar";
+        overlay.style.display = 'flex';
+
+        btnConfirm.onclick = () => {
+            overlay.style.display = 'none';
+            resolve(true);
+        };
+    });
+}
+
+function mostrarConfirmacionCustomSica(titulo, mensaje, icono = '❓') {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('sica-custom-modal-overlay');
+        const iconDiv = document.getElementById('sica-modal-icon');
+        const titleEl = document.getElementById('sica-modal-title');
+        const msgEl = document.getElementById('sica-modal-message');
+        const btnConfirm = document.getElementById('sica-modal-btn-confirm');
+        const btnCancel = document.getElementById('sica-modal-btn-cancel');
+
+        if (!overlay) {
+            resolve(true);
+            return;
+        }
+
+        iconDiv.innerText = icono;
+        titleEl.innerText = titulo || "Confirmación Requerida";
+        msgEl.innerText = mensaje || "";
+        btnCancel.style.display = 'inline-block';
+        btnConfirm.innerText = "Confirmar";
+        btnCancel.innerText = "Cancelar";
+        overlay.style.display = 'flex';
+
+        btnConfirm.onclick = () => {
+            overlay.style.display = 'none';
+            resolve(true);
+        };
+
+        btnCancel.onclick = () => {
+            overlay.style.display = 'none';
+            resolve(false);
+        };
+    });
+}
+
+function selectRoad(road) {
+    selectedRoad = road;
+    
+    if (road === 'FRECUENTE') {
+        // ROAD A: Directo a escaneo biométrico (Paso 3)
+        currentStep = 3;
+        const scanTitle = document.getElementById('scan-step-title');
+        const scanDesc = document.getElementById('scan-step-desc');
+        if (scanTitle) scanTitle.innerText = "Road A: Escáner Facial (Autenticación de Usuario Frecuente)";
+        if (scanDesc) scanDesc.innerText = "Centra tu rostro frente a la cámara. El escáner de 5 segundos validará tu firma facial para ingresar a tu Panel de Gestión.";
+
+        if (window.iniciarCamaraIA) {
+            window.iniciarCamaraIA();
+        }
+    } else {
+        // ROAD B: Registro completo paso a paso (Paso 1)
+        currentStep = 1;
+        const scanTitle = document.getElementById('scan-step-title');
+        const scanDesc = document.getElementById('scan-step-desc');
+        if (scanTitle) scanTitle.innerText = "Road B: Verificación Biométrica Facial Obligatoria (5 Segundos)";
+        if (scanDesc) scanDesc.innerText = "Realiza el escaneo de 5 segundos para vincular tu firma biométrica a tu registro de nuevo visitante.";
+    }
+
+    updateWizardUI();
+}
+
+async function goToStep(step) {
+    // Validar Paso 1 en Road B antes de avanzar
+    if (step === 2 && currentStep === 1) {
+        const nombre = document.getElementById('nombreCompleto').value.trim();
+        const doc = document.getElementById('docIdentidad').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const empresa = document.getElementById('empresaDestino').value.trim();
+
+        if (!nombre || !doc || !email || !empresa) {
+            await mostrarNotificacionCustomSica(
+                "PASO 1 REQUERIDO",
+                "Por favor completa tus Datos Personales (*): Nombre, Documento, Correo y Empresa Destino antes de continuar.",
+                "⚠️"
+            );
+            return;
+        }
+
+        // VERIFICACIÓN DE SEGURIDAD: NO PERMITIR RE-REGISTRAR UN DOCUMENTO YA EXISTENTE
+        try {
+            const checkRes = await fetch(`/api/biometria/verificar-doc?doc=${encodeURIComponent(doc)}`);
+            if (checkRes.ok) {
+                const docData = await checkRes.json();
+                if (docData.existe) {
+                    // Si el usuario ya está autenticado por rostro con ese documento, permitir continuar limpiamente
+                    if (authenticatedUser && String(authenticatedUser.docIdentidad).trim() === String(doc).trim()) {
+                        // Usuario autenticado creando una nueva visita para sí mismo -> Continuar
+                    } else {
+                        await mostrarNotificacionCustomSica(
+                            "CONTROL DE ACCESO Y SEGURIDAD SICA",
+                            `El documento N° [${doc}] YA se encuentra registrado a nombre de ${docData.nombreCompleto}.\n\nPor políticas de seguridad, no puedes registrar un nuevo perfil con este documento. Debes ingresar mediante Verificación Biométrica Facial (Road A - Usuario Frecuente).\n\nSe te redirigirá a la cámara web para validar tu identidad.`,
+                            "🔒"
+                        );
+                        
+                        selectRoad('FRECUENTE');
+                        return;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("No se pudo verificar el documento:", e);
+        }
+    }
+
+    if (step === 3) {
+        if (window.iniciarCamaraIA) {
+            window.iniciarCamaraIA();
+        }
+    }
+
+    currentStep = step;
+    updateWizardUI();
+}
+
+function updateWizardUI() {
+    const roadScreen = document.getElementById('road-select-screen');
+    if (roadScreen) {
+        roadScreen.classList.toggle('active', currentStep === 0);
+    }
+
+    const sections = [1, 2, 3, 4, 'user-hub'];
+    sections.forEach(secId => {
+        const sec = document.getElementById(`step-section-${secId}`);
+        if (sec) {
+            sec.classList.toggle('active', secId === currentStep || String(secId) === String(currentStep));
+        }
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function selectCategory(cat, el) {
+    selectedCategory = cat;
+    document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+
+    const txtMotivo = document.getElementById('motivo');
+    if (cat === 'EMERGENCIA') {
+        txtMotivo.value = 'Soporte Técnico e Infraestructura Crítica';
+    } else if (cat === 'EXPRESS') {
+        txtMotivo.value = 'Entrega de Paquetería / Correspondencia';
+    } else if (cat === 'ESTADIA_PROLONGADA') {
+        txtMotivo.value = 'Mantenimiento / Proyecto Temporal';
+    } else {
+        txtMotivo.value = 'Desarrollo de Software y Reunión Técnica';
+    }
+}
+
+function iniciarSecuenciaEscaneo5s() {
+    const progressBox = document.getElementById('scan-progress-box');
+    const progressFill = document.getElementById('progress-bar-fill');
+    const stepMsg = document.getElementById('scan-step-msg');
+    const countdownText = document.getElementById('scan-countdown-text');
+    const statusText = document.getElementById('ai-status-text');
+    const statusDot = document.getElementById('status-dot');
+    const btnScan = document.getElementById('btn-scan-face');
+    const btnSubmit = document.getElementById('btn-submit-pass');
+    const banner = document.getElementById('autofill-banner');
+
+    progressBox.style.display = 'block';
+    btnScan.disabled = true;
+    btnScan.style.opacity = '0.5';
+
+    if (window.iniciarEscaneoReal5Segundos) {
+        window.iniciarEscaneoReal5Segundos(
+            (data) => {
+                progressFill.style.width = data.progress + '%';
+                countdownText.innerText = data.secondsLeft + 's';
+                stepMsg.innerText = data.message;
+                statusText.innerText = `[🤖] Escaneando rostro real (${data.progress}%): ${data.message}`;
+            },
+            async (result) => {
+                btnScan.disabled = false;
+                btnScan.style.opacity = '1.0';
+                if (statusDot) statusDot.className = 'pulse-dot green';
+
+                currentFotoRealBase64 = result.fotoBase64;
+                currentVector = result.vectorBiometrico;
+
+                statusText.innerText = "[✓] Escaneo Facial de 5 Segundos Completado Exitosamente";
+
+                // INTERCEPCIÓN DE SEGURIDAD BIOMÉTRICA: VERIFICAR SI EL ROSTRO YA EXISTE EN BD
+                let matchedPersona = null;
+                try {
+                    const bioRes = await fetch('/api/biometria', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            vectorBiometrico: JSON.stringify(currentVector)
+                        })
+                    });
+
+
+                    if (bioRes.ok) {
+                        const bioData = await bioRes.json();
+                        if (bioData.coincidencia) {
+                            matchedPersona = bioData;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Error en verificación biométrica:", e);
+                }
+
+                // SI EL ROSTRO YA EXISTE EN EL SISTEMA SICA (CUALQUIERA SEA EL CAMINO):
+                if (matchedPersona) {
+                    if (selectedRoad === 'NUEVO') {
+                        // INTERCEPCIÓN DE SEGURIDAD: Intentó registrarse como nuevo con otro nombre, pero su rostro ya existe!
+                        await mostrarNotificacionCustomSica(
+                            "DETECCIÓN DE IDENTIDAD BIOMÉTRICA SICA",
+                            `¡Atención! Tu rostro ya está registrado en el sistema a nombre de:\n\n👤 ${matchedPersona.nombreCompleto}\n📄 Documento N° ${matchedPersona.docIdentidad}\n\nPor políticas de seguridad, no puedes registrar cuentas duplicadas. Se ha autenticado tu perfil real y serás redirigido a tu Panel de Usuario.`,
+                            "🔒"
+                        );
+                    }
+
+                    authenticatedUser = matchedPersona;
+                    cargarPerfilHubUsuario();
+
+                    setTimeout(() => {
+                        goToStep('user-hub');
+                    }, 400);
+
+                } else if (selectedRoad === 'FRECUENTE') {
+                    // ROSTRO NO RECONOCIDO EN CAMINO DE USUARIO FRECUENTE -> RECHAZO Y REORIENTACIÓN
+                    await mostrarNotificacionCustomSica(
+                        "ACCESO DENEGADO - ROSTRO NO REGISTRADO",
+                        "Tu rostro no coincide con ningún usuario registrado en la base de datos SICA.\n\nPor favor regístrate como Nuevo Visitante (Road B) para crear tu perfil.",
+                        "⛔"
+                    );
+                    selectRoad('NUEVO');
+
+                } else {
+                    // ROAD B (NUEVO VISITANTE AUTÉNTICO) -> CONTINUAR REGISTRO
+                    banner.style.display = 'flex';
+                    if (btnSubmit) btnSubmit.style.display = 'inline-block';
+                    setTimeout(() => {
+                        procesarSolicitudPaseInteligente();
+                    }, 500);
+                }
+            }
+        );
+    }
+}
+
+// Carga los datos del perfil y estado de acceso en el Hub de Usuario Frecuente
+function cargarPerfilHubUsuario() {
+    if (!authenticatedUser) return;
+
+    document.getElementById('hub-user-name').innerText = authenticatedUser.nombreCompleto || 'Visitante Registrado';
+    document.getElementById('hub-user-doc').innerText = `Documento: ${authenticatedUser.docIdentidad}`;
+    
+    const hubPhoto = document.getElementById('hub-user-photo');
+    const hubPlaceholder = document.getElementById('hub-user-placeholder');
+    if (hubPhoto && currentFotoRealBase64) {
+        hubPhoto.src = currentFotoRealBase64;
+        hubPhoto.style.display = 'block';
+        if (hubPlaceholder) hubPlaceholder.style.display = 'none';
+    }
+
+    // ACTUALIZACIÓN DE ESTADO DE ACCESO (HABILITADO / RESTRINGIDO)
+    const accessBadge = document.getElementById('hub-access-badge');
+    const restrictionBanner = document.getElementById('hub-restriction-banner');
+    const btnNewVisit = document.getElementById('btn-new-visit-frecuente');
+
+    const estado = (authenticatedUser.estadoAcceso || 'HABILITADO').toUpperCase();
+
+    if (estado === 'RESTRINGIDO') {
+        if (accessBadge) {
+            accessBadge.className = 'cat-tag red';
+            accessBadge.innerText = 'ESTADO: RESTRINGIDO';
+        }
+        if (restrictionBanner) restrictionBanner.style.display = 'block';
+        if (btnNewVisit) {
+            btnNewVisit.disabled = true;
+            btnNewVisit.style.opacity = '0.5';
+            btnNewVisit.style.cursor = 'not-allowed';
+            btnNewVisit.title = "Cuenta restringida. No se permite solicitar nuevos pases.";
+        }
+    } else {
+        if (accessBadge) {
+            accessBadge.className = 'cat-tag green';
+            accessBadge.innerText = 'ESTADO: HABILITADO';
+        }
+        if (restrictionBanner) restrictionBanner.style.display = 'none';
+        if (btnNewVisit) {
+            btnNewVisit.disabled = false;
+            btnNewVisit.style.opacity = '1.0';
+            btnNewVisit.style.cursor = 'pointer';
+            btnNewVisit.title = "";
+        }
+    }
+
+    // Cargar automáticamente el historial reciente
+    verVisitasPendientesUsuario();
+}
+
+// 1. GESTIÓN FRECUENTE: VER HISTORIAL DE VISITAS REALIZADAS Y PENDIENTES
+async function verVisitasPendientesUsuario() {
+    if (!authenticatedUser || !authenticatedUser.docIdentidad) return;
+
+    const listContainer = document.getElementById('user-visits-list-container');
+    const listTitle = document.getElementById('user-visits-list-title');
+    const kpiBadge = document.getElementById('user-visits-kpi-badge');
+    const cardsDiv = document.getElementById('user-visits-cards');
+    cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>Cargando historial de visitas...</p>";
+    listContainer.style.display = 'block';
+    listTitle.innerText = "📜 Historial de Visitas Realizadas";
+
+    try {
+        const res = await fetch(`/api/pases/persona/${authenticatedUser.docIdentidad}`);
+        if (res.ok) {
+            const pases = await res.json();
+
+            if (!pases || pases.length === 0) {
+                if (kpiBadge) kpiBadge.innerText = "Total: 0 visitas";
+                cardsDiv.innerHTML = "<p style='color: var(--status-granted-text); font-size: 13px; font-weight: 600;'>No tienes historial de visitas registradas.</p>";
+                return;
+            }
+
+            const aprobadas = pases.filter(p => p.estado === 'APROBADO').length;
+            const pendientes = pases.filter(p => p.estado === 'PENDIENTE_APROBACION').length;
+            const canceladas = pases.filter(p => p.estado === 'RECHAZADO' || p.estado === 'CANCELADO').length;
+
+            if (kpiBadge) {
+                kpiBadge.innerText = `Total: ${pases.length} | Pendientes: ${pendientes} | Aprobadas: ${aprobadas} | Canceladas: ${canceladas}`;
+            }
+
+            cardsDiv.innerHTML = pases.map(p => `
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; text-align: left;">
+                    <div>
+                        <strong style="color: var(--accent-primary); font-size: 14px;">Solicitud #${p.id}</strong> - <span style="font-size: 12px; color: var(--text-muted);">${p.empresaDestino || 'General'}</span>
+                        <div style="font-size: 13px; margin-top: 4px; color: var(--text-main);">${p.motivo}</div>
+                        <span class="cat-tag ${p.estado === 'APROBADO' ? 'green' : (p.estado === 'PENDIENTE_APROBACION' ? 'red' : 'red')}" style="font-size: 11px; margin-top: 6px; display: inline-block;">${p.estado}</span>
+                    </div>
+                    ${(p.estado === 'PENDIENTE_APROBACION' || p.estado === 'APROBADO') ? `
+                        <button type="button" class="btn-danger" onclick="cancelarPasePorId(${p.id})" style="padding: 8px 12px; font-size: 12px; background: #EF4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            🚫 Cancelar
+                        </button>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        cardsDiv.innerHTML = "<p style='color: #EF4444; font-size: 13px;'>Error al obtener el historial de visitas.</p>";
+    }
+}
+
+// 2. GESTIÓN FRECUENTE: CANCELAR VISITAS ACTIVAS
+async function abrirModalCancelarVisitaUsuario() {
+    if (!authenticatedUser || !authenticatedUser.docIdentidad) return;
+
+    const listContainer = document.getElementById('user-visits-list-container');
+    const listTitle = document.getElementById('user-visits-list-title');
+    const cardsDiv = document.getElementById('user-visits-cards');
+    cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>Cargando visitas para cancelación...</p>";
+    listContainer.style.display = 'block';
+    listTitle.innerText = "🚫 Cancelar / Anular Visita Registrada";
+
+    try {
+        const res = await fetch(`/api/pases/persona/${authenticatedUser.docIdentidad}`);
+        if (res.ok) {
+            const pases = await res.json();
+            const activas = pases.filter(p => p.estado !== 'RECHAZADO' && p.estado !== 'CANCELADO');
+
+            if (!activas || activas.length === 0) {
+                cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>No tienes visitas registradas para cancelar.</p>";
+                return;
+            }
+
+            cardsDiv.innerHTML = activas.map(p => `
+                <div style="background: var(--bg-card); border: 1px dashed #EF4444; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; text-align: left;">
+                    <div>
+                        <strong style="color: #EF4444; font-size: 14px;">Solicitud #${p.id}</strong> - <span style="font-size: 12px; color: var(--text-muted);">${p.empresaDestino || 'General'}</span>
+                        <div style="font-size: 13px; margin-top: 4px; color: var(--text-main);">${p.motivo}</div>
+                    </div>
+                    <button type="button" class="btn-danger" onclick="cancelarPasePorId(${p.id})" style="padding: 10px 14px; font-size: 13px; background: #EF4444; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                        🚫 Confirmar Cancelación
+                    </button>
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        cardsDiv.innerHTML = "<p style='color: #EF4444; font-size: 13px;'>Error al cargar las visitas.</p>";
+    }
+}
+
+async function cancelarPasePorId(id) {
+    const confirmCancel = await mostrarConfirmacionCustomSica(
+        "CONFIRMAR CANCELACIÓN",
+        `🚫 ¿Estás seguro de cancelar la solicitud de visita #${id}?`,
+        "🚫"
+    );
+    if (!confirmCancel) return;
+
+    try {
+        await fetch(`/api/pases/${id}/cancelar`, { method: 'POST' });
+        await mostrarNotificacionCustomSica("VISITA CANCELADA", `✅ Solicitud de visita #${id} cancelada exitosamente.`, "✅");
+        verVisitasPendientesUsuario();
+    } catch (e) {
+        await mostrarNotificacionCustomSica("ERROR", "Error al cancelar la visita: " + e.message, "❌");
+    }
+}
+
+// 3. GESTIÓN FRECUENTE: REGISTRAR NUEVA VISITA (CAMPOS PRE-LLENADOS Y EDITABLES)
+async function abrirFormularioNuevaVisitaFrecuente() {
+    if (authenticatedUser && authenticatedUser.estadoAcceso === 'RESTRINGIDO') {
+        await mostrarNotificacionCustomSica(
+            "ACCESO RESTRINGIDO",
+            "Tu cuenta tiene un bloqueo de seguridad preventivo. No tienes permitido registrar nuevas visitas. Acércate a la oficina de administración de accesos.",
+            "🔴"
+        );
+        return;
+    }
+
+    if (authenticatedUser) {
+        document.getElementById('nombreCompleto').value = authenticatedUser.nombreCompleto || '';
+        document.getElementById('docIdentidad').value = authenticatedUser.docIdentidad || '';
+        document.getElementById('email').value = authenticatedUser.email || '';
+        document.getElementById('telefono').value = authenticatedUser.telefono || '';
+        document.getElementById('empresaDestino').value = authenticatedUser.empresaNombre || 'General';
+    }
+    currentStep = 1;
+    updateWizardUI();
+}
+
+
+async function procesarSolicitudPaseInteligente() {
+    if (!currentVector || !currentFotoRealBase64) {
+        await mostrarNotificacionCustomSica(
+            "ACCESO DENEGADO",
+            "Debes presionar 'Iniciar Escaneo Facial (5s)' y esperar a que la cámara capture tu foto antes de enviar la solicitud.",
+            "⚠️"
+        );
+        return;
+    }
+
+    let nombre = document.getElementById('nombreCompleto').value.trim();
+    let doc = document.getElementById('docIdentidad').value.trim();
+    let email = document.getElementById('email').value.trim();
+    let tel = document.getElementById('telefono').value.trim();
+    let empresa = document.getElementById('empresaDestino').value.trim();
+    let motivo = document.getElementById('motivo').value.trim();
+
+    if (!nombre) nombre = authenticatedUser ? authenticatedUser.nombreCompleto : "Visitante SICA";
+    if (!doc) doc = authenticatedUser ? authenticatedUser.docIdentidad : "1010101010";
+    if (!email) email = authenticatedUser ? authenticatedUser.email : "visitante@sica.local";
+    if (!empresa) empresa = "General";
+    if (!motivo) motivo = "Reunión de Trabajo";
+
+    let finalMotivo = motivo;
+    if (!finalMotivo.startsWith('[') && selectedCategory) {
+        finalMotivo = `[${selectedCategory}] ${motivo}`;
+    }
+
+    const payload = {
+        nombreCompleto: nombre,
+        docIdentidad: doc,
+        email: email,
+        telefono: tel,
+        empresaDestino: empresa,
+        motivo: finalMotivo,
+        vectorBiometrico: JSON.stringify(currentVector),
+        fotoUrl: currentFotoRealBase64
+    };
+
+    try {
+        const res = await fetch('/api/pases/solicitar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            const passData = await res.json().catch(() => ({}));
+            if (passData && passData.id) {
+                lastGeneratedPassId = passData.id;
+            }
+
+            const elNombre = document.getElementById('t-nombre');
+            if (elNombre) elNombre.innerText = nombre;
+
+            const elDoc = document.getElementById('t-doc');
+            if (elDoc) elDoc.innerText = doc;
+
+            const elEmpresa = document.getElementById('t-empresa');
+            if (elEmpresa) elEmpresa.innerText = empresa;
+
+            const elMotivo = document.getElementById('t-motivo');
+            if (elMotivo) elMotivo.innerText = finalMotivo;
+
+            const elCat = document.getElementById('pass-category-label');
+            if (elCat) elCat.innerText = `CATEGORÍA: ${selectedCategory}`;
+
+            const photoImg = document.getElementById('pass-captured-photo');
+            const placeholder = document.getElementById('pass-avatar-placeholder');
+            if (photoImg && currentFotoRealBase64) {
+                photoImg.src = currentFotoRealBase64;
+                photoImg.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+            }
+
+            goToStep(4);
+
+        } else {
+            const errData = await res.json().catch(() => ({}));
+            const errorMsg = errData.mensaje || errData.error || res.statusText || "Error en el servidor";
+            await mostrarNotificacionCustomSica("ERROR EN SERVIDOR", "Error al procesar la solicitud de pase en el servidor:\n\n" + errorMsg, "❌");
+        }
+
+    } catch (err) {
+        await mostrarNotificacionCustomSica("ERROR DE CONEXIÓN", "Error de conexión con el servidor SICA: " + err.message, "❌");
+    }
+}
+
+async function cancelarVisitaActual() {
+    const confirmCancel = await mostrarConfirmacionCustomSica(
+        "CANCELAR VISITA",
+        "🚫 ¿Estás seguro de cancelar esta solicitud de visita en SICA?",
+        "🚫"
+    );
+    if (!confirmCancel) return;
+
+    try {
+        const passId = lastGeneratedPassId || 1;
+        await fetch(`/api/pases/${passId}/cancelar`, { method: 'POST' });
+    } catch (ignored) {}
+
+    await mostrarNotificacionCustomSica("VISITA CANCELADA", "✅ Tu solicitud de visita ha sido CANCELADA exitosamente.", "✅");
+    resetPortal();
+}
+
+function resetPortal() {
+    location.reload();
+}
+
+window.selectRoad = selectRoad;
+window.goToStep = goToStep;
+window.selectCategory = selectCategory;
+window.iniciarSecuenciaEscaneo5s = iniciarSecuenciaEscaneo5s;
+window.procesarSolicitudPaseInteligente = procesarSolicitudPaseInteligente;
+window.verVisitasPendientesUsuario = verVisitasPendientesUsuario;
+window.abrirModalCancelarVisitaUsuario = abrirModalCancelarVisitaUsuario;
+window.abrirFormularioNuevaVisitaFrecuente = abrirFormularioNuevaVisitaFrecuente;
+window.cancelarPasePorId = cancelarPasePorId;
+window.cancelarVisitaActual = cancelarVisitaActual;
+window.resetPortal = resetPortal;
+window.mostrarNotificacionCustomSica = mostrarNotificacionCustomSica;
+window.mostrarConfirmacionCustomSica = mostrarConfirmacionCustomSica;

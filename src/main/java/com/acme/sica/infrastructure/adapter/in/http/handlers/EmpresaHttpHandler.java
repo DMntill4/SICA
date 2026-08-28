@@ -5,8 +5,8 @@ import com.acme.sica.infrastructure.adapter.in.http.router.HttpUtils;
 import com.acme.sica.application.usecase.empresas.GestionarEmpresaUseCase;
 import com.acme.sica.application.AuthenticatedUserContext;
 import com.acme.sica.application.dto.EmpresaDTO;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
+
 
 import java.io.IOException;
 import java.util.List;

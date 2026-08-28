@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SICA - Portal de Accesos Biométricos de Seguridad</title>
+    <link rel="stylesheet" href="/portal/css/portal.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    
+    <div class="container">
+        <!-- HEADER PORTAL -->
+        <header class="header-box">
+            <span class="header-badge">SISTEMA INTEGRADO DE CONTROL DE ACCESOS</span>
+            <h1 class="header-title">SICA SMART PASS</h1>
+            <p class="subtitle">Portal de Autoservicio de Alta Seguridad</p>
+        </header>
+
+        <!-- STEPPER PERSISTENTE DE SEGURIDAD -->
+        <div class="stepper-container" id="global-stepper">
+            <div class="step-item active" id="st-1">
+                <span class="step-number">1</span>
+                <span>Perfil</span>
+            </div>
+            <div class="step-item" id="st-2">
+                <span class="step-number">2</span>
+                <span>Modalidad</span>
+            </div>
+            <div class="step-item" id="st-3">
+                <span class="step-number">3</span>
+                <span>Biometría 5s</span>
+            </div>
+            <div class="step-item" id="st-4">
+                <span class="step-number">4</span>
+                <span>Pase Emitido</span>
+            </div>
+        </div>
+
+        <!-- MAIN CARD CONTAINER -->
+        <div class="card">
+
+            <!-- PASO 0: SELECTOR DE CAMINO / ROAD (FRECUENTE VS NUEVO) -->
+            <div class="section-block active" id="road-select-screen">
+                <div class="section-title center-text">
+                    <div>
+                        <h2>¿Cómo deseas ingresar hoy?</h2>
+                        <p class="desc">Selecciona tu tipo de perfil para habilitar el camino de acceso correspondiente.</p>
+                    </div>
+                </div>
+
+                <div class="road-selection-grid">
+                    <!-- ROAD A: FRECUENTE -->
+                    <div class="road-card road-frecuente" onclick="selectRoad('FRECUENTE')">
+                        <div class="road-badge">[ROAD A] FRECUENTE</div>
+                        <h3>Usuario Frecuente</h3>
+                        <p>Para personas ya registradas. Escanea tu rostro durante 5s y la IA autocompletará tu perfil de inmediato.</p>
+
+                        <ul class="road-features">
+                            <li>[✓] Escaneo Facial Directo (5s)</li>
+                            <li>[✓] Auto-relleno de Perfil</li>
+                            <li>[✓] Pase Fast-Track Express</li>
+                        </ul>
+
+                        <button type="button" class="btn-neon full-width margin-top-14">
+                            Ingresar con Face ID Express &rarr;
+                        </button>
+                    </div>
+
+                    <!-- ROAD B: NUEVO REGISTRO -->
+                    <div class="road-card road-nuevo" onclick="selectRoad('NUEVO')">
+                        <div class="road-badge">[ROAD B] NUEVO</div>
+                        <h3>Nuevo Visitante</h3>
+                        <p>Para tu primera visita al complejo. Registro secuencial paso a paso con verificación biométrica obligatoria.</p>
+
+                        <ul class="road-features">
+                            <li>1. Datos Personales</li>
+                            <li>2. Categoría & Motivo</li>
+                            <li>3. Biometría Facial (5s)</li>
+                        </ul>
+
+                        <button type="button" class="btn-success full-width margin-top-14">
+                            Registrarme como Nuevo &rarr;
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROAD B - PASO 1: DATOS PERSONALES -->
+            <div class="section-block" id="step-section-1">
+                <div class="section-title">
+                    <div>
+                        <h2>Paso 1 de 3: Datos del Visitante</h2>
+                        <p class="desc">Ingresa tu información personal básica para iniciar el registro.</p>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="nombreCompleto">Nombre Completo *</label>
+                        <input type="text" id="nombreCompleto" placeholder="Ej. Johlver Dev" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="docIdentidad">Documento de Identidad *</label>
+                        <input type="text" id="docIdentidad" placeholder="Ej. 98765432" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Correo Electrónico *</label>
+                        <input type="email" id="email" placeholder="johlver@dev.local" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="telefono">Teléfono Móvil</label>
+                        <input type="tel" id="telefono" placeholder="+57 300 987 6543">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="empresaDestino">Empresa / Oficina Destino *</label>
+                        <input type="text" id="empresaDestino" placeholder="Ej. Zona Acme - Piso 3" required>
+                    </div>
+                </div>
+
+                <div class="actions space-between">
+                    <button type="button" class="btn-secondary" onclick="resetPortal()">&larr; Cambiar Camino</button>
+                    <button type="button" class="btn-neon" onclick="goToStep(2)">
+                        Siguiente: Modalidad de Visita &rarr;
+                    </button>
+                </div>
+            </div>
+
+            <!-- ROAD B - PASO 2: CATEGORÍA & MOTIVO -->
+            <div class="section-block" id="step-section-2">
+                <div class="section-title">
+                    <div>
+                        <h2>Paso 2 de 3: Modalidad & Motivo de la Visita</h2>
+                        <p class="desc">Selecciona el tipo de ingreso y especifica la razón de tu estadía.</p>
+                    </div>
+                </div>
+
+                <div class="category-grid">
+                    <div class="category-card active" onclick="selectCategory('NEGOCIOS', this)">
+                        <h3>Visita de Negocios</h3>
+                        <p>Reuniones corporativas, consultoría y desarrollo.</p>
+                        <span class="cat-tag">Estándar</span>
+                    </div>
+
+                    <div class="category-card" onclick="selectCategory('ESTADIA_PROLONGADA', this)">
+                        <h3>Estadía / Contratista</h3>
+                        <p>Mantenimiento técnico y proyectos de varios días.</p>
+                        <span class="cat-tag amber">Extendido</span>
+                    </div>
+
+                    <div class="category-card" onclick="selectCategory('EMERGENCIA', this)">
+                        <h3>Atención de Emergencia</h3>
+                        <p>Soporte crítico de infraestructura y urgencias.</p>
+                        <span class="cat-tag red">Prioridad Alta</span>
+                    </div>
+
+                    <div class="category-card" onclick="selectCategory('EXPRESS', this)">
+                        <h3>Mensajería / Delivery</h3>
+                        <p>Entrega rápida de correspondencia y paquetes.</p>
+                        <span class="cat-tag green">15 Minutos</span>
+                    </div>
+                </div>
+
+                <div class="form-group full-width margin-bottom-20">
+                    <label for="motivo">Motivo Específico *</label>
+                    <input type="text" id="motivo" value="Desarrollo de Software y Reunión Técnica" placeholder="Ej. Reunión de proyectos" required>
+                </div>
+
+                <div class="actions space-between">
+                    <button type="button" class="btn-secondary" onclick="goToStep(1)">&larr; Volver a Datos</button>
+                    <button type="button" class="btn-neon" onclick="goToStep(3)">
+                        Siguiente: Verificación Biométrica Facial (5s) &rarr;
+                    </button>
+                </div>
+            </div>
+
+            <!-- PASO 3 / ROAD A - ESCÁNER BIOMÉTRICO (5s) -->
+            <div class="section-block" id="step-section-3">
+                <div class="section-title">
+                    <div>
+                        <h2 id="scan-step-title">Verificación Biométrica Facial en Vivo (5 Segundos)</h2>
+                        <p class="desc" id="scan-step-desc">Centra tu rostro frente a la cámara web y presiona 'Iniciar Escaneo'.</p>
+                    </div>
+                </div>
+
+                <div class="camera-wrapper">
+                    <video id="webcam" autoplay playsinline muted></video>
+                    <canvas id="overlay"></canvas>
+                </div>
+
+                <!-- BARRA DE PROGRESO DE 5 SEG -->
+                <div class="scan-progress-box" id="scan-progress-box" style="display: none; margin-bottom: 16px;">
+                    <div class="progress-info" style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+                        <span id="scan-step-msg">Iniciando escaneo...</span>
+                        <strong id="scan-countdown-text">5s</strong>
+                    </div>
+                    <div class="progress-bar-track" style="width: 100%; height: 8px; background: var(--bg-card-alt); border-radius: 4px; overflow: hidden;">
+                        <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%; height: 100%; background: var(--accent-primary); transition: width 0.1s linear;"></div>
+                    </div>
+                </div>
+
+                <div class="ai-live-badge" id="ai-live-status" style="padding: 10px 14px; background: var(--accent-light); border-radius: 8px; font-size: 13px; color: var(--accent-dark); font-weight: 600; margin-bottom: 16px;">
+                    <span id="ai-status-text">Cámara activada. Presiona 'Iniciar Escaneo Facial (5s)'.</span>
+                </div>
+
+                <div class="autofill-banner" id="autofill-banner" style="display: none; padding: 12px 16px; background: var(--status-granted-bg); border-radius: 8px; color: var(--status-granted-text); margin-bottom: 16px;">
+                    <div>
+                        <strong id="autofill-name">¡Rostro Capturado Exitosamente!</strong>
+                        <p id="autofill-details" style="font-size: 12px; margin-top: 2px;">Foto real y firma biométrica vectorial registradas correctamente.</p>
+                    </div>
+                </div>
+
+                <div class="actions space-between margin-top-20">
+                    <button type="button" class="btn-secondary" onclick="resetPortal()">&larr; Cambiar Camino</button>
+                    <button type="button" class="btn-neon" id="btn-scan-face" onclick="iniciarSecuenciaEscaneo5s()">
+                        Iniciar Escaneo Facial (5s)
+                    </button>
+                    <button type="button" class="btn-success" id="btn-submit-pass" onclick="procesarSolicitudPaseInteligente()" style="display: none;">
+                        Enviar Solicitud de Pase Biométrico &rarr;
+                    </button>
+                </div>
+            </div>
+
+            <!-- PASO 3.5: PANEL DE AUTENTICACIÓN / USUARIO FRECUENTE HUB -->
+            <div class="section-block" id="step-section-user-hub">
+                <div class="section-title center-text">
+                    <div>
+                        <h2 id="hub-welcome-title">¡Perfil Autenticado mediante Biometría Facial!</h2>
+                        <p class="desc" id="hub-welcome-desc">Selecciona la gestión de visita que deseas realizar hoy.</p>
+                    </div>
+                </div>
+
+                <div class="user-hub-card" style="background: var(--bg-card-alt); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <div style="width: 70px; height: 70px; border-radius: 50%; overflow: hidden; border: 2px solid var(--accent-primary); background: #1E293B; flex-shrink: 0;">
+                            <img id="hub-user-photo" src="" alt="Foto Perfil" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+                            <div id="hub-user-placeholder" style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; font-weight: 700; color: var(--accent-primary);">FACE ID</div>
+                        </div>
+                        <div style="text-align: left; flex-grow: 1;">
+                            <h3 id="hub-user-name" style="margin: 0; font-size: 18px; color: var(--text-main);">Visitante Frecuente</h3>
+                            <p id="hub-user-doc" style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">Documento: ----------</p>
+                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap;">
+                                <span class="cat-tag green" style="font-size: 11px;">Identidad Verificada 100%</span>
+                                <span id="hub-access-badge" class="cat-tag green" style="font-size: 11px;">ESTADO: HABILITADO</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BANNER SI EL USUARIO ESTÁ RESTRINGIDO -->
+                    <div id="hub-restriction-banner" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid #EF4444; border-radius: 8px; padding: 12px; margin-top: 14px; color: #FCA5A5; font-size: 13px; font-weight: 600; text-align: left;">
+                        🔴 <strong>ACCESO RESTRINGIDO POR SEGURIDAD SICA</strong><br>
+                        Tu cuenta tiene un bloqueo preventivo. No tienes permitido registrar nuevas visitas. Acércate a la oficina de portería o administración de accesos.
+                    </div>
+                </div>
+
+                <!-- 3 BOTONES PRINCIPALES DE GESTIÓN -->
+                <div class="hub-actions-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px;">
+                    <button type="button" class="btn-neon" onclick="verVisitasPendientesUsuario()" style="padding: 14px 16px; font-size: 14px; border-radius: 10px;">
+                        📋 Ver Historial de Visitas
+                    </button>
+                    <button type="button" class="btn-danger" onclick="abrirModalCancelarVisitaUsuario()" style="padding: 14px 16px; font-size: 14px; background: #EF4444; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                        🚫 Cancelar Visitas
+                    </button>
+                    <button type="button" class="btn-primary" id="btn-new-visit-frecuente" onclick="abrirFormularioNuevaVisitaFrecuente()" style="padding: 14px 16px; font-size: 14px; background: #2563EB; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                        ➕ Registrar Nueva Visita
+                    </button>
+                </div>
+
+                <!-- CONTENEDOR DE HISTORIAL DE VISITAS -->
+                <div id="user-visits-list-container" style="display: none; background: var(--bg-card-alt); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 id="user-visits-list-title" style="margin: 0; font-size: 15px;">Mis Visitas Registradas</h3>
+                        <span id="user-visits-kpi-badge" style="font-size: 12px; color: var(--accent-primary); font-weight: 600;"></span>
+                    </div>
+                    <div id="user-visits-cards" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+
+
+                <div class="actions center-text margin-top-20">
+                    <button type="button" class="btn-secondary" onclick="resetPortal()">&larr; Volver al Inicio / Salir</button>
+                </div>
+            </div>
+
+
+            <!-- PASO 4: TICKET DE PASE EMITIDO -->
+            <div class="section-block" id="step-section-4">
+                <div class="section-title center-text">
+                    <div>
+                        <h2>¡Pase de Acceso Biométrico Generado!</h2>
+                        <p class="desc">Tu foto real y firma biométrica han sido transmitidas exitosamente al servidor SICA.</p>
+                    </div>
+                </div>
+
+                <div class="ticket-card">
+                    <span class="ticket-status-badge" id="ticket-status-badge">PENDIENTE APROBACIÓN</span>
+
+                    <div style="display: flex; gap: 20px; align-items: center; justify-content: center; text-align: left; margin: 16px 0;">
+                        <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 2px solid var(--accent-primary); background: var(--bg-card-alt);">
+                            <img id="pass-captured-photo" src="" alt="Foto Real Capturada" style="display: none; width: 100%; height: 100%; object-fit: cover;">
+                            <div id="pass-avatar-placeholder" style="display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; font-weight: 700; color: var(--text-muted);">FACE ID</div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+                            <div><span>Visitante: </span><strong id="t-nombre">Johlver Dev</strong></div>
+                            <div><span>Documento: </span><strong id="t-doc">98765432</strong></div>
+                            <div><span>Destino: </span><strong id="t-empresa">Zona Acme - Piso 3</strong></div>
+                            <div><span>Motivo: </span><strong id="t-motivo">Desarrollo de Software</strong></div>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">Preséntate en portería. El guardia/funcionario verificará tu foto e ingresará tu Check-In.</p>
+                </div>
+
+                <div class="actions space-between" style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="button" class="btn-danger" onclick="cancelarVisitaActual()" style="flex: 1; padding: 12px 16px; background: #EF4444; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        🚫 Cancelar / Anular Visita
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="resetPortal()" style="flex: 1; padding: 12px 16px; background: var(--bg-card-alt); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        ➕ Registrar Otra Visita
+                    </button>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+    <!-- MODAL CUSTOM DE NOTIFICACIÓN Y ALERTA DE SEGURIDAD SICA (HTML/CSS) -->
+    <div id="sica-custom-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 15, 29, 0.85); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center;">
+        <div style="background: #0F172A; border: 1px solid var(--accent-primary); border-radius: 16px; width: 90%; max-width: 440px; padding: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); text-align: center; color: white;">
+            <div id="sica-modal-icon" style="width: 56px; height: 56px; border-radius: 50%; background: rgba(59, 130, 246, 0.15); border: 2px solid var(--accent-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; font-size: 26px;">
+                🔒
+            </div>
+            <h3 id="sica-modal-title" style="margin: 0 0 10px 0; font-size: 17px; color: var(--text-main); font-weight: 700;">Notificación SICA</h3>
+            <p id="sica-modal-message" style="margin: 0 0 20px 0; font-size: 13.5px; color: var(--text-muted); line-height: 1.6; white-space: pre-line; text-align: left;"></p>
+            
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" id="sica-modal-btn-confirm" class="btn-neon" style="flex: 1; padding: 12px; font-weight: 600; border-radius: 8px; cursor: pointer;">Aceptar</button>
+                <button type="button" id="sica-modal-btn-cancel" class="btn-secondary" style="display: none; flex: 1; padding: 12px; font-weight: 600; border-radius: 8px; cursor: pointer;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="/portal/js/biometria.js"></script>
+    <script src="/portal/js/app.js"></script>
+</body>
+</html>
+

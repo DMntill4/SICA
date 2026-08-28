@@ -4,11 +4,13 @@ import com.acme.sica.domain.enums.NivelGravedad;
 import com.acme.sica.domain.model.Incidente;
 import com.acme.sica.domain.model.Persona;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
+import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
 
 import javax.swing.*;
+
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.util.List;
 
@@ -37,65 +39,69 @@ public class IncidentesPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(12, 12));
         setBorder(new EmptyBorder(12, 12, 12, 12));
+        setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.BG_DARK);
 
         // BANNER GUÍA
         JPanel bannerPanel = new JPanel(new BorderLayout());
-        bannerPanel.setBackground(new Color(153, 27, 27)); // Deep Red
-        bannerPanel.setBorder(new EmptyBorder(8, 12, 8, 12));
+        bannerPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_ROSE);
+        bannerPanel.setBorder(new EmptyBorder(10, 16, 10, 16));
         JLabel lblHelp = new JLabel("[!] MÓDULO DE SEGURIDAD: Al registrar un incidente con gravedad CRÍTICO o ALTO, la persona cambia automáticamente a RESTRINGIDO y su ingreso queda bloqueado en portería.");
-        lblHelp.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblHelp.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BOLD);
         lblHelp.setForeground(Color.WHITE);
         bannerPanel.add(lblHelp, BorderLayout.CENTER);
         add(bannerPanel, BorderLayout.NORTH);
 
         // --- PANEL SUPERIOR: Formulario de Incidente ---
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBorder(new TitledBorder("[!] Registrar Incidente de Seguridad (Restricción de Acceso)"));
+        formPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG);
+        formPanel.setBorder(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.createCardBorder("Registrar Incidente de Seguridad"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 8, 5, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         comboPersonas = new JComboBox<>();
-        comboPersonas.setPreferredSize(new Dimension(280, 26));
+        comboPersonas.setPreferredSize(new Dimension(280, 28));
 
         txtTitulo = new JTextField("Intento de ingreso no autorizado a zona de servidores", 25);
-        txtTitulo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtTitulo.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BODY);
 
         txtDescripcion = new JTextArea("Sorprendido intentando abrir puertas de área restringida sin acreditación.", 2, 25);
-        txtDescripcion.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtDescripcion.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BODY);
         JScrollPane scrollDesc = new JScrollPane(txtDescripcion);
 
         comboGravedad = new JComboBox<>(NivelGravedad.values());
         comboGravedad.setSelectedItem(NivelGravedad.CRITICO);
-        comboGravedad.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        comboGravedad.setFont(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.FONT_BOLD);
 
-        btnRegistrar = new JButton("[!] Registrar Incidente & Bloquear Acceso");
-        btnRegistrar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnRegistrar.setBackground(new Color(220, 38, 38));
-        btnRegistrar.setForeground(Color.WHITE);
+        btnRegistrar = new JButton("Registrar Incidente");
+        SicaTheme.styleButton(btnRegistrar, SicaTheme.STATUS_DENIED_TEXT, Color.WHITE);
         btnRegistrar.addActionListener(e -> executeRegistrarIncidente());
 
-        JButton btnRehabilitar = new JButton("[+] Rehabilitar Acceso (Quitar Restricción)");
-        btnRehabilitar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnRehabilitar.setBackground(new Color(16, 185, 129));
-        btnRehabilitar.setForeground(Color.WHITE);
+        JButton btnRehabilitar = new JButton("Rehabilitar Acceso");
+        SicaTheme.styleButton(btnRehabilitar, SicaTheme.STATUS_GRANTED_TEXT, Color.WHITE);
         btnRehabilitar.addActionListener(e -> executeRehabilitarAcceso());
 
 
         JPanel btnPanel = new JPanel(new GridLayout(1, 2, 8, 4));
+        btnPanel.setOpaque(false);
         btnPanel.add(btnRegistrar);
         btnPanel.add(btnRehabilitar);
 
-        gbc.gridx = 0; gbc.gridy = 0; formPanel.add(new JLabel("Persona Involucrada:"), gbc);
+        JLabel lblPer = new JLabel("Persona Involucrada:"); lblPer.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+        JLabel lblGrav = new JLabel("Nivel de Gravedad:"); lblGrav.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+        JLabel lblTit = new JLabel("Título Incidente:"); lblTit.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+        JLabel lblDes = new JLabel("Descripción:"); lblDes.setForeground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MUTED);
+
+        gbc.gridx = 0; gbc.gridy = 0; formPanel.add(lblPer, gbc);
         gbc.gridx = 1; gbc.gridy = 0; formPanel.add(comboPersonas, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; formPanel.add(new JLabel("Nivel de Gravedad:"), gbc);
+        gbc.gridx = 0; gbc.gridy = 1; formPanel.add(lblGrav, gbc);
         gbc.gridx = 1; gbc.gridy = 1; formPanel.add(comboGravedad, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(new JLabel("Título Incidente:"), gbc);
+        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(lblTit, gbc);
         gbc.gridx = 1; gbc.gridy = 2; formPanel.add(txtTitulo, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; formPanel.add(new JLabel("Descripción:"), gbc);
+        gbc.gridx = 0; gbc.gridy = 3; formPanel.add(lblDes, gbc);
         gbc.gridx = 1; gbc.gridy = 3; formPanel.add(scrollDesc, gbc);
 
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2; gbc.insets = new Insets(8, 8, 4, 8);
@@ -105,7 +111,8 @@ public class IncidentesPanel extends JPanel {
 
         // --- PANEL CENTRAL: Historial de Incidentes ---
         JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
-        centerPanel.setBorder(new TitledBorder("📋 Historial de Incidentes de Seguridad Registrados"));
+        centerPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG);
+        centerPanel.setBorder(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.createCardBorder("Historial de Incidentes de Seguridad"));
 
         String[] columns = {"ID", "Persona Afectada", "Documento", "Título Incidente", "Gravedad", "Reportado Por", "Fecha / Hora"};
         tableModel = new DefaultTableModel(columns, 0) {
@@ -113,20 +120,22 @@ public class IncidentesPanel extends JPanel {
         };
 
         tblIncidentes = new JTable(tableModel);
-        tblIncidentes.setRowHeight(26);
-        tblIncidentes.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblIncidentes);
         JScrollPane scrollTable = new JScrollPane(tblIncidentes);
 
         centerPanel.add(scrollTable, BorderLayout.CENTER);
 
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.setOpaque(false);
         btnRefresh = new JButton("🔄 Actualizar Incidentes");
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleButton(btnRefresh, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG_ALT, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_CYAN);
         btnRefresh.addActionListener(e -> loadAll());
         actionPanel.add(btnRefresh);
 
         centerPanel.add(actionPanel, BorderLayout.SOUTH);
         add(centerPanel, BorderLayout.CENTER);
     }
+
 
     public void loadAll() {
         loadPersonas();

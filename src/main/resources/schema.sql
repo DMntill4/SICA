@@ -71,9 +71,12 @@ CREATE TABLE IF NOT EXISTS persona (
     telefono VARCHAR(20),
     empresa_id BIGINT NULL,
     estado_acceso VARCHAR(20) NOT NULL DEFAULT 'HABILITADO', -- HABILITADO, RESTRINGIDO
+    vector_biometrico LONGTEXT NULL,
+    foto_url LONGTEXT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_persona_empresa FOREIGN KEY (empresa_id) REFERENCES empresa(id) ON DELETE SET NULL
 );
+
 
 -- 8. Tabla: PUNTO_ACCESO
 CREATE TABLE IF NOT EXISTS punto_acceso (
@@ -164,3 +167,22 @@ CREATE TABLE IF NOT EXISTS bitacora_auditoria (
     ip_origen VARCHAR(45),
     fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 15. Tabla: SOLICITUD_PASE (Pases solicitados desde Portal Autoservicio con Biometría IA)
+CREATE TABLE IF NOT EXISTS solicitud_pase (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    nombre_completo VARCHAR(100) NOT NULL,
+    doc_identidad VARCHAR(30) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    telefono VARCHAR(20) NULL,
+    empresa_destino VARCHAR(100) NULL,
+    funcionario_destino_id BIGINT NULL,
+    motivo VARCHAR(255) NOT NULL,
+    fecha_hora_solicitada TIMESTAMP NOT NULL,
+    vector_biometrico TEXT NULL,
+    foto_url TEXT NULL,
+    estado VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE_APROBACION', -- PENDIENTE_APROBACION, APROBADO, RECHAZADO
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_solicitud_pase_funcionario FOREIGN KEY (funcionario_destino_id) REFERENCES usuario(id) ON DELETE SET NULL
+);
+

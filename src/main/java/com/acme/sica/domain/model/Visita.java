@@ -4,9 +4,14 @@ import com.acme.sica.domain.enums.EstadoVisita;
 import com.acme.sica.domain.enums.TipoCierreVisita;
 import com.acme.sica.domain.enums.TipoVisita;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Visita {
+
     private Long id;
     private Long personaId;
     private String personaNombreCompleto;
@@ -58,6 +63,18 @@ public class Visita {
     public String getPersonaNombreCompleto() {
         return personaNombreCompleto;
     }
+
+    @JsonIgnore
+    public String getNombrePersona() {
+        return personaNombreCompleto != null ? personaNombreCompleto : ("Persona #" + personaId);
+    }
+
+    @JsonIgnore
+    public String getDocPersona() {
+        return personaDocIdentidad != null ? personaDocIdentidad : "-";
+    }
+
+
 
     public void setPersonaNombreCompleto(String personaNombreCompleto) {
         this.personaNombreCompleto = personaNombreCompleto;

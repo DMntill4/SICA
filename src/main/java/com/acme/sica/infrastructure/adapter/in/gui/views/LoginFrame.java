@@ -1,12 +1,17 @@
 package com.acme.sica.infrastructure.adapter.in.gui.views;
 
-import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
 import com.acme.sica.application.dto.LoginResponseDTO;
+import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
+import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 
+/**
+ * Pantalla de Inicio de Sesión Institucional (Sin Emojis).
+ */
 public class LoginFrame extends JFrame {
 
     private final SicaApiClient apiClient;
@@ -21,85 +26,184 @@ public class LoginFrame extends JFrame {
     }
 
     private void initUI() {
-        setTitle("SICA - Control de Acceso (Inicio de Sesión)");
+        setTitle("SICA - Sistema Integrado de Control de Accesos");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(450, 480);
+        setSize(780, 520);
         setLocationRelativeTo(null);
         setResizable(false);
 
-        JPanel contentPane = new JPanel(new BorderLayout());
-        contentPane.setBorder(new EmptyBorder(30, 40, 30, 40));
-        setContentPane(contentPane);
+        JPanel mainContainer = new JPanel(new GridLayout(1, 2, 0, 0));
+        mainContainer.setBackground(SicaTheme.BG_MAIN);
+        setContentPane(mainContainer);
 
-        // Encabezado
-        JPanel headerPanel = new JPanel(new GridLayout(2, 1, 5, 5));
-        JLabel titleLabel = new JLabel("SICA - Zona Acme", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        titleLabel.setForeground(new Color(56, 189, 248)); // Blue accent
+        // COLUMNA IZQUIERDA: Contexto Institucional
+        JPanel leftBrandPanel = new JPanel(new BorderLayout(0, 16));
+        leftBrandPanel.setBackground(SicaTheme.HEADER_BG);
+        leftBrandPanel.setBorder(new EmptyBorder(40, 36, 40, 36));
 
-        JLabel subtitleLabel = new JLabel("Sistema Integrado de Control de Acceso", SwingConstants.CENTER);
-        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        subtitleLabel.setForeground(Color.GRAY);
+        JPanel brandHeader = new JPanel(new GridLayout(3, 1, 6, 6));
+        brandHeader.setOpaque(false);
 
-        headerPanel.add(titleLabel);
-        headerPanel.add(subtitleLabel);
-        contentPane.add(headerPanel, BorderLayout.NORTH);
+        JLabel lblBadge = new JLabel("INFRAESTRUCTURA DE SEGURIDAD");
+        lblBadge.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblBadge.setForeground(SicaTheme.ACCENT_CYAN);
 
-        // Formulario Central
-        JPanel formPanel = new JPanel(new GridBagLayout());
+        JLabel lblBrandTitle = new JLabel("SICA ZONA ACME");
+        lblBrandTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblBrandTitle.setForeground(Color.WHITE);
+
+        JLabel lblSub = new JLabel("Plataforma Integrada de Control de Accesos y Registro Biométrico.");
+        lblSub.setFont(SicaTheme.FONT_BODY);
+        lblSub.setForeground(new Color(200, 220, 240));
+
+        brandHeader.add(lblBadge);
+        brandHeader.add(lblBrandTitle);
+        brandHeader.add(lblSub);
+
+        leftBrandPanel.add(brandHeader, BorderLayout.NORTH);
+
+        JPanel statusBox = new JPanel(new GridLayout(3, 1, 10, 10));
+        statusBox.setOpaque(false);
+
+        statusBox.add(createStatusPill("[ONLINE] SERVIDOR REST", "Puerto 8080 en ejecucion activa"));
+        statusBox.add(createStatusPill("[BIOMETRÍA] CONTROL ACTIVO", "Reconocimiento Facial de 5 segundos"));
+        statusBox.add(createStatusPill("[SEGURIDAD] AUDITORÍA", "Registro inmutable de accesos"));
+
+        leftBrandPanel.add(statusBox, BorderLayout.CENTER);
+
+        JLabel lblFooterBrand = new JLabel("SICA Enterprise v6.0 • Acme Security Group", SwingConstants.LEFT);
+        lblFooterBrand.setFont(SicaTheme.FONT_SMALL);
+        lblFooterBrand.setForeground(SicaTheme.TEXT_DISABLED);
+        leftBrandPanel.add(lblFooterBrand, BorderLayout.SOUTH);
+
+        mainContainer.add(leftBrandPanel);
+
+        // COLUMNA DERECHA: Formulario
+        JPanel rightFormPanel = new JPanel(new BorderLayout());
+        rightFormPanel.setBackground(SicaTheme.BG_MAIN);
+        rightFormPanel.setBorder(new EmptyBorder(40, 36, 40, 36));
+
+        JPanel formCard = new JPanel(new GridBagLayout());
+        formCard.setBackground(SicaTheme.CARD_BG);
+        formCard.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true),
+                new EmptyBorder(24, 24, 24, 24)
+        ));
+
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 0, 8, 0);
+        gbc.insets = new Insets(6, 0, 4, 0);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridx = 0;
 
-        // Campo Username
+        JLabel lblFormTitle = new JLabel("Iniciar Sesión");
+        lblFormTitle.setFont(SicaTheme.FONT_TITLE);
+        lblFormTitle.setForeground(SicaTheme.TEXT_MAIN);
+
+        JLabel lblFormSub = new JLabel("Ingrese sus credenciales de operador autorizadas.");
+        lblFormSub.setFont(SicaTheme.FONT_BODY);
+        lblFormSub.setForeground(SicaTheme.TEXT_MUTED);
+
         JLabel lblUsername = new JLabel("Nombre de Usuario:");
-        lblUsername.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        txtUsername = new JTextField("admin", 20);
-        txtUsername.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblUsername.setFont(SicaTheme.FONT_BOLD);
+        lblUsername.setForeground(SicaTheme.TEXT_MAIN);
 
-        // Campo Password
+        txtUsername = new JTextField("admin", 18);
+        txtUsername.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtUsername.setBackground(SicaTheme.CARD_BG_ALT);
+        txtUsername.setForeground(SicaTheme.TEXT_MAIN);
+        txtUsername.setCaretColor(SicaTheme.ACCENT_CYAN);
+        txtUsername.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true),
+                new EmptyBorder(8, 12, 8, 12)
+        ));
+
         JLabel lblPassword = new JLabel("Contraseña:");
-        lblPassword.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        txtPassword = new JPasswordField("admin123", 20);
-        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblPassword.setFont(SicaTheme.FONT_BOLD);
+        lblPassword.setForeground(SicaTheme.TEXT_MAIN);
 
-        // Botón Login
-        btnLogin = new JButton("Iniciar Sesión");
-        btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnLogin.setBackground(new Color(14, 165, 233));
-        btnLogin.setForeground(Color.WHITE);
-        btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        txtPassword = new JPasswordField("admin123", 18);
+        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtPassword.setBackground(SicaTheme.CARD_BG_ALT);
+        txtPassword.setForeground(SicaTheme.TEXT_MAIN);
+        txtPassword.setCaretColor(SicaTheme.ACCENT_CYAN);
+        txtPassword.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true),
+                new EmptyBorder(8, 12, 8, 12)
+        ));
+
+        btnLogin = new JButton("AUTENTICAR E INGRESAR");
+        SicaTheme.styleButton(btnLogin, SicaTheme.ACCENT_CYAN, Color.WHITE);
+        btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnLogin.addActionListener(e -> executeLogin());
 
-        // Mensaje de Error
         lblError = new JLabel("", SwingConstants.CENTER);
-        lblError.setForeground(new Color(239, 68, 68)); // Red error
-        lblError.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblError.setForeground(SicaTheme.STATUS_DENIED_TEXT);
+        lblError.setFont(SicaTheme.FONT_BOLD);
 
-        gbc.gridy = 0; formPanel.add(lblUsername, gbc);
-        gbc.gridy = 1; formPanel.add(txtUsername, gbc);
-        gbc.gridy = 2; formPanel.add(lblPassword, gbc);
-        gbc.gridy = 3; formPanel.add(txtPassword, gbc);
-        gbc.gridy = 4; gbc.insets = new Insets(20, 0, 5, 0); formPanel.add(btnLogin, gbc);
-        gbc.gridy = 5; gbc.insets = new Insets(5, 0, 0, 0); formPanel.add(lblError, gbc);
+        gbc.gridy = 0; formCard.add(lblFormTitle, gbc);
+        gbc.gridy = 1; gbc.insets = new Insets(0, 0, 14, 0); formCard.add(lblFormSub, gbc);
+        gbc.gridy = 2; gbc.insets = new Insets(4, 0, 4, 0); formCard.add(lblUsername, gbc);
+        gbc.gridy = 3; formCard.add(txtUsername, gbc);
+        gbc.gridy = 4; formCard.add(lblPassword, gbc);
+        gbc.gridy = 5; formCard.add(txtPassword, gbc);
+        gbc.gridy = 6; gbc.insets = new Insets(16, 0, 4, 0); formCard.add(btnLogin, gbc);
+        gbc.gridy = 7; gbc.insets = new Insets(4, 0, 0, 0); formCard.add(lblError, gbc);
 
-        contentPane.add(formPanel, BorderLayout.CENTER);
+        rightFormPanel.add(formCard, BorderLayout.CENTER);
 
-        // Preset sugerencias en footer
-        JPanel footerPanel = new JPanel(new GridLayout(3, 1));
-        footerPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
-        JLabel hintAdmin = new JLabel("• Admin: admin / admin123", SwingConstants.CENTER);
-        JLabel hintGuardia = new JLabel("• Guardia: guardia1 / guardia123", SwingConstants.CENTER);
-        JLabel hintFunc = new JLabel("• Funcionario: func1 / func123", SwingConstants.CENTER);
-        hintAdmin.setFont(new Font("Segoe UI", Font.ITALIC, 11)); hintAdmin.setForeground(Color.GRAY);
-        hintGuardia.setFont(new Font("Segoe UI", Font.ITALIC, 11)); hintGuardia.setForeground(Color.GRAY);
-        hintFunc.setFont(new Font("Segoe UI", Font.ITALIC, 11)); hintFunc.setForeground(Color.GRAY);
+        JPanel footerHintPanel = new JPanel(new GridLayout(1, 3, 4, 4));
+        footerHintPanel.setOpaque(false);
+        footerHintPanel.setBorder(new EmptyBorder(12, 0, 0, 0));
 
-        footerPanel.add(hintAdmin);
-        footerPanel.add(hintGuardia);
-        footerPanel.add(hintFunc);
-        contentPane.add(footerPanel, BorderLayout.SOUTH);
+        JButton btnHintAdmin = new JButton("Admin");
+        JButton btnHintGuardia = new JButton("Guardia");
+        JButton btnHintFunc = new JButton("Funcionario");
+
+        styleHintButton(btnHintAdmin, "admin", "admin123");
+        styleHintButton(btnHintGuardia, "guardia1", "guardia123");
+        styleHintButton(btnHintFunc, "func1", "func123");
+
+        footerHintPanel.add(btnHintAdmin);
+        footerHintPanel.add(btnHintGuardia);
+        footerHintPanel.add(btnHintFunc);
+
+        rightFormPanel.add(footerHintPanel, BorderLayout.SOUTH);
+
+        mainContainer.add(rightFormPanel);
+    }
+
+    private JPanel createStatusPill(String title, String desc) {
+        JPanel p = new JPanel(new GridLayout(2, 1, 2, 2));
+        p.setBackground(new Color(21, 62, 90));
+        p.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(40, 95, 135), 1, true),
+                new EmptyBorder(8, 12, 8, 12)
+        ));
+
+        JLabel t = new JLabel(title);
+        t.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        t.setForeground(SicaTheme.ACCENT_CYAN);
+
+        JLabel d = new JLabel(desc);
+        d.setFont(SicaTheme.FONT_SMALL);
+        d.setForeground(Color.WHITE);
+
+        p.add(t);
+        p.add(d);
+        return p;
+    }
+
+    private void styleHintButton(JButton btn, String u, String p) {
+        btn.setFont(SicaTheme.FONT_SMALL);
+        btn.setForeground(SicaTheme.TEXT_MUTED);
+        btn.setBackground(SicaTheme.CARD_BG_ALT);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createLineBorder(SicaTheme.BORDER_SUBTLE, 1, true));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.addActionListener(e -> {
+            txtUsername.setText(u);
+            txtPassword.setText(p);
+        });
     }
 
     private void executeLogin() {
@@ -107,15 +211,13 @@ public class LoginFrame extends JFrame {
         String password = new String(txtPassword.getPassword());
 
         if (username.isEmpty() || password.isEmpty()) {
-            lblError.setText("Ingrese usuario y contraseña");
+            lblError.setText("Ingrese su usuario y contraseña");
             return;
         }
 
         btnLogin.setEnabled(false);
-        btnLogin.setText("Autenticando...");
-        lblError.setText("");
+        lblError.setText("Autenticando...");
 
-        // Ejecutar petición asíncrona con SwingWorker
         SwingWorker<LoginResponseDTO, Void> worker = new SwingWorker<>() {
             @Override
             protected LoginResponseDTO doInBackground() throws Exception {
@@ -125,19 +227,23 @@ public class LoginFrame extends JFrame {
             @Override
             protected void done() {
                 try {
-                    get(); // Ejecuta y obtiene el resultado, o lanza excepcion si fallo
-                    dispose(); // Cerrar ventana Login
-                    
-                    // Abrir Dashboard Principal
+                    LoginResponseDTO response = get();
+                    lblError.setText("");
+
+                    com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(LoginFrame.this,
+                            "[+] Sesión Iniciada Correctamente. Bienvenido " + response.nombreCompleto(),
+                            com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
+
+                    dispose();
                     SwingUtilities.invokeLater(() -> {
                         MainDashboardFrame dashboard = new MainDashboardFrame(apiClient);
                         dashboard.setVisible(true);
                     });
+
                 } catch (Exception e) {
-                    Throwable cause = e.getCause() != null ? e.getCause() : e;
-                    lblError.setText(cause.getMessage());
                     btnLogin.setEnabled(true);
-                    btnLogin.setText("Iniciar Sesión");
+                    Throwable cause = e.getCause() != null ? e.getCause() : e;
+                    lblError.setText("Error: " + cause.getMessage());
                 }
             }
         };

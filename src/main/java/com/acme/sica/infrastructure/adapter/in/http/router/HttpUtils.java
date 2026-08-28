@@ -27,6 +27,11 @@ public class HttpUtils {
         }
     }
 
+    public static <T> T parseJsonRequestBody(HttpExchange exchange, Class<T> clazz) throws IOException {
+        return readRequestBody(exchange, clazz);
+    }
+
+
     public static void sendJsonResponse(HttpExchange exchange, int statusCode, Object data) throws IOException {
         byte[] bytes = objectMapper.writeValueAsBytes(data);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");

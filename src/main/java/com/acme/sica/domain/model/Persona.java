@@ -1,9 +1,13 @@
 package com.acme.sica.domain.model;
 
 import com.acme.sica.domain.enums.EstadoAcceso;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Persona {
+
     private Long id;
     private String docIdentidad;
     private String tipoDocumento;
@@ -14,11 +18,20 @@ public class Persona {
     private Long empresaId;
     private String empresaNombre;
     private EstadoAcceso estadoAcceso;
+    private String vectorBiometrico;
+    private String fotoUrl;
     private LocalDateTime creadoEn;
 
     public Persona() {
         this.estadoAcceso = EstadoAcceso.HABILITADO;
     }
+
+    public String getVectorBiometrico() { return vectorBiometrico; }
+    public void setVectorBiometrico(String vectorBiometrico) { this.vectorBiometrico = vectorBiometrico; }
+
+    public String getFotoUrl() { return fotoUrl; }
+    public void setFotoUrl(String fotoUrl) { this.fotoUrl = fotoUrl; }
+
 
     public Long getId() {
         return id;
@@ -44,9 +57,18 @@ public class Persona {
         this.tipoDocumento = tipoDocumento;
     }
 
+    @JsonIgnore
+    public String getNombreCompleto() {
+        if (nombre == null) return "";
+        if (apellido == null || apellido.trim().isEmpty()) return nombre;
+        return nombre + " " + apellido;
+    }
+
+
     public String getNombre() {
         return nombre;
     }
+
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
