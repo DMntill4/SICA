@@ -525,23 +525,54 @@ public class GuardiaPanel extends JPanel {
     }
 
     private void executeVisitaRapidaPrueba() {
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                apiClient.crearVisitaRapidaPrueba();
-                return null;
-            }
+        JTextField txtDoc = new JTextField();
+        JTextField txtNom = new JTextField();
+        JTextField txtMotivo = new JTextField("Entrega Rápida / Mensajería Express");
 
-            @Override
-            protected void done() {
-                try {
-                    get();
-                    loadAllData();
-                } catch (Exception ignored) {}
-            }
-        };
-        worker.execute();
+        JPanel panel = new JPanel(new java.awt.GridLayout(3, 2, 6, 6));
+        panel.add(new JLabel("Documento (*):")); panel.add(txtDoc);
+        panel.add(new JLabel("Nombre:")); panel.add(txtNom);
+        panel.add(new JLabel("Motivo Visita:")); panel.add(txtMotivo);
+
+        int res = JOptionPane.showConfirmDialog(this, panel, "⚡ Registro de Visita Rápida / Express (Portería)", JOptionPane.OK_CANCEL_OPTION);
+        if (res == JOptionPane.OK_OPTION) {
+            String doc = txtDoc.getText().trim();
+            String nom = txtNom.getText().trim();
+            String mot = txtMotivo.getText().trim();
+
+            if (doc.isEmpty()) doc = "EXPRESS-" + (System.currentTimeMillis() % 100000);
+            if (nom.isEmpty()) nom = "Visitante Express";
+            if (mot.isEmpty()) mot = "Visita Rápida / Entrega Express";
+
+            final String finalDoc = doc;
+            final String finalNom = nom;
+            final String finalMot = mot;
+
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    try {
+                        apiClient.crearPersona(finalNom, "Express", finalDoc, "express@sica.local");
+                    } catch (Exception ignored) {}
+                    apiClient.registrarVisitaNoAnunciada(finalDoc, "[EXPRESS] " + finalMot);
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        JOptionPane.showMessageDialog(GuardiaPanel.this, "✅ Visita Rápida / Express registrada exitosamente.\n\nDocumento: " + finalDoc + "\nVisitante: " + finalNom, "Visita Rápida Creada", JOptionPane.INFORMATION_MESSAGE);
+                        loadAllData();
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(GuardiaPanel.this, "Error al registrar Visita Rápida: " + e.getMessage(), "Error Visita Rápida", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
+            worker.execute();
+        }
     }
+
 
     private void openCrearPersonaDialog() {
         JTextField txtNom = new JTextField();
