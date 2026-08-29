@@ -212,7 +212,7 @@ public class ReportesPanel extends JPanel {
 
     private void renderTablaVisitas(List<Visita> lista, String tituloModulo) {
         tableModel.setColumnIdentifiers(new String[]{
-                "ID Visita", "Persona / Visitante", "Documento", "Motivo / Detalle", "Tipo Visita", "Estado", "Ingreso", "Salida"
+                "ID Visita", "Persona / Visitante", "Documento", "Motivo / Detalle", "Tipo Visita", "Estado", "Tipo Cierre", "Ingreso", "Salida"
         });
         tableModel.setRowCount(0);
 
@@ -221,13 +221,28 @@ public class ReportesPanel extends JPanel {
             if ("DENTRO".equalsIgnoreCase(String.valueOf(v.getEstadoVisita()))) {
                 dentroCount++;
             }
+            String tipoCierreDisplay = "-";
+            String estadoDisplay = v.getEstadoVisita() != null ? v.getEstadoVisita().name() : "-";
+
+            if (v.getTipoCierre() != null) {
+                tipoCierreDisplay = v.getTipoCierre().name();
+                if (v.getTipoCierre() == TipoCierreVisita.CERRADA_POR_SISTEMA) {
+                    estadoDisplay = "FINALIZADO (Cierre Sistema)";
+                } else if (v.getTipoCierre() == TipoCierreVisita.NORMAL) {
+                    estadoDisplay = "FINALIZADO (Cierre Normal)";
+                }
+            } else if ("FINALIZADO".equalsIgnoreCase(estadoDisplay)) {
+                tipoCierreDisplay = "NORMAL";
+            }
+
             tableModel.addRow(new Object[]{
                     v.getId(),
                     v.getPersonaNombreCompleto(),
                     v.getPersonaDocIdentidad(),
                     v.getMotivo() != null ? v.getMotivo() : "N/A",
                     v.getTipoVisita(),
-                    v.getEstadoVisita(),
+                    estadoDisplay,
+                    tipoCierreDisplay,
                     v.getFechaHoraIngreso() != null ? v.getFechaHoraIngreso().toString().replace("T", " ") : "-",
                     v.getFechaHoraSalida() != null ? v.getFechaHoraSalida().toString().replace("T", " ") : "-"
             });
