@@ -153,7 +153,7 @@ com.acme.sica
 
 Para que **cualquier persona** que clone el repositorio pueda ejecutar la aplicación inmediatamente en su equipo local, debe seguir estos pasos sencillos:
 
-### 📋 1. Requisitos Previos
+###  1. Requisitos Previos
 - **Java JDK 17 o 21** instalado ([Descargar OpenJDK](https://adoptium.net/)).
 - **Git** instalado.
 - **Navegador Web moderno** (Chrome, Edge o Firefox) con acceso a cámara web para probar la biometría facial IA.
@@ -161,7 +161,7 @@ Para que **cualquier persona** que clone el repositorio pueda ejecutar la aplica
 
 ---
 
-### 🚀 2. Clonar el Repositorio y Configurar Entorno (`.env`)
+###  2. Clonar el Repositorio y Configurar Entorno (`.env`)
 
 ```bash
 # 1. Clonar el repositorio desde GitHub
@@ -182,9 +182,9 @@ Copy-Item .env.example .env
 ---
 
 
-### 🗄️ 3. Configurar la Base de Datos (Elegir Opción A o B)
+###  3. Configurar la Base de Datos (Elegir Opción A o B)
 
-#### 🔹 Opción A: Con MySQL (Recomendado para Producción)
+####  Opción A: Con MySQL (Recomendado para Producción)
 1. Inicia tu servidor MySQL.
 2. Crea la base de datos vacía ejecutando en tu cliente SQL:
    ```sql
@@ -198,7 +198,7 @@ Copy-Item .env.example .env
    DB_PASS=tu_contraseña
    ```
 
-#### 🔹 Opción B: Modo H2 In-Memory (Prueba Instantánea Sin Instalar MySQL)
+#### Opción B: Modo H2 In-Memory (Prueba Instantánea Sin Instalar MySQL)
 Si no tienes MySQL instalado o deseas probar la app inmediatamente en memoria sin configurar bases de datos externas:
 1. Abre el archivo `.env` y cambia `DB_TYPE`:
    ```env
@@ -208,7 +208,7 @@ Si no tienes MySQL instalado o deseas probar la app inmediatamente en memoria si
 
 ---
 
-### 📦 4. Compilar y Ejecutar
+###  4. Compilar y Ejecutar
 
 ```bash
 # En Linux / Mac:
@@ -224,7 +224,7 @@ java -jar target/sica.jar
 
 ---
 
-### 🖥️ 5. ¿Cómo Usar la Aplicación una vez Iniciada?
+###  5. ¿Cómo Usar la Aplicación una vez Iniciada?
 
 1. **Interfaz Gráfica de Escritorio (Swing FlatLaf Dark)**:
    - Se abrirá **automáticamente** al iniciar el programa con el formulario de Login.
