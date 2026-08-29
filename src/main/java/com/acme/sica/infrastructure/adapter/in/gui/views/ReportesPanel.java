@@ -1,5 +1,6 @@
 package com.acme.sica.infrastructure.adapter.in.gui.views;
 
+import com.acme.sica.domain.enums.TipoCierreVisita;
 import com.acme.sica.domain.model.Incidente;
 import com.acme.sica.domain.model.Visita;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
