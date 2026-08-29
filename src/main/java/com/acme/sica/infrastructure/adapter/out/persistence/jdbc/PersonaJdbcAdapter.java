@@ -229,9 +229,15 @@ public class PersonaJdbcAdapter implements PersonaRepository {
         }
         p.setEmpresaNombre(rs.getString("empresa_nombre"));
 
-        String estadoStr = rs.getString("estado_acceso");
-        if (estadoStr != null) {
-            p.setEstadoAcceso(EstadoAcceso.valueOf(estadoStr));
+        String estado = rs.getString("estado_acceso");
+        if (estado != null && !estado.trim().isEmpty()) {
+            try {
+                p.setEstadoAcceso(EstadoAcceso.valueOf(estado));
+            } catch (IllegalArgumentException e) {
+                p.setEstadoAcceso(EstadoAcceso.HABILITADO); // Default fallback
+            }
+        } else {
+            p.setEstadoAcceso(EstadoAcceso.HABILITADO);
         }
 
         try {
