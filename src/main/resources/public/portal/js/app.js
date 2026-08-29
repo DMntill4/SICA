@@ -345,17 +345,15 @@ function cargarPerfilHubUsuario() {
         }
     }
 
-    // Cargar automáticamente el historial reciente
     verVisitasPendientesUsuario();
 }
 
 // 1. GESTIÓN FRECUENTE: VER HISTORIAL Y ESTADO EN VIVO DE VISITAS (SINCRONIZADO CON PORTERÍA)
 async function verVisitasPendientesUsuario() {
+
     if (!authenticatedUser || !authenticatedUser.docIdentidad) return;
 
     const docUser = String(authenticatedUser.docIdentidad || '').trim();
-    const personaId = authenticatedUser.personaId || authenticatedUser.id;
-
     const listContainer = document.getElementById('user-visits-list-container');
     const listTitle = document.getElementById('user-visits-list-title');
     const kpiBadge = document.getElementById('user-visits-kpi-badge');
@@ -366,15 +364,34 @@ async function verVisitasPendientesUsuario() {
     listTitle.innerText = "📋 Historial y Estado en Vivo de Visitas (Sincronizado con Portería)";
 
     try {
-        const [resPases, resVisitas] = await Promise.all([
-            fetch(`/api/pases/persona/${docUser}`).then(r => r.ok ? r.json() : []),
-            fetch(`/api/visitas`).then(r => r.ok ? r.json() : [])
+        const [resPersona, resPases, resVisitas] = await Promise.all([
+            fetch(`/api/personas?doc=${docUser}`).then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch(`/api/pases/persona/${docUser}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/visitas`).then(r => r.ok ? r.json() : []).catch(() => [])
         ]);
 
+        // 1. VERIFICACIÓN DE RESTRICCIÓN O BLOQUEO DE SEGURIDAD (PERSONA)
+        let estadoPersona = 'HABILITADO';
+        if (resPersona && resPersona.estadoAcceso) {
+            estadoPersona = resPersona.estadoAcceso;
+        } else if (authenticatedUser.estadoAcceso) {
+            estadoPersona = authenticatedUser.estadoAcceso;
+        }
+
+        const isRestringido = (estadoPersona === 'RESTRINGIDO');
+
+        // Mostrar u ocultar banner de restricción en el Hub
+        const restrBanner = document.getElementById('hub-restriction-banner');
+        if (restrBanner) {
+            restrBanner.style.display = isRestringido ? 'block' : 'none';
+        }
+
+        // 2. FILTRAR Y ORDENAR VISITAS DE LA BASE DE DATOS (NUEVA A VIEJA)
         const misVisitasDB = resVisitas.filter(v => 
             (v.personaDocIdentidad && String(v.personaDocIdentidad).trim() === docUser) ||
-            (v.personaId && personaId && String(v.personaId) === String(personaId))
-        );
+            (v.personaDoc && String(v.personaDoc).trim() === docUser) ||
+            (v.personaId && (v.personaId == authenticatedUser.personaId || v.personaId == authenticatedUser.id))
+        ).sort((a, b) => (b.id || 0) - (a.id || 0));
 
         if ((!resPases || resPases.length === 0) && (!misVisitasDB || misVisitasDB.length === 0)) {
             cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>No tienes solicitudes ni visitas registradas en el sistema.</p>";
@@ -384,19 +401,21 @@ async function verVisitasPendientesUsuario() {
 
         let items = [];
 
+        // Mapear pases de la web
         resPases.forEach(p => {
             let estadoReal = p.estado;
             
-            const matchVisita = misVisitasDB.find(v => 
-                (v.motivo && p.motivo && v.motivo.includes(p.motivo)) ||
-                (v.estadoVisita === 'DENTRO' || v.estadoVisita === 'APROBADO' || v.estadoVisita === 'FINALIZADO')
-            );
+            const ultVisita = misVisitasDB.length > 0 ? misVisitasDB[0] : null;
 
-            if (matchVisita) {
-                if (matchVisita.estadoVisita === 'DENTRO') estadoReal = 'DENTRO (En Instalaciones 🟢)';
-                else if (matchVisita.estadoVisita === 'FINALIZADO') estadoReal = 'FINALIZADO (Check-Out Realizado 🏁)';
-                else if (matchVisita.estadoVisita === 'APROBADO') estadoReal = 'APROBADO (Listo para Ingreso ✅)';
-                else if (matchVisita.estadoVisita === 'RECHAZADO') estadoReal = 'RECHAZADO 🔴';
+            if (isRestringido) {
+                estadoReal = '🔴 ACCESO RESTRINGIDO POR SEGURIDAD SICA';
+            } else if (ultVisita) {
+                if (ultVisita.estadoVisita === 'DENTRO') estadoReal = '🟢 DENTRO (Ingreso Realizado en Portería)';
+                else if (ultVisita.estadoVisita === 'FINALIZADO') estadoReal = '🏁 FINALIZADO (Salida Registrada)';
+                else if (ultVisita.estadoVisita === 'APROBADO') estadoReal = '✅ APROBADO (Listo para Ingreso)';
+                else if (ultVisita.estadoVisita === 'RECHAZADO') estadoReal = '🔴 RECHAZADO POR FUNCIONARIO';
+                else if (ultVisita.estadoVisita === 'PENDIENTE_APROBACION_OLVIDO') estadoReal = '🪪 OLVIDO CARNET (Pendiente Aprobación)';
+                else if (ultVisita.estadoVisita === 'PENDIENTE_APROBACION') estadoReal = '⏳ PENDIENTE DE APROBACIÓN POR FUNCIONARIO';
             }
 
             items.push({
@@ -408,18 +427,22 @@ async function verVisitasPendientesUsuario() {
             });
         });
 
+        // Agregar visitas directas de portería no contempladas en pases web
         misVisitasDB.forEach(v => {
-            const yaMapeado = items.some(i => i.motivo && i.motivo.includes(v.motivo));
+            const yaMapeado = items.some(i => i.id === v.id || (i.motivo && v.motivo && i.motivo.includes(v.motivo)));
             if (!yaMapeado) {
                 let estText = v.estadoVisita;
-                if (v.estadoVisita === 'DENTRO') estText = 'DENTRO (En Instalaciones 🟢)';
-                else if (v.estadoVisita === 'FINALIZADO') estText = 'FINALIZADO (Check-Out Realizado 🏁)';
-                else if (v.estadoVisita === 'APROBADO') estText = 'APROBADO (Listo para Ingreso ✅)';
+                if (isRestringido) estText = '🔴 ACCESO RESTRINGIDO POR SEGURIDAD SICA';
+                else if (v.estadoVisita === 'DENTRO') estText = '🟢 DENTRO (Ingreso Realizado en Portería)';
+                else if (v.estadoVisita === 'FINALIZADO') estText = '🏁 FINALIZADO (Salida Registrada)';
+                else if (v.estadoVisita === 'APROBADO') estText = '✅ APROBADO (Listo para Ingreso)';
+                else if (v.estadoVisita === 'PENDIENTE_APROBACION') estText = '⏳ PENDIENTE DE APROBACIÓN POR FUNCIONARIO';
+                else if (v.estadoVisita === 'PENDIENTE_APROBACION_OLVIDO') estText = '🪪 OLVIDO CARNET (Pendiente Aprobación)';
 
                 items.push({
                     id: v.id,
                     empresa: 'Zona Acme',
-                    motivo: v.motivo || 'Ingreso Registrado',
+                    motivo: v.motivo || 'Registro en Portería',
                     estado: estText,
                     rawEstado: v.estadoVisita
                 });
@@ -451,7 +474,7 @@ async function verVisitasPendientesUsuario() {
                 colorBorder = '#6B7280';
                 badgeBg = 'rgba(107, 114, 128, 0.2)';
                 badgeColor = '#9CA3AF';
-            } else if (String(item.estado).includes('RECHAZADO') || String(item.estado).includes('CANCELADO')) {
+            } else if (String(item.estado).includes('RESTRINGIDO') || String(item.estado).includes('RECHAZADO') || String(item.estado).includes('CANCELADO')) {
                 colorBorder = '#EF4444';
                 badgeBg = 'rgba(239, 68, 68, 0.2)';
                 badgeColor = '#FCA5A5';
@@ -462,14 +485,14 @@ async function verVisitasPendientesUsuario() {
                     <div>
                         <div style="display: flex; gap: 8px; align-items: center;">
                             <strong style="color: var(--accent-primary); font-size: 14px;">Solicitud #${item.id}</strong>
-                            <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 700;">
+                            <span style="font-size: 11px; padding: 3px 10px; border-radius: 12px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 700;">
                                 ${item.estado}
                             </span>
                         </div>
                         <div style="font-size: 13px; margin-top: 6px; color: var(--text-main); font-weight: 600;">${item.motivo}</div>
                         <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">📍 Destino: ${item.empresa}</div>
                     </div>
-                    ${(item.rawEstado === 'PENDIENTE_APROBACION' || item.rawEstado === 'APROBADO') ? `
+                    ${(!isRestringido && (item.rawEstado === 'PENDIENTE_APROBACION' || item.rawEstado === 'APROBADO')) ? `
                         <button type="button" class="btn-danger" onclick="cancelarPasePorId(${item.id})" style="padding: 8px 12px; font-size: 12px; background: #EF4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                             🚫 Cancelar
                         </button>
@@ -496,24 +519,28 @@ async function actualizarEstadoTicketEnVivo() {
     badgeElem.style.background = "#3B82F6";
 
     try {
-        const [resPases, resVisitas] = await Promise.all([
-            fetch(`/api/pases/persona/${doc}`).then(r => r.ok ? r.json() : []),
-            fetch(`/api/visitas`).then(r => r.ok ? r.json() : [])
+        const [resPersona, resPases, resVisitas] = await Promise.all([
+            fetch(`/api/personas?doc=${doc}`).then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch(`/api/pases/persona/${doc}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/visitas`).then(r => r.ok ? r.json() : []).catch(() => [])
         ]);
 
         let estadoEncontrado = "PENDIENTE APROBACIÓN";
         let colorBg = "#F59E0B";
 
-        if (resVisitas && resVisitas.length > 0) {
+        if (resPersona && resPersona.estadoAcceso === 'RESTRINGIDO') {
+            estadoEncontrado = "🔴 ACCESO RESTRINGIDO POR SEGURIDAD SICA";
+            colorBg = "#EF4444";
+        } else {
             const misVisitas = resVisitas.filter(v => 
                 (v.personaDocIdentidad && String(v.personaDocIdentidad).trim() === doc) ||
                 (v.personaDoc && String(v.personaDoc).trim() === doc)
-            );
+            ).sort((a, b) => (b.id || 0) - (a.id || 0));
 
             if (misVisitas.length > 0) {
-                const ultVisita = misVisitas[misVisitas.length - 1];
+                const ultVisita = misVisitas[0];
                 if (ultVisita.estadoVisita === 'DENTRO') {
-                    estadoEncontrado = "🟢 DENTRO (Ingreso Autorizado)";
+                    estadoEncontrado = "🟢 DENTRO (Ingreso Realizado en Portería)";
                     colorBg = "#10B981";
                 } else if (ultVisita.estadoVisita === 'FINALIZADO') {
                     estadoEncontrado = "🏁 FINALIZADO (Salida Registrada)";
@@ -524,18 +551,19 @@ async function actualizarEstadoTicketEnVivo() {
                 } else if (ultVisita.estadoVisita === 'RECHAZADO') {
                     estadoEncontrado = "🔴 SOLICITUD RECHAZADA";
                     colorBg = "#EF4444";
+                } else if (ultVisita.estadoVisita === 'PENDIENTE_APROBACION_OLVIDO') {
+                    estadoEncontrado = "🪪 PENDIENTE APROBACIÓN POR OLVIDO CARNET";
+                    colorBg = "#F59E0B";
                 }
-            }
-        }
-
-        if (estadoEncontrado === "PENDIENTE APROBACIÓN" && resPases.length > 0) {
-            const ultPase = resPases[resPases.length - 1];
-            if (ultPase.estado === 'APROBADO') {
-                estadoEncontrado = "✅ APROBADO POR FUNCIONARIO";
-                colorBg = "#2563EB";
-            } else if (ultPase.estado === 'RECHAZADO' || ultPase.estado === 'CANCELADO') {
-                estadoEncontrado = "🔴 RECHAZADO / CANCELADO";
-                colorBg = "#EF4444";
+            } else if (resPases.length > 0) {
+                const ultPase = resPases[resPases.length - 1];
+                if (ultPase.estado === 'APROBADO') {
+                    estadoEncontrado = "✅ APROBADO POR FUNCIONARIO";
+                    colorBg = "#2563EB";
+                } else if (ultPase.estado === 'RECHAZADO' || ultPase.estado === 'CANCELADO') {
+                    estadoEncontrado = "🔴 RECHAZADO / CANCELADO";
+                    colorBg = "#EF4444";
+                }
             }
         }
 
