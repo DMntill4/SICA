@@ -253,18 +253,22 @@
                     </div>
                 </div>
 
-                <!-- 3 BOTONES PRINCIPALES DE GESTIÓN -->
-                <div class="hub-actions-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px;">
-                    <button type="button" class="btn-neon" onclick="verVisitasPendientesUsuario()" style="padding: 14px 16px; font-size: 14px; border-radius: 10px;">
+                <!-- 4 BOTONES PRINCIPALES DE GESTIÓN -->
+                <div class="hub-actions-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 24px;">
+                    <button type="button" class="btn-neon" onclick="verVisitasPendientesUsuario()" style="padding: 14px 12px; font-size: 13.5px; border-radius: 10px;">
                         📋 Ver Historial de Visitas
                     </button>
-                    <button type="button" class="btn-danger" onclick="abrirModalCancelarVisitaUsuario()" style="padding: 14px 16px; font-size: 14px; background: #EF4444; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    <button type="button" class="btn-danger" onclick="abrirModalCancelarVisitaUsuario()" style="padding: 14px 12px; font-size: 13.5px; background: #EF4444; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
                         🚫 Cancelar Visitas
                     </button>
-                    <button type="button" class="btn-primary" id="btn-new-visit-frecuente" onclick="abrirFormularioNuevaVisitaFrecuente()" style="padding: 14px 16px; font-size: 14px; background: #2563EB; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    <button type="button" class="btn-primary" id="btn-new-visit-frecuente" onclick="abrirFormularioNuevaVisitaFrecuente()" style="padding: 14px 12px; font-size: 13.5px; background: #2563EB; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
                         ➕ Registrar Nueva Visita
                     </button>
+                    <button type="button" class="btn-warning" id="btn-reportar-anomalia" onclick="abrirModalReportarAnomaliaUsuario()" style="padding: 14px 12px; font-size: 13.5px; background: #F59E0B; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                        🚨 Reportar Olvido / Novedad
+                    </button>
                 </div>
+
 
                 <!-- CONTENEDOR DE HISTORIAL DE VISITAS -->
                 <div id="user-visits-list-container" style="display: none; background: var(--bg-card-alt); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 20px;">

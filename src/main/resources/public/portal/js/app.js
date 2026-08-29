@@ -570,6 +570,84 @@ async function cancelarVisitaActual() {
     resetPortal();
 }
 
+// 4. REPORTAR NOVEDAD / PÉRDIDA DE CARNET ESTANDO ADENTRO
+async function abrirModalReportarAnomaliaUsuario() {
+    if (!authenticatedUser) {
+        await mostrarNotificacionCustomSica("AUTENTICACIÓN REQUERIDA", "Debes estar autenticado por biometría facial para reportar una novedad de carnet.", "🔒");
+        return;
+    }
+
+    const listContainer = document.getElementById('user-visits-list-container');
+    const listTitle = document.getElementById('user-visits-list-title');
+    const cardsDiv = document.getElementById('user-visits-cards');
+    
+    listContainer.style.display = 'block';
+    listTitle.innerText = "🚨 Reportar Novedad / Pérdida de Carnet (Validado por Biometría IA)";
+
+    cardsDiv.innerHTML = `
+        <div style="background: var(--bg-card); border: 1px solid #F59E0B; border-radius: 10px; padding: 16px; text-align: left;">
+            <div style="font-weight: 700; color: #F59E0B; font-size: 14px; margin-bottom: 8px;">
+                👤 Reportante: ${authenticatedUser.nombreCompleto || 'Usuario Registrado'} (${authenticatedUser.docIdentidad})
+            </div>
+            
+            <label style="display: block; font-size: 12.5px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">Selecciona el tipo de Novedad / Incidencia (*):</label>
+            <select id="select-tipo-anomalia" style="width: 100%; padding: 10px; border-radius: 6px; background: var(--bg-card-alt); color: var(--text-main); border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 13px;">
+                <option value="PERDIDA_CARNET">🪪 Pérdida / Extravío de Carnet Físico estando Adentro</option>
+                <option value="OLVIDO_CARNET">🚪 Olvido de Carnet Físico / Requiero Pase Temporal de Salida</option>
+                <option value="DIFICULTAD_TORNIQUETE">⚠️ Dificultad o Bloqueo de Ingreso/Salida en Punto de Acceso</option>
+                <option value="ASISTENCIA_SEGURIDAD">🆘 Solicitar Asistencia Directa de Portería / Seguridad</option>
+            </select>
+
+            <label style="display: block; font-size: 12.5px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">Detalles adicionales / Comentario (*):</label>
+            <textarea id="txt-desc-anomalia" rows="3" placeholder="Ej: Se me extravió el carnet en el edificio A, solicito pase de salida temporal..." style="width: 100%; padding: 10px; border-radius: 6px; background: var(--bg-card-alt); color: var(--text-main); border: 1px solid var(--border-color); margin-bottom: 14px; font-size: 13px; resize: vertical;"></textarea>
+
+            <button type="button" class="btn-neon" onclick="enviarReporteAnomaliaWeb()" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 700; background: #F59E0B; color: #FFFFFF; border: none; border-radius: 8px; cursor: pointer;">
+                🚨 Transmitir Reporte de Novedad con Firma Biométrica
+            </button>
+        </div>
+    `;
+}
+
+async function enviarReporteAnomaliaWeb() {
+    if (!authenticatedUser) return;
+
+    const tipo = document.getElementById('select-tipo-anomalia').value;
+    const desc = document.getElementById('txt-desc-anomalia').value.trim();
+
+    if (!desc) {
+        await mostrarNotificacionCustomSica("CAMPO REQUERIDO", "Por favor ingresa una descripción o comentario del evento.", "⚠️");
+        return;
+    }
+
+    try {
+        const payload = {
+            docIdentidad: authenticatedUser.docIdentidad,
+            tipoAnomalia: tipo,
+            descripcion: desc
+        };
+
+        const res = await fetch('/api/pases/anomalia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            await mostrarNotificacionCustomSica(
+                "NOVEDAD TRANSMITIDA A PORTERÍA",
+                `✅ Se ha registrado tu reporte de novedad (${tipo}) exitosamente en el sistema SICA.\n\nSe ha emitido tu solicitud de Pase Temporal por Olvido/Pérdida en portería. El guardia/administrador ya puede verificar tu documento e identidad en pantalla.`,
+                "✅"
+            );
+            document.getElementById('user-visits-list-container').style.display = 'none';
+        } else {
+            const errData = await res.json().catch(() => ({}));
+            await mostrarNotificacionCustomSica("ERROR", "Error al transmitir el reporte: " + (errData.mensaje || res.statusText), "❌");
+        }
+    } catch (e) {
+        await mostrarNotificacionCustomSica("ERROR DE CONEXIÓN", "Error al conectar con el servidor SICA: " + e.message, "❌");
+    }
+}
+
 function resetPortal() {
     location.reload();
 }
@@ -582,8 +660,11 @@ window.procesarSolicitudPaseInteligente = procesarSolicitudPaseInteligente;
 window.verVisitasPendientesUsuario = verVisitasPendientesUsuario;
 window.abrirModalCancelarVisitaUsuario = abrirModalCancelarVisitaUsuario;
 window.abrirFormularioNuevaVisitaFrecuente = abrirFormularioNuevaVisitaFrecuente;
+window.abrirModalReportarAnomaliaUsuario = abrirModalReportarAnomaliaUsuario;
+window.enviarReporteAnomaliaWeb = enviarReporteAnomaliaWeb;
 window.cancelarPasePorId = cancelarPasePorId;
 window.cancelarVisitaActual = cancelarVisitaActual;
 window.resetPortal = resetPortal;
 window.mostrarNotificacionCustomSica = mostrarNotificacionCustomSica;
 window.mostrarConfirmacionCustomSica = mostrarConfirmacionCustomSica;
+

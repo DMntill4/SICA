@@ -81,7 +81,13 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
                     handleCancelarPase(exchange, path);
                     return;
                 }
+
+                if (path.endsWith("/anomalia")) {
+                    handleReportarAnomalia(exchange);
+                    return;
+                }
             }
+
 
 
             HttpUtils.sendErrorResponse(exchange, 404, "Endpoint no encontrado");
@@ -260,7 +266,64 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
         HttpUtils.sendJsonResponse(exchange, 200, filtradas);
     }
 
+    private void handleReportarAnomalia(HttpExchange exchange) throws IOException {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = HttpUtils.parseJsonRequestBody(exchange, Map.class);
+
+        if (body == null || !body.containsKey("docIdentidad") || !body.containsKey("tipoAnomalia")) {
+            HttpUtils.sendErrorResponse(exchange, 400, "Campos 'docIdentidad' y 'tipoAnomalia' son requeridos");
+            return;
+        }
+
+        String doc = (String) body.get("docIdentidad");
+        String tipo = (String) body.get("tipoAnomalia");
+        String desc = (String) body.getOrDefault("descripcion", "Reporte generado desde el Portal Web de Autoservicio");
+
+        Optional<Persona> optP = personaRepository.findByDocIdentidad(doc);
+        if (optP.isEmpty()) {
+            HttpUtils.sendErrorResponse(exchange, 404, "Persona no encontrada con documento: " + doc);
+            return;
+        }
+
+        Persona p = optP.get();
+
+        SolicitudPase s = new SolicitudPase();
+        s.setNombreCompleto(p.getNombre() + " " + p.getApellido());
+        s.setDocIdentidad(doc);
+        s.setEmail(p.getEmail() != null ? p.getEmail() : "visitante@sica.local");
+        s.setTelefono(p.getTelefono() != null ? p.getTelefono() : "");
+        s.setEmpresaDestino("Reporte de Novedades Web");
+        s.setFuncionarioDestinoId(3L);
+        s.setMotivo("🚨 [NOVEDAD WEB] " + tipo + ": " + desc);
+        s.setFechaHoraSolicitada(LocalDateTime.now());
+        s.setFotoUrl(p.getFotoUrl());
+        s.setEstado(SolicitudPase.EstadoSolicitud.PENDIENTE_APROBACION);
+
+        SolicitudPase guardada = solicitudRepository.guardar(s);
+
+        try {
+            Visita v = new Visita();
+            v.setPersonaId(p.getId());
+            v.setFuncionarioId(3L);
+            v.setTipoVisita(TipoVisita.PASE_TEMPORAL);
+            v.setEstadoVisita(EstadoVisita.PENDIENTE_APROBACION_OLVIDO);
+            v.setMotivo("🚨 Reporte Web: " + tipo + " - " + desc);
+            v.setFechaHoraProgramada(LocalDateTime.now());
+            visitaRepository.save(v);
+        } catch (Exception ex) {
+            System.err.println("[Anomalia Warning] No se creo la visita temporal: " + ex.getMessage());
+        }
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("id", guardada.getId());
+        resp.put("mensaje", "Reporte de novedad registrado exitosamente con firma biométrica.");
+        resp.put("tipoAnomalia", tipo);
+
+        HttpUtils.sendJsonResponse(exchange, 201, resp);
+    }
+
     private Long extractIdFromPath(String path, String actionSuffix) {
+
 
 
         try {
