@@ -7,8 +7,10 @@ let currentVector = null;
 let currentFotoRealBase64 = null;
 let lastGeneratedPassId = null;
 let authenticatedUser = null; // Guardar datos de usuario autenticado por rostro
+let isCreatingVisitForAuthenticatedUser = false;
 
 document.addEventListener('DOMContentLoaded', () => {
+
     updateWizardUI();
 });
 
@@ -77,8 +79,10 @@ function mostrarConfirmacionCustomSica(titulo, mensaje, icono = '❓') {
 
 function selectRoad(road) {
     selectedRoad = road;
+    isCreatingVisitForAuthenticatedUser = false;
     
     if (road === 'FRECUENTE') {
+
         // ROAD A: Directo a escaneo biométrico (Paso 3)
         currentStep = 3;
         const scanTitle = document.getElementById('scan-step-title');
@@ -243,8 +247,17 @@ function iniciarSecuenciaEscaneo5s() {
                     console.warn("Error en verificación biométrica:", e);
                 }
 
-                // SI EL ROSTRO YA EXISTE EN EL SISTEMA SICA (CUALQUIERA SEA EL CAMINO):
-                if (matchedPersona) {
+                // CASO A: USUARIO FRECUENTE AUTENTICADO QUE ESTÁ EMITIENDO UNA NUEVA VISITA
+                if (isCreatingVisitForAuthenticatedUser && authenticatedUser) {
+                    isCreatingVisitForAuthenticatedUser = false;
+                    banner.style.display = 'flex';
+                    if (btnSubmit) btnSubmit.style.display = 'inline-block';
+                    setTimeout(() => {
+                        procesarSolicitudPaseInteligente();
+                    }, 500);
+
+                // CASO B: EL ROSTRO COINCIDE CON UN REGISTRO EN BASE DE DATOS (NUEVO O LOGIN)
+                } else if (matchedPersona) {
                     if (selectedRoad === 'NUEVO') {
                         // INTERCEPCIÓN DE SEGURIDAD: Intentó registrarse como nuevo con otro nombre, pero su rostro ya existe!
                         await mostrarNotificacionCustomSica(
@@ -260,6 +273,7 @@ function iniciarSecuenciaEscaneo5s() {
                     setTimeout(() => {
                         goToStep('user-hub');
                     }, 400);
+
 
                 } else if (selectedRoad === 'FRECUENTE') {
                     // ROSTRO NO RECONOCIDO EN CAMINO DE USUARIO FRECUENTE -> RECHAZO Y REORIENTACIÓN
@@ -460,9 +474,11 @@ async function abrirFormularioNuevaVisitaFrecuente() {
         document.getElementById('telefono').value = authenticatedUser.telefono || '';
         document.getElementById('empresaDestino').value = authenticatedUser.empresaNombre || 'General';
     }
+    isCreatingVisitForAuthenticatedUser = true;
     currentStep = 1;
     updateWizardUI();
 }
+
 
 
 async function procesarSolicitudPaseInteligente() {
