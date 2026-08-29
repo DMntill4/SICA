@@ -149,34 +149,95 @@ com.acme.sica
 
 ---
 
-## 7. Guía de Instalación y Ejecución
+## 7. Guía de Instalación y Ejecución Paso a Paso
 
-### Requisitos Previos
-- **Java JDK 21** instalado.
-- **Servidor MySQL 8.0** activo (Base de datos `sica`).
+Para que **cualquier persona** que clone el repositorio pueda ejecutar la aplicación inmediatamente en su equipo local, debe seguir estos pasos sencillos:
+
+### 📋 1. Requisitos Previos
+- **Java JDK 17 o 21** instalado ([Descargar OpenJDK](https://adoptium.net/)).
 - **Git** instalado.
+- **Navegador Web moderno** (Chrome, Edge o Firefox) con acceso a cámara web para probar la biometría facial IA.
+- *(Opcional)* **MySQL 8.0** en ejecución (si se elige usar MySQL como motor de persistencia).
 
-### Pasos de Ejecución
+---
+
+### 🚀 2. Clonar el Repositorio y Configurar Entorno (`.env`)
 
 ```bash
-# 1. Clonar el repositorio
+# 1. Clonar el repositorio desde GitHub
 git clone https://github.com/DMntill4/SICA.git
 cd SICA
 
-# 2. Copiar la plantilla de entorno
+# 2. Crear el archivo de configuración .env desde la plantilla
+# En Linux / Mac:
 cp .env.example .env
 
-# 3. Compilar y empaquetar con Maven Wrapper
-./mvnw clean package
+# En Windows (PowerShell):
+Copy-Item .env.example .env
+```
 
-# 4. Ejecutar la aplicación (Backend HTTP + Portal Web + GUI Swing)
+---
+
+### 🗄️ 3. Configurar la Base de Datos (Elegir Opción A o B)
+
+#### 🔹 Opción A: Con MySQL (Recomendado para Producción)
+1. Inicia tu servidor MySQL.
+2. Crea la base de datos vacía ejecutando en tu cliente SQL:
+   ```sql
+   CREATE DATABASE sica CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+3. Verifica que en tu archivo `.env` coincidan el usuario (`DB_USER`) y contraseña (`DB_PASS`):
+   ```env
+   DB_TYPE=MYSQL
+   DB_URL=jdbc:mysql://localhost:3306/sica?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+   DB_USER=root
+   DB_PASS=tu_contraseña
+   ```
+
+#### 🔹 Opción B: Modo H2 In-Memory (Prueba Instantánea Sin Instalar MySQL)
+Si no tienes MySQL instalado o deseas probar la app inmediatamente en memoria sin configurar bases de datos externas:
+1. Abre el archivo `.env` y cambia `DB_TYPE`:
+   ```env
+   DB_TYPE=H2
+   ```
+   *(Las tablas y credenciales se construirán automáticamente en memoria en milisegundos).*
+
+---
+
+### 📦 4. Compilar y Ejecutar
+
+```bash
+# En Linux / Mac:
+./mvnw clean package
+java -jar target/sica.jar
+
+# En Windows (PowerShell o CMD):
+.\mvnw.cmd clean package
 java -jar target/sica.jar
 ```
 
-- **Portal Web Autoservicio Visitantes**: `http://localhost:8080/portal`
-- **Endpoint Base REST API**: `http://localhost:8080/api`
+*(También puedes abrir la carpeta del proyecto directamente en tu IDE preferido como IntelliJ IDEA o Eclipse y ejecutar la clase principal `com.acme.sica.SicaApplication`).*
 
 ---
+
+### 🖥️ 5. ¿Cómo Usar la Aplicación una vez Iniciada?
+
+1. **Interfaz Gráfica de Escritorio (Swing FlatLaf Dark)**:
+   - Se abrirá **automáticamente** al iniciar el programa con el formulario de Login.
+   - Usa cualquiera de las credenciales preconfiguradas:
+     - **Administrador**: usuario `admin` | clave `admin123`
+     - **Guardia de Portería**: usuario `guardia1` | clave `guardia123`
+     - **Funcionario**: usuario `func1` | clave `func123`
+
+2. **Portal Web de Autoservicio de Visitantes (Biometría IA)**:
+   - Abre tu navegador web y entra a: **`http://localhost:8080/portal`**
+   - Conecta tu cámara web, otorga permisos al navegador y prueba el escáner facial 128D en vivo.
+
+3. **API REST / Postman**:
+   - Endpoint base para consultas HTTP: **`http://localhost:8080/api`**
+
+---
+
 
 ## 8. Catálogo de Endpoints REST API
 
