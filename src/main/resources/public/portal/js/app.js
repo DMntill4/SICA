@@ -349,7 +349,7 @@ function cargarPerfilHubUsuario() {
     verVisitasPendientesUsuario();
 }
 
-// 1. GESTIÓN FRECUENTE: VER HISTORIAL DE VISITAS REALIZADAS Y PENDIENTES
+// 1. GESTIÓN FRECUENTE: VER HISTORIAL Y ESTADO EN VIVO DE VISITAS (SINCRONIZADO CON PORTERÍA)
 async function verVisitasPendientesUsuario() {
     if (!authenticatedUser || !authenticatedUser.docIdentidad) return;
 
@@ -357,48 +357,189 @@ async function verVisitasPendientesUsuario() {
     const listTitle = document.getElementById('user-visits-list-title');
     const kpiBadge = document.getElementById('user-visits-kpi-badge');
     const cardsDiv = document.getElementById('user-visits-cards');
-    cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>Cargando historial de visitas...</p>";
+
+    cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>🔄 Obteniendo estado actualizado de visitas en vivo desde portería...</p>";
     listContainer.style.display = 'block';
-    listTitle.innerText = "📜 Historial de Visitas Realizadas";
+    listTitle.innerText = "📋 Historial y Estado en Vivo de Visitas (Sincronizado con Portería)";
 
     try {
-        const res = await fetch(`/api/pases/persona/${authenticatedUser.docIdentidad}`);
-        if (res.ok) {
-            const pases = await res.json();
+        const [resPases, resVisitas] = await Promise.all([
+            fetch(`/api/pases/persona/${authenticatedUser.docIdentidad}`).then(r => r.ok ? r.json() : []),
+            fetch(`/api/visitas`).then(r => r.ok ? r.json() : [])
+        ]);
 
-            if (!pases || pases.length === 0) {
-                if (kpiBadge) kpiBadge.innerText = "Total: 0 visitas";
-                cardsDiv.innerHTML = "<p style='color: var(--status-granted-text); font-size: 13px; font-weight: 600;'>No tienes historial de visitas registradas.</p>";
-                return;
+        const personaId = authenticatedUser.id;
+        const misVisitasDB = resVisitas.filter(v => v.personaId == personaId);
+
+        if ((!resPases || resPases.length === 0) && (!misVisitasDB || misVisitasDB.length === 0)) {
+            cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>No tienes solicitudes ni visitas registradas en el sistema.</p>";
+            if (kpiBadge) kpiBadge.innerText = "";
+            return;
+        }
+
+        let items = [];
+
+        resPases.forEach(p => {
+            let estadoReal = p.estado;
+            
+            const matchVisita = misVisitasDB.find(v => v.motivo && v.motivo.includes(p.motivo));
+            if (matchVisita) {
+                if (matchVisita.estadoVisita === 'DENTRO') estadoReal = 'DENTRO (En Instalaciones 🟢)';
+                else if (matchVisita.estadoVisita === 'FINALIZADO') estadoReal = 'FINALIZADO (Check-Out Realizado 🏁)';
+                else if (matchVisita.estadoVisita === 'APROBADO') estadoReal = 'APROBADO (Listo para Ingreso ✅)';
+                else if (matchVisita.estadoVisita === 'RECHAZADO') estadoReal = 'RECHAZADO 🔴';
             }
 
-            const aprobadas = pases.filter(p => p.estado === 'APROBADO').length;
-            const pendientes = pases.filter(p => p.estado === 'PENDIENTE_APROBACION').length;
-            const canceladas = pases.filter(p => p.estado === 'RECHAZADO' || p.estado === 'CANCELADO').length;
+            items.push({
+                id: p.id,
+                empresa: p.empresaDestino || 'Zona Acme',
+                motivo: p.motivo,
+                estado: estadoReal,
+                rawEstado: p.estado
+            });
+        });
 
-            if (kpiBadge) {
-                kpiBadge.innerText = `Total: ${pases.length} | Pendientes: ${pendientes} | Aprobadas: ${aprobadas} | Canceladas: ${canceladas}`;
+        misVisitasDB.forEach(v => {
+            const yaMapeado = items.some(i => i.motivo && i.motivo.includes(v.motivo));
+            if (!yaMapeado) {
+                let estText = v.estadoVisita;
+                if (v.estadoVisita === 'DENTRO') estText = 'DENTRO (En Instalaciones 🟢)';
+                else if (v.estadoVisita === 'FINALIZADO') estText = 'FINALIZADO (Check-Out Realizado 🏁)';
+                else if (v.estadoVisita === 'APROBADO') estText = 'APROBADO (Listo para Ingreso ✅)';
+
+                items.push({
+                    id: v.id,
+                    empresa: 'Zona Acme',
+                    motivo: v.motivo || 'Ingreso Registrado',
+                    estado: estText,
+                    rawEstado: v.estadoVisita
+                });
+            }
+        });
+
+        const total = items.length;
+        const dentroCount = items.filter(i => String(i.estado).includes('DENTRO')).length;
+        const aprCount = items.filter(i => String(i.estado).includes('APROBADO')).length;
+
+        if (kpiBadge) {
+            kpiBadge.innerText = `Total: ${total} | Aprobadas: ${aprCount} | En Instalaciones: ${dentroCount}`;
+        }
+
+        cardsDiv.innerHTML = items.map(item => {
+            let colorBorder = 'var(--border-color)';
+            let badgeBg = 'rgba(59, 130, 246, 0.15)';
+            let badgeColor = '#60A5FA';
+
+            if (String(item.estado).includes('DENTRO')) {
+                colorBorder = '#10B981';
+                badgeBg = 'rgba(16, 185, 129, 0.2)';
+                badgeColor = '#34D399';
+            } else if (String(item.estado).includes('APROBADO')) {
+                colorBorder = '#3B82F6';
+                badgeBg = 'rgba(59, 130, 246, 0.2)';
+                badgeColor = '#60A5FA';
+            } else if (String(item.estado).includes('FINALIZADO')) {
+                colorBorder = '#6B7280';
+                badgeBg = 'rgba(107, 114, 128, 0.2)';
+                badgeColor = '#9CA3AF';
+            } else if (String(item.estado).includes('RECHAZADO') || String(item.estado).includes('CANCELADO')) {
+                colorBorder = '#EF4444';
+                badgeBg = 'rgba(239, 68, 68, 0.2)';
+                badgeColor = '#FCA5A5';
             }
 
-            cardsDiv.innerHTML = pases.map(p => `
-                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; text-align: left;">
+            return `
+                <div style="background: var(--bg-card); border: 1px solid ${colorBorder}; border-radius: 10px; padding: 14px; display: flex; justify-content: space-between; align-items: center; text-align: left;">
                     <div>
-                        <strong style="color: var(--accent-primary); font-size: 14px;">Solicitud #${p.id}</strong> - <span style="font-size: 12px; color: var(--text-muted);">${p.empresaDestino || 'General'}</span>
-                        <div style="font-size: 13px; margin-top: 4px; color: var(--text-main);">${p.motivo}</div>
-                        <span class="cat-tag ${p.estado === 'APROBADO' ? 'green' : (p.estado === 'PENDIENTE_APROBACION' ? 'red' : 'red')}" style="font-size: 11px; margin-top: 6px; display: inline-block;">${p.estado}</span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <strong style="color: var(--accent-primary); font-size: 14px;">Solicitud #${item.id}</strong>
+                            <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 700;">
+                                ${item.estado}
+                            </span>
+                        </div>
+                        <div style="font-size: 13px; margin-top: 6px; color: var(--text-main); font-weight: 600;">${item.motivo}</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">📍 Destino: ${item.empresa}</div>
                     </div>
-                    ${(p.estado === 'PENDIENTE_APROBACION' || p.estado === 'APROBADO') ? `
-                        <button type="button" class="btn-danger" onclick="cancelarPasePorId(${p.id})" style="padding: 8px 12px; font-size: 12px; background: #EF4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    ${(item.rawEstado === 'PENDIENTE_APROBACION' || item.rawEstado === 'APROBADO') ? `
+                        <button type="button" class="btn-danger" onclick="cancelarPasePorId(${item.id})" style="padding: 8px 12px; font-size: 12px; background: #EF4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                             🚫 Cancelar
                         </button>
                     ` : ''}
                 </div>
-            `).join('');
-        }
+            `;
+        }).join('');
+
     } catch (e) {
         cardsDiv.innerHTML = "<p style='color: #EF4444; font-size: 13px;'>Error al obtener el historial de visitas.</p>";
     }
 }
+
+// CONSULTA DE ESTADO EN VIVO PARA TICKET DE PASE PRIMERA VEZ
+async function actualizarEstadoTicketEnVivo() {
+    const docElem = document.getElementById('t-doc');
+    const badgeElem = document.getElementById('ticket-status-badge');
+    if (!docElem || !badgeElem) return;
+
+    const doc = docElem.innerText.trim();
+    if (!doc) return;
+
+    badgeElem.innerText = "🔄 CONSULTANDO...";
+    badgeElem.style.background = "#3B82F6";
+
+    try {
+        const [resPases, resVisitas] = await Promise.all([
+            fetch(`/api/pases/persona/${doc}`).then(r => r.ok ? r.json() : []),
+            fetch(`/api/visitas`).then(r => r.ok ? r.json() : [])
+        ]);
+
+        let estadoEncontrado = "PENDIENTE APROBACIÓN";
+        let colorBg = "#F59E0B";
+
+        if (resVisitas && resVisitas.length > 0) {
+            const misVisitas = resVisitas.filter(v => v.personaDoc === doc || (resPases[0] && v.personaId === resPases[0].personaId));
+            if (misVisitas.length > 0) {
+                const ultVisita = misVisitas[misVisitas.length - 1];
+                if (ultVisita.estadoVisita === 'DENTRO') {
+                    estadoEncontrado = "🟢 DENTRO (Ingreso Autorizado)";
+                    colorBg = "#10B981";
+                } else if (ultVisita.estadoVisita === 'FINALIZADO') {
+                    estadoEncontrado = "🏁 FINALIZADO (Salida Registrada)";
+                    colorBg = "#6B7280";
+                } else if (ultVisita.estadoVisita === 'APROBADO') {
+                    estadoEncontrado = "✅ APROBADO POR FUNCIONARIO";
+                    colorBg = "#2563EB";
+                } else if (ultVisita.estadoVisita === 'RECHAZADO') {
+                    estadoEncontrado = "🔴 SOLICITUD RECHAZADA";
+                    colorBg = "#EF4444";
+                }
+            }
+        }
+
+        if (estadoEncontrado === "PENDIENTE APROBACIÓN" && resPases.length > 0) {
+            const ultPase = resPases[resPases.length - 1];
+            if (ultPase.estado === 'APROBADO') {
+                estadoEncontrado = "✅ APROBADO POR FUNCIONARIO";
+                colorBg = "#2563EB";
+            } else if (ultPase.estado === 'RECHAZADO' || ultPase.estado === 'CANCELADO') {
+                estadoEncontrado = "🔴 RECHAZADO / CANCELADO";
+                colorBg = "#EF4444";
+            }
+        }
+
+        badgeElem.innerText = estadoEncontrado;
+        badgeElem.style.background = colorBg;
+
+        await mostrarNotificacionCustomSica(
+            "ESTADO EN VIVO DESDE PORTERÍA",
+            `🔄 El estado actual de tu solicitud en el sistema SICA es:\n\n👉 [ ${estadoEncontrado} ]`,
+            "ℹ️"
+        );
+
+    } catch (e) {
+        badgeElem.innerText = "ERROR AL CONSULTAR";
+    }
+}
+
 
 // 2. GESTIÓN FRECUENTE: CANCELAR VISITAS ACTIVAS
 async function abrirModalCancelarVisitaUsuario() {
@@ -678,9 +819,11 @@ window.abrirModalCancelarVisitaUsuario = abrirModalCancelarVisitaUsuario;
 window.abrirFormularioNuevaVisitaFrecuente = abrirFormularioNuevaVisitaFrecuente;
 window.abrirModalReportarAnomaliaUsuario = abrirModalReportarAnomaliaUsuario;
 window.enviarReporteAnomaliaWeb = enviarReporteAnomaliaWeb;
+window.actualizarEstadoTicketEnVivo = actualizarEstadoTicketEnVivo;
 window.cancelarPasePorId = cancelarPasePorId;
 window.cancelarVisitaActual = cancelarVisitaActual;
 window.resetPortal = resetPortal;
 window.mostrarNotificacionCustomSica = mostrarNotificacionCustomSica;
 window.mostrarConfirmacionCustomSica = mostrarConfirmacionCustomSica;
+
 
