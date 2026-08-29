@@ -4,6 +4,9 @@
 ### *Complejo Empresarial "Zona Acme"*
 
 [![Java 21+](https://img.shields.io/badge/JAVA_21+-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/es/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)](https://developer.mozilla.org/es/docs/Web/CSS)
+[![JavaScript ES6+](https://img.shields.io/badge/JAVASCRIPT_ES6+-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/es/docs/Web/JavaScript)
 [![Biometría Facial 128D](https://img.shields.io/badge/BIOMETR%C3%8DA_128D-06B6D4?style=for-the-badge&logo=opencv&logoColor=white)](#biometría-facial-y-reconocimiento-128d)
 [![Java Swing](https://img.shields.io/badge/JAVA_SWING-007396?style=for-the-badge&logo=java&logoColor=white)](https://docs.oracle.com/javase/tutorial/uiswing/)
 [![MySQL 8.0](https://img.shields.io/badge/MYSQL_8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
@@ -12,7 +15,7 @@
 [![GitFlow](https://img.shields.io/badge/GITFLOW-F05032?style=for-the-badge&logo=git&logoColor=white)](https://github.com/DMntill4/SICA.git)
 
 <p align="center">
-  <b>Sistema de arquitectura hexagonal pura + Reconocimiento Biométrico Facial 128D en vivo + Portal Web de Autoservicio de Visitantes y cliente GUI de escritorio en Java Swing (FlatLaf Dark) para el control de accesos, incidentes y auditoría inmutable en tiempo real.</b>
+  <b>Sistema de arquitectura hexagonal pura + Reconocimiento Biométrico Facial 128D en vivo + Portal Web de Autoservicio de Visitantes (HTML5, CSS3, JavaScript) y cliente GUI de escritorio en Java Swing (FlatLaf Dark) para el control de accesos, incidentes y auditoría inmutable en tiempo real.</b>
 </p>
 
 </div>
@@ -41,7 +44,7 @@ El Complejo Empresarial **"Zona Acme"** alberga a más de 30 empresas de alto pe
 
 **SICA** resuelve estas problemáticas mediante:
 - **Reconocimiento Biométrico Facial 128D**: Autenticación e identificación de visitantes por cámara en vivo en 5 segundos con vectores Euclidianos ($\text{Dist} \le 0.35$).
-- **Portal Web de Autoservicio (`/portal`)**: Registro independiente de invitados, emisión de pases web y Hub de Usuario Frecuente.
+- **Portal Web de Autoservicio (`/portal`)**: Desarrollado en HTML5, Vanilla CSS3 y JavaScript ES6+ para registro independiente de invitados, emisión de pases web y Hub de Usuario Frecuente.
 - **Automatización de los 4 Flujos de Acceso**: Pre-Registrado, No Anunciado / Express (Visita Rápida), Pase Temporal (Carnet Olvidado) y Regularización Automática de Salida Olvidada.
 - **Seguridad Reactiva e Inmediata**: Bloqueo instantáneo en portería al registrar incidentes de gravedad CRÍTICO o ALTO (`RESTRINGIDO`).
 - **Auditoría Inmutable**: Registro append-only de todas las operaciones del sistema con IP de origen y contexto de usuario.
@@ -53,7 +56,7 @@ El Complejo Empresarial **"Zona Acme"** alberga a más de 30 empresas de alto pe
 | Módulo | Descripción |
 |---|---|
 | **Reconocimiento Facial 128D** | Escaneo en vivo con MediaPipe Face Mesh, cálculo vectorial de distancia euclidiana y verificación anti-duplicados por rostro. |
-| **Portal Web de Autoservicio** | Interfaz web responsiva con Hub de Usuario Frecuente (`ESTADO: HABILITADO` / `ESTADO: RESTRINGIDO`), solicitud y cancelación de pases. |
+| **Portal Web de Autoservicio (HTML5/CSS3/JS)** | Interfaz web responsiva con Hub de Usuario Frecuente (`ESTADO: HABILITADO` / `ESTADO: RESTRINGIDO`), solicitud y cancelación de pases. |
 | **Autenticación & JWT** | Login con hashing `BCrypt` y tokens JWT de sesión sin estado con revocación en logout (`token_revocado`). |
 | **RBAC Granular** | Control de acceso basado en 16 permisos individuales en BD (`crear_persona`, `checkin_visita`, `aprobar_visita`, etc.). |
 | **Flujos de Visita & Express** | Pre-registro, visitas exprés de paquetería `[EXPRESS]`, aprobación de pases y regularización de salidas olvidadas (`CERRADA_POR_SISTEMA`). |
@@ -81,7 +84,7 @@ El sistema integra reconocimiento facial de alta precisión mediante la extracci
 | Tecnología | Rol en la Aplicación |
 |---|---|
 | **Java 21 (OpenJDK)** | Lenguaje principal de programación con sintaxis moderna (Records, Pattern Matching). |
-| **HTML5 / CSS3 / JavaScript** | Portal Web de Autoservicio para visitantes (`/portal`) con modales custom SICA. |
+| **HTML5 / CSS3 / JavaScript (ES6+)** | Frontend del Portal Web de Autoservicio (`/portal`), modales custom Glassmorphism y dinámicas SPA de la cámara. |
 | **MediaPipe Face Mesh** | Extracción biométrica facial de 468 puntos en navegador. |
 | **Java Swing + FlatLaf 3.4** | Cliente GUI de escritorio con diseño oscuro (*Dark Theme*) libre de recortes. |
 | **JDK Native HttpServer** | Servidor web concurrente integrado (`com.sun.net.httpserver.HttpServer`). |
@@ -91,6 +94,7 @@ El sistema integra reconocimiento facial de alta precisión mediante la extracci
 | **Apache Maven** | Gestión de dependencias y empaquetado JAR ejecutable autocontenido (*Shaded JAR*). |
 
 </div>
+
 
 ---
 
