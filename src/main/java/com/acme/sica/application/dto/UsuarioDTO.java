@@ -7,5 +7,7 @@ public record UsuarioDTO(
     String email,
     Long rolId,
     Long empresaId,
-    Boolean bloqueado
+    Boolean bloqueado,
+    String fotoUrl
 ) {}
+

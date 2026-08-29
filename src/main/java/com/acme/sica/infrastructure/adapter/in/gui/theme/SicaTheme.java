@@ -73,11 +73,40 @@ public class SicaTheme {
             UIManager.put("TextComponent.arc", 8);
             UIManager.put("ScrollBar.thumbArc", 8);
 
+            // 1. Paneles y Ventanas Oscuras
             UIManager.put("Panel.background", BG_MAIN);
             UIManager.put("Viewport.background", CARD_BG);
             UIManager.put("ScrollPane.background", CARD_BG);
             UIManager.put("SplitPane.background", BG_MAIN);
+            UIManager.put("RootPane.background", BG_MAIN);
 
+            // 2. Diálogos, Popups y OptionPane (100% Dark Slate Navy)
+            UIManager.put("OptionPane.background", CARD_BG);
+            UIManager.put("OptionPane.messageForeground", TEXT_MAIN);
+            UIManager.put("OptionPane.foreground", TEXT_MAIN);
+            UIManager.put("Dialog.background", CARD_BG);
+            UIManager.put("Dialog.contentPaneBackground", CARD_BG);
+            UIManager.put("Window.background", CARD_BG);
+
+            // 3. Componentes de Formulario (Labels, TextFields, CheckBoxes, ComboBox)
+            UIManager.put("Label.foreground", TEXT_MAIN);
+            UIManager.put("TextField.background", CARD_BG_ALT);
+            UIManager.put("TextField.foreground", TEXT_MAIN);
+            UIManager.put("TextField.caretForeground", TEXT_MAIN);
+            UIManager.put("TextField.selectionBackground", ACCENT_CYAN_LIGHT);
+            UIManager.put("TextField.selectionForeground", TEXT_MAIN);
+            UIManager.put("PasswordField.background", CARD_BG_ALT);
+            UIManager.put("PasswordField.foreground", TEXT_MAIN);
+            UIManager.put("TextArea.background", CARD_BG_ALT);
+            UIManager.put("TextArea.foreground", TEXT_MAIN);
+            UIManager.put("CheckBox.background", CARD_BG);
+            UIManager.put("CheckBox.foreground", TEXT_MAIN);
+            UIManager.put("RadioButton.background", CARD_BG);
+            UIManager.put("RadioButton.foreground", TEXT_MAIN);
+            UIManager.put("ComboBox.background", CARD_BG_ALT);
+            UIManager.put("ComboBox.foreground", TEXT_MAIN);
+
+            // 4. Pestañas y Tablas
             UIManager.put("TabbedPane.selectedBackground", CARD_BG);
             UIManager.put("TabbedPane.background", BG_MAIN);
             UIManager.put("TabbedPane.foreground", TEXT_MUTED);
@@ -93,6 +122,45 @@ public class SicaTheme {
             UIManager.put("TableHeader.foreground", ACCENT_NAVY);
         } catch (Exception ignored) {}
     }
+
+    /**
+     * Aplica el tema oscuro azul marino SICA de forma recursiva a cualquier contenedor o formulario.
+     */
+    public static void applyDarkThemeRecursively(Component component) {
+        if (component == null) return;
+
+        if (component instanceof JPanel panel) {
+            panel.setBackground(CARD_BG);
+            panel.setForeground(TEXT_MAIN);
+        } else if (component instanceof JDialog dialog) {
+            dialog.getContentPane().setBackground(CARD_BG);
+        } else if (component instanceof JLabel label) {
+            label.setForeground(TEXT_MAIN);
+        } else if (component instanceof JCheckBox chk) {
+            chk.setBackground(CARD_BG);
+            chk.setForeground(TEXT_MAIN);
+            chk.setOpaque(true);
+        } else if (component instanceof JTextField txt) {
+            txt.setBackground(CARD_BG_ALT);
+            txt.setForeground(TEXT_MAIN);
+            txt.setCaretColor(TEXT_MAIN);
+            txt.setBorder(BorderFactory.createCompoundBorder(
+                    new LineBorder(BORDER_SUBTLE, 1, true),
+                    new EmptyBorder(6, 10, 6, 10)
+            ));
+        } else if (component instanceof JScrollPane scrollPane) {
+            scrollPane.setBackground(CARD_BG);
+            scrollPane.getViewport().setBackground(CARD_BG);
+            scrollPane.setBorder(BorderFactory.createLineBorder(BORDER_SUBTLE, 1));
+        }
+
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                applyDarkThemeRecursively(child);
+            }
+        }
+    }
+
 
     public static Border createCardBorder(String title) {
         return BorderFactory.createCompoundBorder(

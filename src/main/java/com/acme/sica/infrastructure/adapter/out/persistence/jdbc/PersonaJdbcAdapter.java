@@ -184,25 +184,21 @@ public class PersonaJdbcAdapter implements PersonaRepository {
                 try (PreparedStatement ps = conn.prepareStatement("DELETE FROM incidente WHERE persona_id = ?")) {
                     ps.setLong(1, id);
                     ps.executeUpdate();
-                }
+                } catch (Exception ignored) {}
 
-                // 2. Eliminar códigos QR asociados a las visitas de la persona
-                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM codigo_qr WHERE visita_id IN (SELECT id FROM visita WHERE persona_id = ?)")) {
-                    ps.setLong(1, id);
-                    ps.executeUpdate();
-                }
 
                 // 3. Eliminar visitas asociadas a la persona
                 try (PreparedStatement ps = conn.prepareStatement("DELETE FROM visita WHERE persona_id = ?")) {
                     ps.setLong(1, id);
                     ps.executeUpdate();
-                }
+                } catch (Exception ignored) {}
 
                 // 4. Eliminar el registro principal de persona
                 try (PreparedStatement ps = conn.prepareStatement("DELETE FROM persona WHERE id = ?")) {
                     ps.setLong(1, id);
                     ps.executeUpdate();
                 }
+
 
                 conn.commit();
             } catch (SQLException e) {

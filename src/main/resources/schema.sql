@@ -123,15 +123,6 @@ CREATE TABLE IF NOT EXISTS visita (
     CONSTRAINT fk_visita_grupo FOREIGN KEY (visita_grupo_id) REFERENCES visita_grupo(id) ON DELETE SET NULL
 );
 
--- 11. Tabla: CODIGO_QR
-CREATE TABLE IF NOT EXISTS codigo_qr (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    visita_id BIGINT NOT NULL UNIQUE,
-    codigo_hash VARCHAR(255) NOT NULL UNIQUE,
-    expira_en TIMESTAMP NOT NULL,
-    usado BOOLEAN DEFAULT FALSE,
-    CONSTRAINT fk_codigo_qr_visita FOREIGN KEY (visita_id) REFERENCES visita(id) ON DELETE CASCADE
-);
 
 -- 12. Tabla: INCIDENTE
 CREATE TABLE IF NOT EXISTS incidente (

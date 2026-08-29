@@ -153,9 +153,21 @@ public class SicaApplication {
             com.acme.sica.infrastructure.adapter.in.http.handlers.BiometriaHttpHandler biometriaHandler = new com.acme.sica.infrastructure.adapter.in.http.handlers.BiometriaHttpHandler(personaRepo);
             com.acme.sica.infrastructure.adapter.in.http.handlers.StaticFileHttpHandler staticFileHandler = new com.acme.sica.infrastructure.adapter.in.http.handlers.StaticFileHttpHandler("/public/portal");
 
-            // 7. HttpServer Concurrente
+            // 7. HttpServer Concurrente (con reintento de puertos ante ejecucion previa)
             int port = 8080;
-            HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+            HttpServer server = null;
+            while (port <= 8085) {
+                try {
+                    server = HttpServer.create(new InetSocketAddress(port), 0);
+                    break;
+                } catch (java.net.BindException e) {
+                    port++;
+                }
+            }
+            if (server == null) {
+                server = HttpServer.create(new InetSocketAddress(8080), 0);
+            }
+
             server.createContext("/", router);
             server.createContext("/api/pases", solicitudHandler);
             server.createContext("/api/biometria", biometriaHandler);
@@ -163,6 +175,7 @@ public class SicaApplication {
 
             server.setExecutor(Executors.newFixedThreadPool(10));
             server.start();
+
 
             System.out.println("=================================================");
             System.out.println(" Servidor SICA iniciado exitosamente en puerto " + port);

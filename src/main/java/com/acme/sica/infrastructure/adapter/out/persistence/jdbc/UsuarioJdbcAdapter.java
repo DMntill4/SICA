@@ -98,7 +98,7 @@ public class UsuarioJdbcAdapter implements UsuarioRepository {
 
     @Override
     public Usuario save(Usuario usuario) {
-        String sql = "INSERT INTO usuario (username, password_hash, nombre_completo, email, rol_id, empresa_id, intentos_fallidos, bloqueado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO usuario (username, password_hash, nombre_completo, email, rol_id, empresa_id, intentos_fallidos, bloqueado, foto_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = connectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
@@ -114,6 +114,7 @@ public class UsuarioJdbcAdapter implements UsuarioRepository {
             }
             ps.setInt(7, usuario.getIntentosFallidos());
             ps.setBoolean(8, usuario.isBloqueado());
+            ps.setString(9, usuario.getFotoUrl());
 
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -129,7 +130,7 @@ public class UsuarioJdbcAdapter implements UsuarioRepository {
 
     @Override
     public void update(Usuario usuario) {
-        String sql = "UPDATE usuario SET password_hash = ?, nombre_completo = ?, email = ?, rol_id = ?, empresa_id = ?, intentos_fallidos = ?, bloqueado = ? WHERE id = ?";
+        String sql = "UPDATE usuario SET password_hash = ?, nombre_completo = ?, email = ?, rol_id = ?, empresa_id = ?, intentos_fallidos = ?, bloqueado = ?, foto_url = ? WHERE id = ?";
         try (Connection conn = connectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
@@ -144,7 +145,8 @@ public class UsuarioJdbcAdapter implements UsuarioRepository {
             }
             ps.setInt(6, usuario.getIntentosFallidos());
             ps.setBoolean(7, usuario.isBloqueado());
-            ps.setLong(8, usuario.getId());
+            ps.setString(8, usuario.getFotoUrl());
+            ps.setLong(9, usuario.getId());
 
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -169,12 +171,13 @@ public class UsuarioJdbcAdapter implements UsuarioRepository {
         List<Usuario> list = new ArrayList<>();
         String sql = """
             SELECT u.id, u.username, u.password_hash, u.nombre_completo, u.email, u.rol_id, r.nombre AS rol_nombre,
-                   u.empresa_id, e.nombre AS empresa_nombre, u.intentos_fallidos, u.bloqueado, u.creado_en
+                   u.empresa_id, e.nombre AS empresa_nombre, u.intentos_fallidos, u.bloqueado, u.foto_url, u.creado_en
             FROM usuario u
             JOIN rol r ON u.rol_id = r.id
             LEFT JOIN empresa e ON u.empresa_id = e.id
             ORDER BY u.id ASC
         """;
+
 
         try (Connection conn = connectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -237,10 +240,12 @@ public class UsuarioJdbcAdapter implements UsuarioRepository {
         
         u.setIntentosFallidos(rs.getInt("intentos_fallidos"));
         u.setBloqueado(rs.getBoolean("bloqueado"));
+        try { u.setFotoUrl(rs.getString("foto_url")); } catch (Exception ignored) {}
         Timestamp ts = rs.getTimestamp("creado_en");
         if (ts != null) {
             u.setCreadoEn(ts.toLocalDateTime());
         }
+
         return u;
     }
 }

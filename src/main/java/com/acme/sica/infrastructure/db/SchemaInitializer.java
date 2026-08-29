@@ -80,6 +80,13 @@ public class SchemaInitializer {
             try {
                 stmt.executeUpdate("ALTER TABLE persona MODIFY COLUMN foto_url LONGTEXT NULL");
             } catch (Exception ignored) {}
+            try {
+                stmt.executeUpdate("ALTER TABLE usuario ADD COLUMN foto_url LONGTEXT NULL");
+            } catch (Exception ignored) {}
+            try {
+                stmt.executeUpdate("ALTER TABLE usuario MODIFY COLUMN foto_url LONGTEXT NULL");
+            } catch (Exception ignored) {}
+
 
             try {
                 stmt.executeUpdate("""
@@ -102,6 +109,13 @@ public class SchemaInitializer {
                     )
                 """);
             } catch (Exception ignored) {}
+
+            try {
+                stmt.executeUpdate("DROP TABLE IF EXISTS codigo_qr");
+            } catch (Exception ignored) {}
+
+
+
 
             // Inicialización de tablas y migración verificada
 

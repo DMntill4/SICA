@@ -67,15 +67,20 @@ public class AuditoriaPanel extends JPanel {
         leftPanel.setBackground(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG);
         leftPanel.setBorder(com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.createCardBorder("Usuarios del Sistema (Cuentas Activas)"));
 
-        String[] colsUsers = {"ID", "Username", "Nombre Completo", "Rol", "Estado"};
+        String[] colsUsers = {"ID", "Foto", "Username", "Nombre Completo", "Rol", "Estado"};
         tableModelUsuarios = new DefaultTableModel(colsUsers, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
         };
 
         tblUsuarios = new JTable(tableModelUsuarios);
         com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblUsuarios);
+        tblUsuarios.setRowHeight(36);
+        tblUsuarios.getColumnModel().getColumn(1).setCellRenderer(new com.acme.sica.infrastructure.adapter.in.gui.components.AvatarTableCellRenderer());
+        tblUsuarios.getColumnModel().getColumn(1).setPreferredWidth(48);
+
         JScrollPane scrollUsers = new JScrollPane(tblUsuarios);
         leftPanel.add(scrollUsers, BorderLayout.CENTER);
+
 
         JPanel userActionPanel = new JPanel(new GridLayout(2, 3, 4, 4));
         userActionPanel.setOpaque(false);
@@ -136,8 +141,14 @@ public class AuditoriaPanel extends JPanel {
         com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleButton(btnRefresh, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG_ALT, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.ACCENT_CYAN);
         btnRefresh.addActionListener(e -> loadData());
 
+        JButton btnExportar = new JButton("📥 Exportar CSV");
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleButton(btnExportar, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.CARD_BG_ALT, com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.TEXT_MAIN);
+        btnExportar.addActionListener(e -> executeExportarCSV());
+
+        actionPanel.add(btnExportar);
         actionPanel.add(btnRefresh);
         rightPanel.add(actionPanel, BorderLayout.SOUTH);
+
         splitPane.setRightComponent(rightPanel);
 
         add(splitPane, BorderLayout.CENTER);
@@ -181,12 +192,14 @@ public class AuditoriaPanel extends JPanel {
                         Boolean bloq = (Boolean) u.get("bloqueado");
                         tableModelUsuarios.addRow(new Object[]{
                                 u.get("id"),
+                                u.get("fotoUrl"),
                                 u.get("username"),
                                 u.get("nombreCompleto"),
                                 u.get("rolNombre"),
                                 (bloq != null && bloq) ? "🔴 BLOQUEADO" : "🟢 ACTIVO"
                         });
                     }
+
                 } catch (Exception ignored) {
                 }
             }
@@ -467,8 +480,10 @@ public class AuditoriaPanel extends JPanel {
 
         form.add(top, BorderLayout.NORTH);
         form.add(new JScrollPane(permPanel), BorderLayout.CENTER);
+        SicaTheme.applyDarkThemeRecursively(form);
 
         int option = JOptionPane.showConfirmDialog(parent, form, "➕ Crear Nuevo Rol en SICA", JOptionPane.OK_CANCEL_OPTION);
+
         if (option == JOptionPane.OK_OPTION) {
             String nom = txtNombre.getText().trim();
             String desc = txtDesc.getText().trim();
@@ -529,7 +544,9 @@ public class AuditoriaPanel extends JPanel {
             return;
         }
 
+        SicaTheme.applyDarkThemeRecursively(permPanel);
         int option = JOptionPane.showConfirmDialog(parent, new JScrollPane(permPanel), "✏️ Modificar Permisos de Rol: " + rolNombre, JOptionPane.OK_CANCEL_OPTION);
+
         if (option == JOptionPane.OK_OPTION) {
             List<Long> selIds = new java.util.ArrayList<>();
             for (JCheckBox chk : checkBoxes) {
@@ -609,7 +626,9 @@ public class AuditoriaPanel extends JPanel {
         panel.add(new JLabel("Email:")); panel.add(txtEmail);
         panel.add(new JLabel("Rol del Sistema:")); panel.add(comboRol);
 
+        SicaTheme.applyDarkThemeRecursively(panel);
         int option = JOptionPane.showConfirmDialog(this, panel, "✏️ Editar Usuario: " + username, JOptionPane.OK_CANCEL_OPTION);
+
         if (option == JOptionPane.OK_OPTION) {
             String nom = txtNombre.getText().trim();
             String email = txtEmail.getText().trim();
@@ -688,8 +707,10 @@ public class AuditoriaPanel extends JPanel {
             form.add(new JLabel("NIT Empresa:")); form.add(txtNit);
             form.add(new JLabel("Nombre Empresa:")); form.add(txtNombre);
             form.add(new JLabel("Ubicación Oficina:")); form.add(txtOficina);
+            SicaTheme.applyDarkThemeRecursively(form);
 
             int opt = JOptionPane.showConfirmDialog(dialog, form, "➕ Registrar Nueva Empresa (USR-05)", JOptionPane.OK_CANCEL_OPTION);
+
             if (opt == JOptionPane.OK_OPTION) {
                 String nit = txtNit.getText().trim();
                 String nom = txtNombre.getText().trim();
