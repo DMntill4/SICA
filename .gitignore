@@ -1,4 +1,6 @@
 .env
+config.properties
+
 docker-compose.yml
 target/
 .vscode/

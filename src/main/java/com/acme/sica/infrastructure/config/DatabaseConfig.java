@@ -79,8 +79,9 @@ public class DatabaseConfig {
     }
 
     public static String getDbPassword() {
-        return getProperty("db.password", "-3ta9}OK`4[Y");
+        return getProperty("db.password", "root");
     }
+
 
     private static String getProperty(String key, String defaultValue) {
         // Prioridad: System.getProperty -> properties -> env variable -> defaultValue
