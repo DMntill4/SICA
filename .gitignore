@@ -1,5 +1,6 @@
 .env
-config.properties
+/config.properties
+
 
 docker-compose.yml
 target/

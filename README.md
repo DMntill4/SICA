@@ -176,7 +176,11 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
+> [!NOTE]
+> **¿Cómo funciona la configuración en SICA?**: El repositorio **ya incluye** la plantilla base `src/main/resources/config.properties`. Quien baje el proyecto **SOLO tiene que crear su archivo `.env`**. Al iniciar el servidor, `DatabaseConfig.java` detecta el archivo `.env` local y sobreescribe automáticamente las credenciales de conexión sin requerir la edición de `config.properties`.
+
 ---
+
 
 ### 🗄️ 3. Configurar la Base de Datos (Elegir Opción A o B)
 
