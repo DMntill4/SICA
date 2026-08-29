@@ -5,6 +5,8 @@ public enum EstadoVisita {
     PENDIENTE_APROBACION,
     PENDIENTE_APROBACION_OLVIDO,
     RECHAZADO,
+    CANCELADA,
     DENTRO,
     FINALIZADO
 }
+

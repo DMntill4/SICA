@@ -236,10 +236,6 @@ public class ReportesPanel extends JPanel {
 
         lblTotalRegistros.setText("📊 Total Registros (" + tituloModulo + "): " + lista.size());
         lblVisitasDentro.setText("🟢 Personas Dentro: " + dentroCount);
-
-        if (lista.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "ℹ️ No se encontraron registros para los filtros seleccionados (REP-04)", "Sin Resultados", JOptionPane.INFORMATION_MESSAGE);
-        }
     }
 
     private void renderTablaIncidentes(List<Incidente> lista) {
@@ -261,11 +257,8 @@ public class ReportesPanel extends JPanel {
 
         lblTotalRegistros.setText("📊 Total Incidentes: " + lista.size());
         lblIncidentesCriticos.setText("🚨 Incidentes Totales: " + lista.size());
-
-        if (lista.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "ℹ️ No se encontraron incidentes registrados para el filtro (REP-04)", "Sin Resultados", JOptionPane.INFORMATION_MESSAGE);
-        }
     }
+
 
     private void executeExportarCSV() {
         if (tableModel.getRowCount() == 0) {

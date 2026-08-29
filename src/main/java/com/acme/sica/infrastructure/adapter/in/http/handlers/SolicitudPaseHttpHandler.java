@@ -166,11 +166,12 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
             Visita v = new Visita();
             v.setPersonaId(persona.getId());
             v.setFuncionarioId(funcionarioId != null ? funcionarioId : 1L);
-            v.setTipoVisita(TipoVisita.PRE_REGISTRADA);
+            v.setTipoVisita(motivo.contains("[EXPRESS]") ? TipoVisita.NO_ANUNCIADA : TipoVisita.PRE_REGISTRADA);
             v.setEstadoVisita(EstadoVisita.APROBADO);
             v.setMotivo(motivo);
             v.setFechaHoraProgramada(LocalDateTime.now().plusHours(2));
             visitaRepository.save(v);
+
         } catch (Exception ex) {
             System.err.println("[SolicitudPase Warning] Visita automatica no registrada en porteria, pero pase guardado: " + ex.getMessage());
         }
@@ -221,6 +222,26 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
         Long id = extractIdFromPath(path, "/cancelar");
         if (id != null) {
             solicitudRepository.actualizarEstado(id, SolicitudPase.EstadoSolicitud.RECHAZADO);
+
+            // Sincronizar cancelación en la tabla visita para reflejar estado CANCELADA en la App GUI
+            Optional<SolicitudPase> optS = solicitudRepository.buscarPorId(id);
+            if (optS.isPresent()) {
+                SolicitudPase s = optS.get();
+                Optional<Persona> optP = personaRepository.findByDocIdentidad(s.getDocIdentidad());
+                if (optP.isPresent()) {
+                    Persona p = optP.get();
+                    try {
+                        visitaRepository.findAll().stream()
+                                .filter(v -> v.getPersonaId() != null && v.getPersonaId().equals(p.getId()) && v.getEstadoVisita() != EstadoVisita.FINALIZADO)
+                                .forEach(v -> {
+                                    v.setEstadoVisita(EstadoVisita.CANCELADA);
+                                    visitaRepository.update(v);
+                                });
+                    } catch (Exception ex) {
+                        System.err.println("[SolicitudPase Warning] Error al actualizar estado CANCELADA en visita: " + ex.getMessage());
+                    }
+                }
+            }
         }
         Map<String, Object> resp = new HashMap<>();
         resp.put("mensaje", "Solicitud de pase cancelada exitosamente.");
@@ -228,6 +249,7 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
 
         HttpUtils.sendJsonResponse(exchange, 200, resp);
     }
+
 
     private void handleListarPorPersonaDoc(HttpExchange exchange, String path) throws IOException {
         String doc = path.substring(path.lastIndexOf("/") + 1).trim();

@@ -103,18 +103,8 @@ public class SchemaInitializer {
                 """);
             } catch (Exception ignored) {}
 
-            // 1.5 Purga de seguridad: Limpiar personas, visitas y solicitudes de pase anteriores conservando únicamente usuarios (usuario)
+            // Inicialización de tablas y migración verificada
 
-            try {
-                stmt.executeUpdate("DELETE FROM incidente");
-                stmt.executeUpdate("DELETE FROM codigo_qr");
-                stmt.executeUpdate("DELETE FROM visita");
-                stmt.executeUpdate("DELETE FROM solicitud_pase");
-                stmt.executeUpdate("DELETE FROM persona");
-                System.out.println("[DB Init] Purga de seguridad completada: Base de datos limpia de personas e historial. Usuarios (usuario) preservados 100%.");
-            } catch (Exception e) {
-                System.err.println("[DB Init Warning] No se pudo purgar datos anteriores: " + e.getMessage());
-            }
 
             // 2. Sembrar Usuarios (las contraseñas se hashean)
 
