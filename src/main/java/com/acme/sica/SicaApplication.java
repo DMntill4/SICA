@@ -127,11 +127,11 @@ public class SicaApplication {
 
             // Rutas Incidentes
             router.post("/incidentes", incidenteHandler::handleCreate, "registrar_incidente");
-            router.get("/incidentes", incidenteHandler::handleFindAll, "generar_reporte");
+            router.get("/incidentes", incidenteHandler::handleFindAll, null);
 
             // Rutas Visitas
-            router.get("/visitas", visitaHandler::handleFindAll, "generar_reporte");
-            router.get("/visitas/{id}", visitaHandler::handleFindById, "generar_reporte");
+            router.get("/visitas", visitaHandler::handleFindAll, null);
+            router.get("/visitas/{id}", visitaHandler::handleFindById, null);
             router.post("/visitas/preregistrar", visitaHandler::handlePreregistrar, "preregistrar_visita");
             router.post("/visitas/no-anunciada", visitaHandler::handleNoAnunciada, "checkin_visita");
             router.post("/visitas/pase-temporal", visitaHandler::handlePaseTemporal, "checkin_visita");
