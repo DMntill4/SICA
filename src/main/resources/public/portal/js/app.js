@@ -282,6 +282,8 @@ function iniciarSecuenciaEscaneo5s() {
                         "Tu rostro no coincide con ningún usuario registrado en la base de datos SICA.\n\nPor favor regístrate como Nuevo Visitante (Road B) para crear tu perfil.",
                         "⛔"
                     );
+                    // BUG #9 FIX: detener la cámara antes de cambiar de sección
+                    if (window.detenerCamara) window.detenerCamara();
                     selectRoad('NUEVO');
 
                 } else {
@@ -387,7 +389,7 @@ async function verVisitasPendientesUsuario() {
         }
 
         // 2. FILTRAR Y ORDENAR VISITAS DE LA BASE DE DATOS (NUEVA A VIEJA)
-        const misVisitasDB = resVisitas.filter(v => 
+        const misVisitasDB = resVisitas.filter(v =>
             (v.personaDocIdentidad && String(v.personaDocIdentidad).trim() === docUser) ||
             (v.personaDoc && String(v.personaDoc).trim() === docUser) ||
             (v.personaId && (v.personaId == authenticatedUser.personaId || v.personaId == authenticatedUser.id))
@@ -401,21 +403,41 @@ async function verVisitasPendientesUsuario() {
 
         let items = [];
 
-        // Mapear pases de la web
+        // BUG #6 FIX: usar el estado del pase como fuente de verdad.
+        // Solo complementar con la visita de portería cuando el pase siga PENDIENTE_APROBACION.
         resPases.forEach(p => {
+            // Estado base del pase (web)
             let estadoReal = p.estado;
-            
-            const ultVisita = misVisitasDB.length > 0 ? misVisitasDB[0] : null;
+            let rawEstado = p.estado;
 
             if (isRestringido) {
                 estadoReal = '🔴 ACCESO RESTRINGIDO POR SEGURIDAD SICA';
-            } else if (ultVisita) {
-                if (ultVisita.estadoVisita === 'DENTRO') estadoReal = '🟢 DENTRO (Ingreso Realizado en Portería)';
-                else if (ultVisita.estadoVisita === 'FINALIZADO') estadoReal = '🏁 FINALIZADO (Salida Registrada)';
-                else if (ultVisita.estadoVisita === 'APROBADO') estadoReal = '✅ APROBADO (Listo para Ingreso)';
-                else if (ultVisita.estadoVisita === 'RECHAZADO') estadoReal = '🔴 RECHAZADO POR FUNCIONARIO';
-                else if (ultVisita.estadoVisita === 'PENDIENTE_APROBACION_OLVIDO') estadoReal = '🪪 OLVIDO CARNET (Pendiente Aprobación)';
-                else if (ultVisita.estadoVisita === 'PENDIENTE_APROBACION') estadoReal = '⏳ PENDIENTE DE APROBACIÓN POR FUNCIONARIO';
+            } else if (p.estado === 'PENDIENTE_APROBACION') {
+                // Solo buscar en portería si el pase aún no fue procesado
+                const visitaMatch = misVisitasDB.find(v =>
+                    v.estadoVisita === 'DENTRO' ||
+                    v.estadoVisita === 'APROBADO' ||
+                    v.estadoVisita === 'RECHAZADO' ||
+                    v.estadoVisita === 'FINALIZADO'
+                );
+                if (visitaMatch) {
+                    rawEstado = visitaMatch.estadoVisita;
+                    if (visitaMatch.estadoVisita === 'DENTRO')     estadoReal = '🟢 DENTRO (Ingreso Realizado en Portería)';
+                    else if (visitaMatch.estadoVisita === 'FINALIZADO') estadoReal = '🏁 FINALIZADO (Salida Registrada)';
+                    else if (visitaMatch.estadoVisita === 'APROBADO')   estadoReal = '✅ APROBADO (Listo para Ingreso)';
+                    else if (visitaMatch.estadoVisita === 'RECHAZADO')  estadoReal = '🔴 RECHAZADO POR FUNCIONARIO';
+                } else {
+                    estadoReal = '⏳ PENDIENTE DE APROBACIÓN POR FUNCIONARIO';
+                }
+            } else if (p.estado === 'APROBADO') {
+                // Si el pase ya fue aprobado, verificar si ya ingresó
+                const dentroVisita = misVisitasDB.find(v => v.estadoVisita === 'DENTRO');
+                const finVisita    = misVisitasDB.find(v => v.estadoVisita === 'FINALIZADO');
+                if      (finVisita)   { estadoReal = '🏁 FINALIZADO (Salida Registrada)'; rawEstado = 'FINALIZADO'; }
+                else if (dentroVisita){ estadoReal = '🟢 DENTRO (Ingreso Realizado en Portería)'; rawEstado = 'DENTRO'; }
+                else                  { estadoReal = '✅ APROBADO (Listo para Ingreso)'; }
+            } else if (p.estado === 'RECHAZADO' || p.estado === 'CANCELADO') {
+                estadoReal = '🔴 RECHAZADO / CANCELADO';
             }
 
             items.push({
@@ -423,7 +445,7 @@ async function verVisitasPendientesUsuario() {
                 empresa: p.empresaDestino || 'Zona Acme',
                 motivo: p.motivo,
                 estado: estadoReal,
-                rawEstado: p.estado
+                rawEstado: rawEstado
             });
         });
 
@@ -433,10 +455,10 @@ async function verVisitasPendientesUsuario() {
             if (!yaMapeado) {
                 let estText = v.estadoVisita;
                 if (isRestringido) estText = '🔴 ACCESO RESTRINGIDO POR SEGURIDAD SICA';
-                else if (v.estadoVisita === 'DENTRO') estText = '🟢 DENTRO (Ingreso Realizado en Portería)';
-                else if (v.estadoVisita === 'FINALIZADO') estText = '🏁 FINALIZADO (Salida Registrada)';
-                else if (v.estadoVisita === 'APROBADO') estText = '✅ APROBADO (Listo para Ingreso)';
-                else if (v.estadoVisita === 'PENDIENTE_APROBACION') estText = '⏳ PENDIENTE DE APROBACIÓN POR FUNCIONARIO';
+                else if (v.estadoVisita === 'DENTRO')                    estText = '🟢 DENTRO (Ingreso Realizado en Portería)';
+                else if (v.estadoVisita === 'FINALIZADO')                estText = '🏁 FINALIZADO (Salida Registrada)';
+                else if (v.estadoVisita === 'APROBADO')                  estText = '✅ APROBADO (Listo para Ingreso)';
+                else if (v.estadoVisita === 'PENDIENTE_APROBACION')      estText = '⏳ PENDIENTE DE APROBACIÓN POR FUNCIONARIO';
                 else if (v.estadoVisita === 'PENDIENTE_APROBACION_OLVIDO') estText = '🪪 OLVIDO CARNET (Pendiente Aprobación)';
 
                 items.push({
@@ -554,9 +576,12 @@ async function actualizarEstadoTicketEnVivo() {
                 } else if (ultVisita.estadoVisita === 'PENDIENTE_APROBACION_OLVIDO') {
                     estadoEncontrado = "🪪 PENDIENTE APROBACIÓN POR OLVIDO CARNET";
                     colorBg = "#F59E0B";
+                } else if (ultVisita.estadoVisita === 'PENDIENTE_APROBACION') {
+                    estadoEncontrado = "PENDIENTE APROBACIÓN";
+                    colorBg = "#F59E0B";
                 }
             } else if (resPases.length > 0) {
-                const ultPase = resPases[resPases.length - 1];
+                const ultPase = resPases[0];
                 if (ultPase.estado === 'APROBADO') {
                     estadoEncontrado = "✅ APROBADO POR FUNCIONARIO";
                     colorBg = "#2563EB";

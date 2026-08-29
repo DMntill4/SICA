@@ -147,10 +147,11 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
         Optional<Persona> optP = personaRepository.findByDocIdentidad(doc);
         Persona persona;
         if (optP.isPresent()) {
+            // BUG #3 FIX: usar update() para personas existentes, no save() (que podría hacer INSERT)
             persona = optP.get();
             if (vectorBiometrico != null) persona.setVectorBiometrico(vectorBiometrico);
             if (fotoUrl != null) persona.setFotoUrl(fotoUrl);
-            personaRepository.save(persona);
+            personaRepository.update(persona);
         } else {
             persona = new Persona();
             String[] partes = nombre.split(" ", 2);
@@ -232,25 +233,29 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
             return;
         }
 
+        // BUG #4 FIX: cargar la solicitud ANTES de actualizar el estado
+        Optional<SolicitudPase> optS = solicitudRepository.buscarPorId(id);
+        if (optS.isEmpty()) {
+            HttpUtils.sendErrorResponse(exchange, 404, "Solicitud de pase no encontrada");
+            return;
+        }
+
         solicitudRepository.actualizarEstado(id, SolicitudPase.EstadoSolicitud.RECHAZADO);
 
         // Sincronizar estado RECHAZADO en la tabla visita
-        Optional<SolicitudPase> optS = solicitudRepository.buscarPorId(id);
-        if (optS.isPresent()) {
-            SolicitudPase s = optS.get();
-            Optional<Persona> optP = personaRepository.findByDocIdentidad(s.getDocIdentidad());
-            if (optP.isPresent()) {
-                Persona p = optP.get();
-                try {
-                    visitaRepository.findAll().stream()
-                            .filter(v -> v.getPersonaId() != null && v.getPersonaId().equals(p.getId()) && v.getEstadoVisita() == EstadoVisita.PENDIENTE_APROBACION)
-                            .forEach(v -> {
-                                v.setEstadoVisita(EstadoVisita.RECHAZADO);
-                                visitaRepository.update(v);
-                            });
-                } catch (Exception ex) {
-                    System.err.println("[SolicitudPase Warning] Error al actualizar estado RECHAZADO en visita: " + ex.getMessage());
-                }
+        SolicitudPase s = optS.get();
+        Optional<Persona> optP = personaRepository.findByDocIdentidad(s.getDocIdentidad());
+        if (optP.isPresent()) {
+            Persona p = optP.get();
+            try {
+                visitaRepository.findAll().stream()
+                        .filter(v -> v.getPersonaId() != null && v.getPersonaId().equals(p.getId()) && v.getEstadoVisita() == EstadoVisita.PENDIENTE_APROBACION)
+                        .forEach(v -> {
+                            v.setEstadoVisita(EstadoVisita.RECHAZADO);
+                            visitaRepository.update(v);
+                        });
+            } catch (Exception ex) {
+                System.err.println("[SolicitudPase Warning] Error al actualizar estado RECHAZADO en visita: " + ex.getMessage());
             }
         }
 
@@ -267,7 +272,9 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
         if (id != null) {
             solicitudRepository.actualizarEstado(id, SolicitudPase.EstadoSolicitud.RECHAZADO);
 
-            // Sincronizar cancelación en la tabla visita para reflejar estado CANCELADA en la App GUI
+            // Sincronizar cancelación en la tabla visita
+            // BUG #5 FIX: solo cancelar visitas PENDIENTE_APROBACION para no afectar
+            // visitas DENTRO u APROBADAS de otros pases de la misma persona
             Optional<SolicitudPase> optS = solicitudRepository.buscarPorId(id);
             if (optS.isPresent()) {
                 SolicitudPase s = optS.get();
@@ -276,7 +283,10 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
                     Persona p = optP.get();
                     try {
                         visitaRepository.findAll().stream()
-                                .filter(v -> v.getPersonaId() != null && v.getPersonaId().equals(p.getId()) && v.getEstadoVisita() != EstadoVisita.FINALIZADO)
+                                .filter(v -> v.getPersonaId() != null
+                                        && v.getPersonaId().equals(p.getId())
+                                        && (v.getEstadoVisita() == EstadoVisita.PENDIENTE_APROBACION
+                                            || v.getEstadoVisita() == EstadoVisita.APROBADO))
                                 .forEach(v -> {
                                     v.setEstadoVisita(EstadoVisita.CANCELADA);
                                     visitaRepository.update(v);
@@ -315,9 +325,16 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
                     if (sp.getEstado() == SolicitudPase.EstadoSolicitud.PENDIENTE_APROBACION) {
                         boolean estaAprobada = misVisitas.stream()
                                 .anyMatch(v -> v.getEstadoVisita() == EstadoVisita.APROBADO || v.getEstadoVisita() == EstadoVisita.DENTRO || v.getEstadoVisita() == EstadoVisita.FINALIZADO);
+                        
+                        boolean estaRechazada = misVisitas.stream()
+                                .anyMatch(v -> v.getEstadoVisita() == EstadoVisita.RECHAZADO);
+
                         if (estaAprobada) {
                             sp.setEstado(SolicitudPase.EstadoSolicitud.APROBADO);
                             solicitudRepository.actualizarEstado(sp.getId(), SolicitudPase.EstadoSolicitud.APROBADO);
+                        } else if (estaRechazada) {
+                            sp.setEstado(SolicitudPase.EstadoSolicitud.RECHAZADO);
+                            solicitudRepository.actualizarEstado(sp.getId(), SolicitudPase.EstadoSolicitud.RECHAZADO);
                         }
                     }
                 }

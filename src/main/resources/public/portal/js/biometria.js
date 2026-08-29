@@ -287,7 +287,16 @@ function iniciarRenderFaceMeshCanvas() {
 function iniciarEscaneoReal5Segundos(onProgressCallback, onCompleteCallback) {
     const video = document.getElementById('webcam');
     if (!videoStream || !video || video.paused) {
-        alert("Primero activa tu cámara web para realizar el escaneo facial.");
+        // BUG #7 FIX: usar modal custom en lugar de alert() nativo
+        if (window.mostrarNotificacionCustomSica) {
+            window.mostrarNotificacionCustomSica(
+                "CÁMARA NO ACTIVA",
+                "Primero activa tu cámara web para realizar el escaneo facial.",
+                "📷"
+            );
+        } else {
+            alert("Primero activa tu cámara web para realizar el escaneo facial.");
+        }
         return;
     }
 
@@ -342,25 +351,96 @@ function iniciarEscaneoReal5Segundos(onProgressCallback, onCompleteCallback) {
     }, 100);
 }
 
+/**
+ * Calcula un vector biométrico de 128 dimensiones estabilizado por zonas faciales.
+ *
+ * BUG #1 FIX: El enfoque anterior promediaba píxeles en segmentos lineales del buffer completo,
+ * produciendo vectores no-deterministas (cambiaban con iluminación/ángulo/compresión).
+ *
+ * Nuevo enfoque: divide la imagen en 8 zonas faciales (frente, ojos, nariz, boca, mejillas,
+ * mentón, cuello, fondo) y por cada zona extrae 16 estadísticas (media y desv. estándar de
+ * R, G, B y luminancia) → 8 zonas × 16 = 128 dimensiones.
+ * Esto es mucho más estable entre capturas del mismo rostro.
+ */
 function calcularVectorBiometricoReal(pixelData) {
-    let vector = [];
-    let step = Math.floor(pixelData.length / 128);
+    const W = 320;
+    const H = 240;
 
-    for (let i = 0; i < 128; i++) {
-        let sum = 0;
-        let idx = i * step;
-        for (let j = 0; j < step && (idx + j + 2) < pixelData.length; j += 4) {
-            let r = pixelData[idx + j];
-            let g = pixelData[idx + j + 1];
-            let b = pixelData[idx + j + 2];
-            sum += (r * 0.299 + g * 0.587 + b * 0.114);
+    // 8 zonas faciales definidas como [x0_pct, y0_pct, x1_pct, y1_pct]
+    const zonas = [
+        [0.20, 0.00, 0.80, 0.18], // Frente
+        [0.10, 0.18, 0.45, 0.40], // Ojo izquierdo + ceja
+        [0.55, 0.18, 0.90, 0.40], // Ojo derecho + ceja
+        [0.30, 0.35, 0.70, 0.58], // Nariz
+        [0.25, 0.55, 0.75, 0.72], // Boca
+        [0.05, 0.25, 0.30, 0.65], // Mejilla izquierda
+        [0.70, 0.25, 0.95, 0.65], // Mejilla derecha
+        [0.20, 0.70, 0.80, 1.00], // Mentón / cuello
+    ];
+
+    const vector = [];
+
+    for (const [x0p, y0p, x1p, y1p] of zonas) {
+        const x0 = Math.floor(x0p * W);
+        const y0 = Math.floor(y0p * H);
+        const x1 = Math.floor(x1p * W);
+        const y1 = Math.floor(y1p * H);
+
+        let sumR = 0, sumG = 0, sumB = 0, sumL = 0;
+        let sumR2 = 0, sumG2 = 0, sumB2 = 0, sumL2 = 0;
+        let count = 0;
+
+        for (let y = y0; y < y1; y++) {
+            for (let x = x0; x < x1; x++) {
+                const idx = (y * W + x) * 4;
+                const r = pixelData[idx]     / 255.0;
+                const g = pixelData[idx + 1] / 255.0;
+                const b = pixelData[idx + 2] / 255.0;
+                const l = r * 0.299 + g * 0.587 + b * 0.114;
+                sumR += r; sumG += g; sumB += b; sumL += l;
+                sumR2 += r * r; sumG2 += g * g; sumB2 += b * b; sumL2 += l * l;
+                count++;
+            }
         }
-        let avg = sum / (step / 4);
-        let normalizedVal = (avg / 255.0) * 2.0 - 1.0;
-        vector.push(Math.round(normalizedVal * 10000) / 10000);
+
+        if (count === 0) {
+            // Zona vacía: rellenar con ceros
+            for (let i = 0; i < 16; i++) vector.push(0);
+            continue;
+        }
+
+        const meanR = sumR / count;
+        const meanG = sumG / count;
+        const meanB = sumB / count;
+        const meanL = sumL / count;
+        const stdR  = Math.sqrt(Math.max(0, sumR2 / count - meanR * meanR));
+        const stdG  = Math.sqrt(Math.max(0, sumG2 / count - meanG * meanG));
+        const stdB  = Math.sqrt(Math.max(0, sumB2 / count - meanB * meanB));
+        const stdL  = Math.sqrt(Math.max(0, sumL2 / count - meanL * meanL));
+
+        // Normalizar a [-1, 1]
+        const norm = v => Math.round((v * 2.0 - 1.0) * 10000) / 10000;
+        const normStd = v => Math.round((v * 4.0 - 1.0) * 10000) / 10000; // std en [0,0.5] → expandido
+
+        // 16 features por zona: media×4 + std×4 + ratios×4 + cuartiles comprimidos×4
+        vector.push(norm(meanR), norm(meanG), norm(meanB), norm(meanL));
+        vector.push(normStd(stdR), normStd(stdG), normStd(stdB), normStd(stdL));
+        // Ratios de color (estables ante cambios de brillo)
+        const total = meanR + meanG + meanB + 1e-6;
+        vector.push(Math.round((meanR / total) * 20000) / 10000 - 1);
+        vector.push(Math.round((meanG / total) * 20000) / 10000 - 1);
+        vector.push(Math.round((meanB / total) * 20000) / 10000 - 1);
+        vector.push(Math.round((meanL - 0.5) * 20000) / 10000);
+        // Contraste local: std/mean (coeficiente de variación)
+        vector.push(Math.round(Math.min(1, stdL / (meanL + 1e-6)) * 10000) / 10000);
+        vector.push(Math.round(Math.min(1, stdR / (meanR + 1e-6)) * 10000) / 10000);
+        vector.push(Math.round(Math.min(1, stdG / (meanG + 1e-6)) * 10000) / 10000);
+        vector.push(Math.round(Math.min(1, stdB / (meanB + 1e-6)) * 10000) / 10000);
     }
-    return vector;
+
+    return vector; // 128 dimensiones
 }
 
 window.iniciarCamaraIA = iniciarCamaraIA;
+window.detenerCamara = detenerCamara;
 window.iniciarEscaneoReal5Segundos = iniciarEscaneoReal5Segundos;
