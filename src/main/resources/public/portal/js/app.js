@@ -353,6 +353,9 @@ function cargarPerfilHubUsuario() {
 async function verVisitasPendientesUsuario() {
     if (!authenticatedUser || !authenticatedUser.docIdentidad) return;
 
+    const docUser = String(authenticatedUser.docIdentidad || '').trim();
+    const personaId = authenticatedUser.personaId || authenticatedUser.id;
+
     const listContainer = document.getElementById('user-visits-list-container');
     const listTitle = document.getElementById('user-visits-list-title');
     const kpiBadge = document.getElementById('user-visits-kpi-badge');
@@ -364,12 +367,14 @@ async function verVisitasPendientesUsuario() {
 
     try {
         const [resPases, resVisitas] = await Promise.all([
-            fetch(`/api/pases/persona/${authenticatedUser.docIdentidad}`).then(r => r.ok ? r.json() : []),
+            fetch(`/api/pases/persona/${docUser}`).then(r => r.ok ? r.json() : []),
             fetch(`/api/visitas`).then(r => r.ok ? r.json() : [])
         ]);
 
-        const personaId = authenticatedUser.id;
-        const misVisitasDB = resVisitas.filter(v => v.personaId == personaId);
+        const misVisitasDB = resVisitas.filter(v => 
+            (v.personaDocIdentidad && String(v.personaDocIdentidad).trim() === docUser) ||
+            (v.personaId && personaId && String(v.personaId) === String(personaId))
+        );
 
         if ((!resPases || resPases.length === 0) && (!misVisitasDB || misVisitasDB.length === 0)) {
             cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>No tienes solicitudes ni visitas registradas en el sistema.</p>";
@@ -382,7 +387,11 @@ async function verVisitasPendientesUsuario() {
         resPases.forEach(p => {
             let estadoReal = p.estado;
             
-            const matchVisita = misVisitasDB.find(v => v.motivo && v.motivo.includes(p.motivo));
+            const matchVisita = misVisitasDB.find(v => 
+                (v.motivo && p.motivo && v.motivo.includes(p.motivo)) ||
+                (v.estadoVisita === 'DENTRO' || v.estadoVisita === 'APROBADO' || v.estadoVisita === 'FINALIZADO')
+            );
+
             if (matchVisita) {
                 if (matchVisita.estadoVisita === 'DENTRO') estadoReal = 'DENTRO (En Instalaciones 🟢)';
                 else if (matchVisita.estadoVisita === 'FINALIZADO') estadoReal = 'FINALIZADO (Check-Out Realizado 🏁)';
@@ -496,7 +505,11 @@ async function actualizarEstadoTicketEnVivo() {
         let colorBg = "#F59E0B";
 
         if (resVisitas && resVisitas.length > 0) {
-            const misVisitas = resVisitas.filter(v => v.personaDoc === doc || (resPases[0] && v.personaId === resPases[0].personaId));
+            const misVisitas = resVisitas.filter(v => 
+                (v.personaDocIdentidad && String(v.personaDocIdentidad).trim() === doc) ||
+                (v.personaDoc && String(v.personaDoc).trim() === doc)
+            );
+
             if (misVisitas.length > 0) {
                 const ultVisita = misVisitas[misVisitas.length - 1];
                 if (ultVisita.estadoVisita === 'DENTRO') {
@@ -539,6 +552,7 @@ async function actualizarEstadoTicketEnVivo() {
         badgeElem.innerText = "ERROR AL CONSULTAR";
     }
 }
+
 
 
 // 2. GESTIÓN FRECUENTE: CANCELAR VISITAS ACTIVAS

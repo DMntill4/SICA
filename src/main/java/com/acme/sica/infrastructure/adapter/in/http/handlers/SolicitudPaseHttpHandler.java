@@ -301,8 +301,34 @@ public class SolicitudPaseHttpHandler implements HttpHandler {
         List<SolicitudPase> filtradas = todas.stream()
                 .filter(s -> s.getDocIdentidad() != null && s.getDocIdentidad().trim().equalsIgnoreCase(doc))
                 .toList();
+
+        // Sincronización proactiva: Si la visita en la tabla 'visita' ya fue APROBADA o realizada, actualizar el pase
+        try {
+            Optional<Persona> optP = personaRepository.findByDocIdentidad(doc);
+            if (optP.isPresent()) {
+                Long personaId = optP.get().getId();
+                List<Visita> misVisitas = visitaRepository.findAll().stream()
+                        .filter(v -> v.getPersonaId() != null && v.getPersonaId().equals(personaId))
+                        .toList();
+
+                for (SolicitudPase sp : filtradas) {
+                    if (sp.getEstado() == SolicitudPase.EstadoSolicitud.PENDIENTE_APROBACION) {
+                        boolean estaAprobada = misVisitas.stream()
+                                .anyMatch(v -> v.getEstadoVisita() == EstadoVisita.APROBADO || v.getEstadoVisita() == EstadoVisita.DENTRO || v.getEstadoVisita() == EstadoVisita.FINALIZADO);
+                        if (estaAprobada) {
+                            sp.setEstado(SolicitudPase.EstadoSolicitud.APROBADO);
+                            solicitudRepository.actualizarEstado(sp.getId(), SolicitudPase.EstadoSolicitud.APROBADO);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            System.err.println("[SolicitudPase Sync Warning] Error al sincronizar estado de pase con visitas: " + ex.getMessage());
+        }
+
         HttpUtils.sendJsonResponse(exchange, 200, filtradas);
     }
+
 
     private void handleReportarAnomalia(HttpExchange exchange) throws IOException {
         @SuppressWarnings("unchecked")
