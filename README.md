@@ -94,7 +94,13 @@ El sistema integra **Inteligencia Artificial (IA) y Visión Computacional** de a
 
 ## 4. Diagrama Entidad-Relación (ER Diagram)
 
-El siguiente diagrama en **Mermaid** detalla el esquema relacional de la base de datos MySQL / H2 implementado en [schema.sql](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/resources/schema.sql):
+El esquema relacional de la base de datos MySQL / H2 implementado en [schema.sql](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/resources/schema.sql) se detalla en el siguiente modelo gráfico e interactivo:
+
+<div align="center">
+
+<img src="src/main/resources/img/er_diagram.png" alt="SICA Entity Relationship Diagram DrawSQL" width="100%" />
+
+</div>
 
 ```mermaid
 erDiagram
