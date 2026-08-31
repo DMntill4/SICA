@@ -57,8 +57,13 @@ El Complejo Empresarial **"Zona Acme"** alberga a más de 30 empresas de alto pe
 
 ## 2. Características Principales y Novedades
 
-| Módulo | Descripción |
+| Módulo / Funcionalidad | Descripción |
 |---|---|
+| **Identidad Visual & Isotipos Circulares** | Integración de logos oficiales circulares: Búho Azul para el Portal Web (`/portal`) e ícono del Búho Detective Rojo para la App de Administración Swing. |
+| **Sincronización en Vivo (Portería - Web)** | Botones **`🔄 Actualizar Estado`** y **`🔄 Actualizar Estado en Vivo`** para reflejar instantáneamente en la web estados como `🟢 DENTRO`, `🏁 FINALIZADO`, `✅ APROBADO`, `🔴 RESTRINGIDO` y `🪪 OLVIDO CARNET`. |
+| **Módulo Web de Novedades (`POST /api/pases/anomalia`)** | Permite a usuarios autenticados biométricamente reportar pérdida de carnet o solicitar pases especiales de salida directamente desde el portal web. |
+| **Generador de Accesos Directos Portátil** | Script ejecutor [crearAccesos.ps1](file:///c:/Users/dalej/OneDrive/Desktop/SICA/crearAccesos.ps1) que crea accesos directos nativos (`.lnk` / `.url`) en el Escritorio de cualquier usuario sin necesidad de binarios `.exe`. |
+| **Flujo Seguro de Solicitudes Web** | Todas las solicitudes de pase originadas en el portal web ingresan de forma estricta como `PENDIENTE_APROBACION` y requieren autorización previa de un funcionario. |
 | **Gestión de Fotos & Avatares** | Carga de fotos locales desde la PC (`📁 Seleccionar Foto de PC`), sincronización automática de capturas webcam web y siluetas vectoriales 2D personalizadas. |
 | **Edición Completa de Personas** | Diálogo modal `✏️ Editar Persona` con actualización de avatares en tiempo real, validaciones in-situ y trazabilidad de auditoría. |
 | **Modal WALKIN-01 (No Anunciado)** | Formulario interactivo para captura de datos de visitantes sin cita previa, autocompletado por documento y selección del funcionario/anfitrión a notificar. |
@@ -277,15 +282,16 @@ com.acme.sica
 
 ---
 
-## 7. Control de Acceso Basado en Roles (RBAC)
+## 7. Control de Acceso Basado en Roles (RBAC) y Perfiles de Usuario
 
-### Credenciales de Prueba Preconfiguradas:
+### Perfiles de Usuario y Credenciales Preconfiguradas:
 
-| Rol | Username | Password | Permisos Principales | Empresa |
-|---|---|---|---|---|
-| **ADMIN** | `admin` | `admin123` | Control total (1 a 16), gestión de usuarios/empresas, auditoría y limpieza de visitas | N/A |
-| **GUARDIA** | `guardia1` | `guardia123` | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente`, `generar_reporte` | Recepción |
-| **FUNCIONARIO** | `func1` | `func123` | `preregistrar_visita`, `aprobar_visita`, `crear_persona`, `generar_reporte` | Acme Corporation |
+| Perfil de Usuario | Credencial / Acceso | Modalidad | Permisos & Capacidades Principales |
+|---|---|---|---|
+| **ADMIN** | `admin` / `admin123` | App Swing Escritorio | Control total (1 a 16), gestión de usuarios/empresas, auditoría inmutable, activación de Modo de Emergencia. |
+| **GUARDIA** | `guardia1` / `guardia123` | App Swing Escritorio | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente` (bloqueo automático `RESTRINGIDO`), `generar_reporte`. |
+| **FUNCIONARIO** | `func1` / `func123` | App Swing Escritorio | `preregistrar_visita`, `aprobar_visita`, `crear_persona`, `generar_reporte`. |
+| **VISITANTE / FRECUENTE** | Firma Facial IA (5s) | Portal Web (`/portal`) | Auto-registro, escaneo facial 128D, solicitud de pase web, actualización de estado en vivo (`🔄 Actualizar Estado`) y reporte de novedades. |
 
 ---
 
@@ -361,10 +367,20 @@ java -jar target/sica.jar
 
 ---
 
-### 🖥️ 5. ¿Cómo Usar la Aplicación una vez Iniciada?
+### 🖥️ 5. Generador de Accesos Directos de Escritorio (Sin Binarios `.exe`)
+
+Si deseas generar accesos directos nativos en tu Escritorio (`SICA Admin App.lnk` y `SICA Portal Web.lnk`) con sus respetivos íconos corporativos `.ico` sin empaquetar ejecutables de terceros:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\crearAccesos.ps1
+```
+
+---
+
+### 🌐 6. ¿Cómo Usar la Aplicación una vez Iniciada?
 
 1. **Interfaz Gráfica de Escritorio (Swing FlatLaf Dark)**:
-   - Se abrirá **automáticamente** al iniciar el programa con el formulario de Login.
+   - Se abrirá **automáticamente** al iniciar el programa con el formulario de Login e ícono oficial del Búho Detective Rojo.
    - Usa cualquiera de las credenciales preconfiguradas (`admin`, `guardia1`, `func1`).
 
 2. **Portal Web de Autoservicio de Visitantes (Biometría IA)**:
@@ -382,9 +398,10 @@ java -jar target/sica.jar
 - `POST /api/auth/logout` — Cierre de sesión y revocación del token JWT.
 - `POST /api/biometria` — Identificación biométrica facial por vector 128D.
 - `POST /api/biometria/verificar-doc` — Verificación cruzada de documento y firma facial.
-- `POST /api/pases/solicitar` — Solicitud de pase web de visitante con vector facial y foto base64.
+- `POST /api/pases/solicitar` — Solicitud de pase web de visitante con vector facial y foto base64 (`PENDIENTE_APROBACION`).
+- `POST /api/pases/anomalia` — Reporte de novedad o pérdida de carnet desde el portal web por usuario autenticado.
 - `GET /api/pases/pendientes` — Listado de solicitudes de pases web pendientes.
-- `GET /api/pases/persona/{doc}` — Listado de pases por número de documento.
+- `GET /api/pases/persona/{doc}` — Listado de pases por número de documento sincronizados con el estado real de portería.
 - `POST /api/pases/{id}/aprobar` — Aprobación de pase por funcionario.
 - `POST /api/pases/{id}/cancelar` — Cancelación de pase y actualización a estado `CANCELADA`.
 - `GET /api/personas` — Listado de personas/visitantes registrados.
@@ -404,10 +421,12 @@ java -jar target/sica.jar
 
 ## 10. Pruebas Unitarias y Cobertura QA (Suite 100%)
 
-El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 5 (16 / 16 tests passing):
+El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 5 (**26 / 26 tests passing - BUILD SUCCESS**):
 - `AuthUseCaseTest`: Verificación de intentos fallidos, bloqueos y hashing de contraseñas.
+- `GestionarPersonaUseCaseTest`: Verificación de creación, consulta y actualización de personas.
 - `GestionarRolUseCaseTest`: Verificación de creación, modificación y asignación de permisos a roles.
 - `VisitaFactoryTest`: Verificación de la creación de visitas según tipología.
+- `GestionarVisitaUseCaseTest`: Pruebas de ciclo de vida completo de visitas.
 - `SalidaOlvidadaTest`: Verificación de la regularización automática de visitas con `CERRADA_POR_SISTEMA`.
 - `PermissionCheckerTest`: Pruebas de seguridad RBAC.
 
