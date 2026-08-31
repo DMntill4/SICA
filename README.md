@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="src/main/resources/img/banner.png" alt="SICA Banner" width="100%" />
+
 # SICA — Sistema Integrado de Control de Acceso
 ### *Complejo Empresarial "Zona Acme"*
 
@@ -27,16 +29,17 @@
 ## Tabla de Contenidos
 
 - [1. Introducción y Contexto del Problema](#1-introducción-y-contexto-del-problema)
-- [2. Características Principales](#2-características-principales)
+- [2. Características Principales y Novedades](#2-características-principales-y-novedades)
 - [3. Biometría Facial e Inteligencia de Acceso (128D - IA)](#3-biometría-facial-e-inteligencia-de-acceso-128d-ia)
-- [4. Stack Tecnológico](#4-stack-tecnológico)
-- [5. Arquitectura Hexagonal y Patrones de Diseño](#5-arquitectura-hexagonal-y-patrones-de-diseño)
-- [6. Control de Acceso Basado en Roles (RBAC)](#6-control-de-acceso-basado-en-roles-rbac)
-- [7. Guía de Instalación y Ejecución](#7-guía-de-instalación-y-ejecución)
-- [8. Catálogo de Endpoints REST API](#8-catálogo-de-endpoints-rest-api)
-- [9. Pruebas Unitarias y Cobertura QA](#9-pruebas-unitarias-y-cobertura-qa)
-- [10. Recomendaciones de Despliegue y Seguridad](#10-recomendaciones-de-despliegue-y-seguridad)
-- [11. Contribuidores y Autores](#11-contribuidores-y-autores)
+- [4. Diagrama Entidad-Relación (ER Diagram)](#4-diagrama-entidad-relación-er-diagram)
+- [5. Stack Tecnológico](#5-stack-tecnológico)
+- [6. Arquitectura Hexagonal, Principios SOLID y Patrones de Diseño](#6-arquitectura-hexagonal-principios-solid-y-patrones-de-diseño)
+- [7. Control de Acceso Basado en Roles (RBAC) y Perfiles de Usuario](#7-control-de-acceso-basado-en-roles-rbac-y-perfiles-de-usuario)
+- [8. Guía de Instalación y Ejecución Paso a Paso](#8-guía-de-instalación-y-ejecución-paso-a-paso)
+- [9. Catálogo de Endpoints REST API](#9-catálogo-de-endpoints-rest-api)
+- [10. Pruebas Unitarias y Cobertura QA (Suite 100%)](#10-pruebas-unitarias-y-cobertura-qa-suite-100)
+- [11. Recomendaciones de Despliegue y Seguridad](#11-recomendaciones-de-despliegue-y-seguridad)
+- [12. Contribuidores y Autores](#12-contribuidores-y-autores)
 
 ---
 
@@ -47,23 +50,32 @@ El Complejo Empresarial **"Zona Acme"** alberga a más de 30 empresas de alto pe
 **SICA** resuelve estas problemáticas mediante:
 - **Reconocimiento Biométrico Facial mediante Inteligencia Artificial (IA)**: Redes neuronales de visión computacional que capturan 468 landmarks faciales y sintetizan una firma vectorial 128D para autenticación por cámara en vivo en 5 segundos ($\text{Dist} \le 0.35$).
 - **Portal Web de Autoservicio (`/portal`)**: Desarrollado en HTML5, Vanilla CSS3 y JavaScript ES6+ para registro independiente de invitados, emisión de pases web y Hub de Usuario Frecuente.
-- **Automatización de los 4 Flujos de Acceso**: Pre-Registrado, No Anunciado / Express (Visita Rápida), Pase Temporal (Carnet Olvidado) y Regularización Automática de Salida Olvidada.
+- **Gestión Avanzada de Fotografías**: Carga directa de imágenes locales desde archivos de PC (formato Base64), sincronización de fotografías capturadas vía webcam desde la web y avatares vectoriales 2D de alta definición.
+- **Automatización de los 4 Flujos de Acceso**: Pre-Registrado (`VIS`), No Anunciado (`WALKIN-01`), Pase Temporal por Olvido (`FORGET-01`) y Regularización Automática de Salida Olvidada (`REG-01` a `REG-07`).
 - **Seguridad Reactiva e Inmediata**: Bloqueo instantáneo en portería al registrar incidentes de gravedad CRÍTICO o ALTO (`RESTRINGIDO`).
 - **Auditoría Inmutable**: Registro append-only de todas las operaciones del sistema con IP de origen y contexto de usuario.
 
 ---
 
-## 2. Características Principales
+## 2. Características Principales y Novedades
 
-| Módulo | Descripción |
+| Módulo / Funcionalidad | Descripción |
 |---|---|
+| **Identidad Visual & Isotipos Circulares** | Integración de logos oficiales circulares: Búho Azul para el Portal Web (`/portal`) e ícono del Búho Detective Rojo para la App de Administración Swing. |
+| **Sincronización en Vivo (Portería - Web)** | Botones **Actualizar Estado** y **Actualizar Estado en Vivo** para reflejar instantáneamente en la web estados como DENTRO, FINALIZADO, APROBADO POR FUNCIONARIO, ACCESO RESTRINGIDO POR SEGURIDAD SICA y OLVIDO CARNET. |
+| **Módulo Web de Novedades (`POST /api/pases/anomalia`)** | Permite a usuarios autenticados biométricamente reportar pérdida de carnet o solicitar pases especiales de salida directamente desde el portal web. |
+| **Generador de Accesos Directos Portátil** | Script ejecutor [crearAccesos.ps1](file:///c:/Users/dalej/OneDrive/Desktop/SICA/crearAccesos.ps1) que crea accesos directos nativos (`.lnk` / `.url`) en el Escritorio de cualquier usuario sin necesidad de binarios `.exe`. |
+| **Flujo Seguro de Solicitudes Web** | Todas las solicitudes de pase originadas en el portal web ingresan de forma estricta como `PENDIENTE_APROBACION` y requieren autorización previa de un funcionario. |
+| **Gestión de Fotos & Avatares** | Carga de fotos locales desde la PC (Seleccionar Foto de PC), sincronización automática de capturas webcam web y siluetas vectoriales 2D personalizadas. |
+| **Edición Completa de Personas** | Diálogo modal Editar Persona con actualización de avatares en tiempo real, validaciones in-situ y trazabilidad de auditoría. |
+| **Modal WALKIN-01 (No Anunciado)** | Formulario interactivo para captura de datos de visitantes sin cita previa, autocompletado por documento y selección del funcionario/anfitrión a notificar. |
+| **Modal FORGET-01 (Carnet Olvidado)** | Registro de pases temporales por olvido de documento físico con estado `PENDIENTE_APROBACION_OLVIDO` y vigencia puntual de 1 día. |
 | **Reconocimiento Facial IA 128D** | Escaneo en vivo con redes neuronales MediaPipe Face Mesh, cálculo vectorial de distancia euclidiana y verificación anti-duplicados por rostro. |
-| **Portal Web de Autoservicio (HTML5/CSS3/JS)** | Interfaz web responsiva con Hub de Usuario Frecuente (`ESTADO: HABILITADO` / `ESTADO: RESTRINGIDO`), solicitud y cancelación de pases. |
+| **Portal Web de Autoservicio** | Interfaz web responsiva (`/portal`) con Hub de Usuario Frecuente (`ESTADO: HABILITADO` / `ESTADO: RESTRINGIDO`), solicitud y cancelación de pases. |
 | **Autenticación & JWT** | Login con hashing `BCrypt` y tokens JWT de sesión sin estado con revocación en logout (`token_revocado`). |
 | **RBAC Granular** | Control de acceso basado en 16 permisos individuales en BD (`crear_persona`, `checkin_visita`, `aprobar_visita`, etc.). |
-| **Flujos de Visita & Express** | Pre-registro, visitas exprés de paquetería `[EXPRESS]`, aprobación de pases y regularización de salidas olvidadas (`CERRADA_POR_SISTEMA`). |
-| **Gestión de Incidentes** | Bloqueo dinámico de personas a estado `RESTRINGIDO`, histórico de alertas y botón de **Rehabilitación de Acceso**. |
-| **Interfaz Swing FlatLaf Dark** | UI de escritorio moderna estructurada por roles (`GuardiaPanel`, `FuncionarioPanel`, `IncidentesPanel`, `AuditoriaPanel`, `SparklineChartPanel`). |
+| **Regularización de Salidas Olvidadas** | Auto-cierre de visitas previas activas en estado `CERRADA_POR_SISTEMA` al ingresar nuevamente, garantizando flujo continuo sin bloqueos. |
+| **Interfaz Swing FlatLaf Dark** | UI de escritorio moderna estructurada por roles (`GuardiaPanel`, `FuncionarioPanel`, `IncidentesPanel`, `AuditoriaPanel`, `ReportesPanel`). |
 
 ---
 
@@ -80,7 +92,124 @@ El sistema integra **Inteligencia Artificial (IA) y Visión Computacional** de a
 
 ---
 
-## 4. Stack Tecnológico
+## 4. Diagrama Entidad-Relación (ER Diagram)
+
+El siguiente diagrama en **Mermaid** detalla el esquema relacional de la base de datos MySQL / H2 implementado en [schema.sql](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/resources/schema.sql):
+
+```mermaid
+erDiagram
+    ROL ||--o{ ROL_PERMISO : posee
+    PERMISO ||--o{ ROL_PERMISO : asignado
+    ROL ||--o{ USUARIO : asignado_a
+    EMPRESA ||--o{ USUARIO : emplea
+    EMPRESA ||--o{ PERSONA : pertenece
+    PERSONA ||--o{ VISITA : realiza
+    USUARIO ||--o{ VISITA : autoriza_o_registra
+    PUNTO_ACCESO ||--o{ VISITA : punto_ingreso_salida
+    PERSONA ||--o{ INCIDENTE : involucra
+    USUARIO ||--o{ INCIDENTE : reporta
+    USUARIO ||--o{ SOLICITUD_PASE : notifica_destino
+
+    ROL {
+        bigint id PK
+        varchar nombre
+        varchar descripcion
+    }
+
+    PERMISO {
+        bigint id PK
+        varchar nombre
+        varchar descripcion
+    }
+
+    EMPRESA {
+        bigint id PK
+        varchar nit
+        varchar nombre
+        varchar ubicacion_oficina
+        boolean activa
+    }
+
+    USUARIO {
+        bigint id PK
+        varchar username
+        varchar password_hash
+        varchar nombre_completo
+        varchar email
+        bigint rol_id FK
+        bigint empresa_id FK
+        boolean activo
+    }
+
+    PERSONA {
+        bigint id PK
+        varchar doc_identidad UK
+        varchar tipo_documento
+        varchar nombre
+        varchar apellido
+        varchar email
+        varchar telefono
+        bigint empresa_id FK
+        varchar estado_acceso
+        longtext vector_biometrico
+        longtext foto_url
+    }
+
+    VISITA {
+        bigint id PK
+        bigint persona_id FK
+        bigint funcionario_id FK
+        bigint punto_acceso_ingreso_id FK
+        bigint punto_acceso_salida_id FK
+        bigint guardia_ingreso_id FK
+        bigint guardia_salida_id FK
+        varchar tipo_visita
+        varchar estado_visita
+        varchar motivo
+        timestamp fecha_hora_programada
+        timestamp fecha_hora_ingreso
+        timestamp fecha_hora_salida
+        varchar tipo_cierre
+    }
+
+    SOLICITUD_PASE {
+        bigint id PK
+        varchar nombre_completo
+        varchar doc_identidad
+        varchar email
+        varchar telefono
+        varchar empresa_destino
+        bigint funcionario_destino_id FK
+        varchar motivo
+        longtext vector_biometrico
+        longtext foto_url
+        varchar estado
+    }
+
+    INCIDENTE {
+        bigint id PK
+        bigint persona_id FK
+        bigint reportado_por_usuario_id FK
+        varchar tipo_incidente
+        varchar nivel_gravedad
+        text descripcion
+        timestamp fecha_hora
+    }
+
+    BITACORA_AUDITORIA {
+        bigint id PK
+        bigint usuario_id
+        varchar username
+        varchar accion
+        text detalles
+        varchar ip_origen
+        timestamp fecha_hora
+    }
+```
+
+---
+
+## 5. Stack Tecnológico
 
 <div align="center">
 
@@ -99,11 +228,9 @@ El sistema integra **Inteligencia Artificial (IA) y Visión Computacional** de a
 
 </div>
 
-
-
 ---
 
-## 5. Arquitectura Hexagonal y Patrones de Diseño
+## 6. Arquitectura Hexagonal, Principios SOLID y Patrones de Diseño
 
 El proyecto implementa una **Arquitectura Hexagonal (Ports & Adapters)** estructurada por paquetes independientes (*Vertical Slice*):
 
@@ -129,31 +256,52 @@ com.acme.sica
     └── security/                        (JwtUtil, PasswordHasher, PermissionChecker)
 ```
 
+### Aplicación Concreta de Principios SOLID
+
+1. **Single Responsibility Principle (SRP)**:
+   - **[VisitaFactory.java](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/java/com/acme/sica/application/usecase/visitas/factory/VisitaFactory.java)**: Se encarga única y exclusivamente de construir objetos de la entidad `Visita` asegurando la correcta asignación de tipos y estados según las reglas del negocio.
+   - **[PasswordHasher.java](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/java/com/acme/sica/infrastructure/security/PasswordHasher.java)**: Se encarga exclusivamente de la generación y verificación de hashes BCrypt.
+
+2. **Open/Closed Principle (OCP)**:
+   - **[AccessValidationStrategy.java](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/java/com/acme/sica/application/usecase/visitas/strategy/AccessValidationStrategy.java)**: Interface que permite incorporar nuevas estrategias de validación de acceso (ej. `RestrictedPersonValidationStrategy`, `PreRegisteredValidationStrategy`, `UnannouncedValidationStrategy`) sin modificar el flujo central de `GestionarVisitaUseCase.java`.
+
+3. **Liskov Substitution Principle (LSP)**:
+   - **[ConnectionFactory.java](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/java/com/acme/sica/infrastructure/db/connection/ConnectionFactory.java)**: Implementado por `MySqlConnectionFactory` y `H2ConnectionFactory`. Cualquier adaptador JDBC consume la interfaz `ConnectionFactory` indistintamente y funciona de manera transparente sea MySQL o H2.
+
+4. **Interface Segregation Principle (ISP)**:
+   - **[PersonaRepository.java](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/java/com/acme/sica/application/port/out/PersonaRepository.java)** vs **[AuditRepository.java](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/java/com/acme/sica/application/port/out/AuditRepository.java)**: Los módulos consumen únicamente los métodos necesarios a través de interfaces segregadas por dominio en lugar de una interfaz monolítica gigante.
+
+5. **Dependency Inversion Principle (DIP)**:
+   - **[GestionarVisitaUseCase.java](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/java/com/acme/sica/application/usecase/visitas/GestionarVisitaUseCase.java)**: El caso de uso depende abstractamente de las interfaces `VisitaRepository` y `PersonaRepository` (puertos de salida), no de clases concretas como `VisitaJdbcAdapter`. La inyección se resuelve en tiempo de ejecución.
+
+---
+
 ### Patrones de Diseño Aplicados:
 1. **Abstract Factory Pattern (`db/connection/`)**: Fábricas concretas `MySqlConnectionFactory` y `H2ConnectionFactory` seleccionadas dinámicamente mediante `DatabaseFactoryProvider`.
 2. **Factory Pattern (`VisitaFactory`)**: Centraliza la instanciación de visitas asignando estados según la tipología del flujo.
-3. **Strategy Pattern (`AccessValidationStrategy`)**: Algoritmos intercambiables de validación de acceso (`RestrictedPersonValidationStrategy`, `PreRegisteredValidationStrategy`, `UnannouncedValidationStrategy`).
+3. **Strategy Pattern (`AccessValidationStrategy`)**: Algoritmos intercambiables de validación de acceso.
 4. **State Pattern / Chain**: Gestión de ciclo de vida de visitas y autorización RBAC middleware.
 
 ---
 
-## 6. Control de Acceso Basado en Roles (RBAC)
+## 7. Control de Acceso Basado en Roles (RBAC) y Perfiles de Usuario
 
-### Credenciales de Prueba Preconfiguradas:
+### Perfiles de Usuario y Credenciales Preconfiguradas:
 
-| Rol | Username | Password | Permisos Principales | Empresa |
-|---|---|---|---|---|
-| **ADMIN** | `admin` | `admin123` | Control total (1 a 16), gestión de usuarios/empresas, auditoría y limpieza de visitas | N/A |
-| **GUARDIA** | `guardia1` | `guardia123` | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente`, `generar_reporte` | Recepción |
-| **FUNCIONARIO** | `func1` | `func123` | `preregistrar_visita`, `aprobar_visita`, `crear_persona`, `generar_reporte` | Acme Corporation |
+| Perfil de Usuario | Credencial / Acceso | Modalidad | Permisos & Capacidades Principales |
+|---|---|---|---|
+| **ADMIN** | `admin` / `admin123` | App Swing Escritorio | Control total (1 a 16), gestión de usuarios/empresas, auditoría inmutable, activación de Modo de Emergencia. |
+| **GUARDIA** | `guardia1` / `guardia123` | App Swing Escritorio | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente` (bloqueo automático `RESTRINGIDO`), `generar_reporte`. |
+| **FUNCIONARIO** | `func1` / `func123` | App Swing Escritorio | `preregistrar_visita`, `aprobar_visita`, `crear_persona`, `generar_reporte`. |
+| **VISITANTE / FRECUENTE** | Firma Facial IA (5s) | Portal Web (`/portal`) | Auto-registro, escaneo facial 128D, solicitud de pase web, actualización de estado en vivo y reporte de novedades. |
 
 ---
 
-## 7. Guía de Instalación y Ejecución Paso a Paso
+## 8. Guía de Instalación y Ejecución Paso a Paso
 
 Para que **cualquier persona** que clone el repositorio pueda ejecutar la aplicación inmediatamente en su equipo local, debe seguir estos pasos sencillos:
 
-###  1. Requisitos Previos
+### 1. Requisitos Previos
 - **Java JDK 17 o 21** instalado ([Descargar OpenJDK](https://adoptium.net/)).
 - **Git** instalado.
 - **Navegador Web moderno** (Chrome, Edge o Firefox) con acceso a cámara web para probar la biometría facial IA.
@@ -161,7 +309,7 @@ Para que **cualquier persona** que clone el repositorio pueda ejecutar la aplica
 
 ---
 
-###  2. Clonar el Repositorio y Configurar Entorno (`.env`)
+### 2. Clonar el Repositorio y Configurar Entorno (`.env`)
 
 ```bash
 # 1. Clonar el repositorio desde GitHub
@@ -176,15 +324,13 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
-> [!NOTE]
 > **¿Cómo funciona la configuración en SICA?**: El repositorio **ya incluye** la plantilla base `src/main/resources/config.properties`. Quien baje el proyecto **SOLO tiene que crear su archivo `.env`**. Al iniciar el servidor, `DatabaseConfig.java` detecta el archivo `.env` local y sobreescribe automáticamente las credenciales de conexión sin requerir la edición de `config.properties`.
 
 ---
 
+### 3. Configurar la Base de Datos (Elegir Opción A o B)
 
-###  3. Configurar la Base de Datos (Elegir Opción A o B)
-
-####  Opción A: Con MySQL (Recomendado para Producción)
+#### Opción A: Con MySQL (Recomendado para Producción)
 1. Inicia tu servidor MySQL.
 2. Crea la base de datos vacía ejecutando en tu cliente SQL:
    ```sql
@@ -208,7 +354,7 @@ Si no tienes MySQL instalado o deseas probar la app inmediatamente en memoria si
 
 ---
 
-###  4. Compilar y Ejecutar
+### 4. Compilar y Ejecutar
 
 ```bash
 # En Linux / Mac:
@@ -220,18 +366,23 @@ java -jar target/sica.jar
 java -jar target/sica.jar
 ```
 
-*(También puedes abrir la carpeta del proyecto directamente en tu IDE preferido como IntelliJ IDEA o Eclipse y ejecutar la clase principal `com.acme.sica.SicaApplication`).*
+---
+
+### 5. Generador de Accesos Directos de Escritorio (Sin Binarios `.exe`)
+
+Si deseas generar accesos directos nativos en tu Escritorio (`SICA Admin App.lnk` y `SICA Portal Web.lnk`) con sus respetivos íconos corporativos `.ico` sin empaquetar ejecutables de terceros:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\crearAccesos.ps1
+```
 
 ---
 
-###  5. ¿Cómo Usar la Aplicación una vez Iniciada?
+### 6. ¿Cómo Usar la Aplicación una vez Iniciada?
 
 1. **Interfaz Gráfica de Escritorio (Swing FlatLaf Dark)**:
-   - Se abrirá **automáticamente** al iniciar el programa con el formulario de Login.
-   - Usa cualquiera de las credenciales preconfiguradas:
-     - **Administrador**: usuario `admin` | clave `admin123`
-     - **Guardia de Portería**: usuario `guardia1` | clave `guardia123`
-     - **Funcionario**: usuario `func1` | clave `func123`
+   - Se abrirá **automáticamente** al iniciar el programa con el formulario de Login e ícono oficial del Búho Detective Rojo.
+   - Usa cualquiera de las credenciales preconfiguradas (`admin`, `guardia1`, `func1`).
 
 2. **Portal Web de Autoservicio de Visitantes (Biometría IA)**:
    - Abre tu navegador web y entra a: **`http://localhost:8080/portal`**
@@ -242,25 +393,26 @@ java -jar target/sica.jar
 
 ---
 
-
-## 8. Catálogo de Endpoints REST API
+## 9. Catálogo de Endpoints REST API
 
 - `POST /api/auth/login` — Autenticación de usuario y retorno de JWT.
 - `POST /api/auth/logout` — Cierre de sesión y revocación del token JWT.
 - `POST /api/biometria` — Identificación biométrica facial por vector 128D.
 - `POST /api/biometria/verificar-doc` — Verificación cruzada de documento y firma facial.
-- `POST /api/pases/solicitar` — Solicitud de pase web de visitante con vector facial.
+- `POST /api/pases/solicitar` — Solicitud de pase web de visitante con vector facial y foto base64 (`PENDIENTE_APROBACION`).
+- `POST /api/pases/anomalia` — Reporte de novedad o pérdida de carnet desde el portal web por usuario autenticado.
 - `GET /api/pases/pendientes` — Listado de solicitudes de pases web pendientes.
-- `GET /api/pases/persona/{doc}` — Listado de pases por número de documento.
+- `GET /api/pases/persona/{doc}` — Listado de pases por número de documento sincronizados con el estado real de portería.
 - `POST /api/pases/{id}/aprobar` — Aprobación de pase por funcionario.
 - `POST /api/pases/{id}/cancelar` — Cancelación de pase y actualización a estado `CANCELADA`.
 - `GET /api/personas` — Listado de personas/visitantes registrados.
 - `POST /api/personas` — Registrar nueva persona (`crear_persona`).
+- `PUT /api/personas/{id}` — Modificar persona (`modificar_persona`).
 - `DELETE /api/personas/{id}` — Eliminar persona con borrado transaccional en cascada.
 - `PUT /api/personas/{id}/rehabilitar` — Rehabilitar acceso levantando restricción de incidente.
 - `POST /api/visitas/preregistrar` — Pre-registro de invitado por funcionario.
-- `POST /api/visitas/no-anunciada` — Registro de visitante inesperado / Express en portería.
-- `POST /api/visitas/pase-temporal` — Ingreso por carnet olvidado.
+- `POST /api/visitas/no-anunciada` — Registro de visitante inesperado / WALKIN-01 en portería.
+- `POST /api/visitas/pase-temporal` — Ingreso por carnet olvidado / FORGET-01.
 - `POST /api/visitas/{id}/check-in` — Registro de entrada con regularización automática de salida olvidada.
 - `POST /api/visitas/{id}/check-out` — Registro de salida normal.
 - `POST /api/incidentes` — Registro de incidente y bloqueo automático a `RESTRINGIDO`.
@@ -268,12 +420,14 @@ java -jar target/sica.jar
 
 ---
 
-## 9. Pruebas Unitarias y Cobertura QA
+## 10. Pruebas Unitarias y Cobertura QA (Suite 100%)
 
-El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 5 (16 / 16 tests passing):
+El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 5 (**26 / 26 tests passing - BUILD SUCCESS**):
 - `AuthUseCaseTest`: Verificación de intentos fallidos, bloqueos y hashing de contraseñas.
+- `GestionarPersonaUseCaseTest`: Verificación de creación, consulta y actualización de personas.
 - `GestionarRolUseCaseTest`: Verificación de creación, modificación y asignación de permisos a roles.
 - `VisitaFactoryTest`: Verificación de la creación de visitas según tipología.
+- `GestionarVisitaUseCaseTest`: Pruebas de ciclo de vida completo de visitas.
 - `SalidaOlvidadaTest`: Verificación de la regularización automática de visitas con `CERRADA_POR_SISTEMA`.
 - `PermissionCheckerTest`: Pruebas de seguridad RBAC.
 
@@ -284,20 +438,15 @@ El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 
 
 ---
 
-## 10. Recomendaciones de Despliegue y Seguridad
+## 11. Recomendaciones de Despliegue y Seguridad
 
-> [!IMPORTANT]
 > **Variables de Entorno**: Asegúrate de mantener la clave secreta `JWT_SECRET` y las credenciales de base de datos en el archivo `.env` sin subirlo al control de versiones.
 
-> [!TIP]
 > **Cámara HTTPS**: Para habilitar el escáner facial por cámara web en redes externas o producción, el portal web debe servirse a través de protocolo **HTTPS** (o `localhost` para pruebas locales).
-
-> [!NOTE]
-> **Persistencia Continua**: El sistema preserva todos los registros biométricos y de personas en MySQL a través de reinicios del servidor. Para restablecer datos de prueba de forma manual, utiliza las funciones de eliminación directa de la consola Swing como Administrador.
 
 ---
 
-## 11. Contribuidores y Autores
+## 12. Contribuidores y Autores
 
 <div align="center">
 
