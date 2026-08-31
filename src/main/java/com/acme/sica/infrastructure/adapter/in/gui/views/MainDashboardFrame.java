@@ -57,15 +57,29 @@ public class MainDashboardFrame extends JFrame {
         headerPanel.setBackground(SicaTheme.HEADER_BG);
         headerPanel.setBorder(new EmptyBorder(12, 20, 12, 20));
 
+        SessionContext session = SessionContext.getInstance();
+
         // Isotipo e Identificación Institucional
         JLabel titleLabel = new JLabel("SICA ZONA ACME");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
         titleLabel.setForeground(Color.WHITE);
 
+        try {
+            String logoPath = session.isAdmin() ? "/img/userlogo.png" : "/img/adminlogo.png";
+            java.net.URL logoUrl = getClass().getResource(logoPath);
+            if (logoUrl != null) {
+                ImageIcon originalIcon = new ImageIcon(logoUrl);
+                this.setIconImage(originalIcon.getImage());
+                Image scaledImage = originalIcon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
+                titleLabel.setIcon(new ImageIcon(scaledImage));
+                titleLabel.setIconTextGap(10);
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading logo: " + e.getMessage());
+        }
+
         JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         userPanel.setOpaque(false);
-
-        SessionContext session = SessionContext.getInstance();
         JLabel userLabel = new JLabel("OPERADOR: " + session.getNombreCompleto() + " (" + session.getRoleName() + ")");
         userLabel.setFont(SicaTheme.FONT_BOLD);
         userLabel.setForeground(SicaTheme.ACCENT_CYAN_LIGHT);
