@@ -162,9 +162,9 @@ public class SchemaInitializer {
                 pst.executeBatch();
             }
 
-            // 3. Garantizar que las contraseñas semilla existentes tengan los hashes válidos sin alterar su estado de bloqueo
+            // 3. Garantizar que las contraseñas semilla existentes tengan los hashes válidos y estado desbloqueado
             try (PreparedStatement updatePst = conn.prepareStatement(
-                    "UPDATE usuario SET password_hash = ? WHERE username = ?")) {
+                    "UPDATE usuario SET password_hash = ?, intentos_fallidos = 0, bloqueado = FALSE WHERE username = ?")) {
                 updatePst.setString(1, hasher.hashPassword("admin123"));
                 updatePst.setString(2, "admin");
                 updatePst.executeUpdate();
@@ -176,7 +176,7 @@ public class SchemaInitializer {
                 updatePst.setString(1, hasher.hashPassword("func123"));
                 updatePst.setString(2, "func1");
                 updatePst.executeUpdate();
-                System.out.println("[DB Init] Hashes de usuarios semilla verificados (admin, guardia1, func1).");
+                System.out.println("[DB Init] Hashes y estado de desbloqueo de usuarios semilla verificados (admin, guardia1, func1).");
             } catch (Exception e) {
                 System.err.println("[DB Init Warning] No se pudieron actualizar contraseñas semilla: " + e.getMessage());
             }
