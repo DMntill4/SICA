@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="src/main/resources/img/banner.png" alt="SICA Banner" width="100%" />
+
 # SICA — Sistema Integrado de Control de Acceso
 ### *Complejo Empresarial "Zona Acme"*
 
@@ -32,8 +34,8 @@
 - [4. Diagrama Entidad-Relación (ER Diagram)](#4-diagrama-entidad-relación-er-diagram)
 - [5. Stack Tecnológico](#5-stack-tecnológico)
 - [6. Arquitectura Hexagonal, Principios SOLID y Patrones de Diseño](#6-arquitectura-hexagonal-principios-solid-y-patrones-de-diseño)
-- [7. Control de Acceso Basado en Roles (RBAC)](#7-control-de-acceso-basado-en-roles-rbac)
-- [8. Guía de Instalación y Ejecución](#8-guía-de-instalación-y-ejecución)
+- [7. Control de Acceso Basado en Roles (RBAC) y Perfiles de Usuario](#7-control-de-acceso-basado-en-roles-rbac-y-perfiles-de-usuario)
+- [8. Guía de Instalación y Ejecución Paso a Paso](#8-guía-de-instalación-y-ejecución-paso-a-paso)
 - [9. Catálogo de Endpoints REST API](#9-catálogo-de-endpoints-rest-api)
 - [10. Pruebas Unitarias y Cobertura QA (Suite 100%)](#10-pruebas-unitarias-y-cobertura-qa-suite-100)
 - [11. Recomendaciones de Despliegue y Seguridad](#11-recomendaciones-de-despliegue-y-seguridad)
@@ -60,12 +62,12 @@ El Complejo Empresarial **"Zona Acme"** alberga a más de 30 empresas de alto pe
 | Módulo / Funcionalidad | Descripción |
 |---|---|
 | **Identidad Visual & Isotipos Circulares** | Integración de logos oficiales circulares: Búho Azul para el Portal Web (`/portal`) e ícono del Búho Detective Rojo para la App de Administración Swing. |
-| **Sincronización en Vivo (Portería - Web)** | Botones **`🔄 Actualizar Estado`** y **`🔄 Actualizar Estado en Vivo`** para reflejar instantáneamente en la web estados como `🟢 DENTRO`, `🏁 FINALIZADO`, `✅ APROBADO`, `🔴 RESTRINGIDO` y `🪪 OLVIDO CARNET`. |
+| **Sincronización en Vivo (Portería - Web)** | Botones **Actualizar Estado** y **Actualizar Estado en Vivo** para reflejar instantáneamente en la web estados como DENTRO, FINALIZADO, APROBADO POR FUNCIONARIO, ACCESO RESTRINGIDO POR SEGURIDAD SICA y OLVIDO CARNET. |
 | **Módulo Web de Novedades (`POST /api/pases/anomalia`)** | Permite a usuarios autenticados biométricamente reportar pérdida de carnet o solicitar pases especiales de salida directamente desde el portal web. |
 | **Generador de Accesos Directos Portátil** | Script ejecutor [crearAccesos.ps1](file:///c:/Users/dalej/OneDrive/Desktop/SICA/crearAccesos.ps1) que crea accesos directos nativos (`.lnk` / `.url`) en el Escritorio de cualquier usuario sin necesidad de binarios `.exe`. |
 | **Flujo Seguro de Solicitudes Web** | Todas las solicitudes de pase originadas en el portal web ingresan de forma estricta como `PENDIENTE_APROBACION` y requieren autorización previa de un funcionario. |
-| **Gestión de Fotos & Avatares** | Carga de fotos locales desde la PC (`📁 Seleccionar Foto de PC`), sincronización automática de capturas webcam web y siluetas vectoriales 2D personalizadas. |
-| **Edición Completa de Personas** | Diálogo modal `✏️ Editar Persona` con actualización de avatares en tiempo real, validaciones in-situ y trazabilidad de auditoría. |
+| **Gestión de Fotos & Avatares** | Carga de fotos locales desde la PC (Seleccionar Foto de PC), sincronización automática de capturas webcam web y siluetas vectoriales 2D personalizadas. |
+| **Edición Completa de Personas** | Diálogo modal Editar Persona con actualización de avatares en tiempo real, validaciones in-situ y trazabilidad de auditoría. |
 | **Modal WALKIN-01 (No Anunciado)** | Formulario interactivo para captura de datos de visitantes sin cita previa, autocompletado por documento y selección del funcionario/anfitrión a notificar. |
 | **Modal FORGET-01 (Carnet Olvidado)** | Registro de pases temporales por olvido de documento físico con estado `PENDIENTE_APROBACION_OLVIDO` y vigencia puntual de 1 día. |
 | **Reconocimiento Facial IA 128D** | Escaneo en vivo con redes neuronales MediaPipe Face Mesh, cálculo vectorial de distancia euclidiana y verificación anti-duplicados por rostro. |
@@ -254,7 +256,7 @@ com.acme.sica
     └── security/                        (JwtUtil, PasswordHasher, PermissionChecker)
 ```
 
-### 📐 Aplicación Concreta de Principios SOLID
+### Aplicación Concreta de Principios SOLID
 
 1. **Single Responsibility Principle (SRP)**:
    - **[VisitaFactory.java](file:///c:/Users/dalej/OneDrive/Desktop/SICA/src/main/java/com/acme/sica/application/usecase/visitas/factory/VisitaFactory.java)**: Se encarga única y exclusivamente de construir objetos de la entidad `Visita` asegurando la correcta asignación de tipos y estados según las reglas del negocio.
@@ -291,7 +293,7 @@ com.acme.sica
 | **ADMIN** | `admin` / `admin123` | App Swing Escritorio | Control total (1 a 16), gestión de usuarios/empresas, auditoría inmutable, activación de Modo de Emergencia. |
 | **GUARDIA** | `guardia1` / `guardia123` | App Swing Escritorio | `crear_persona`, `checkin_visita`, `checkout_visita`, `registrar_incidente` (bloqueo automático `RESTRINGIDO`), `generar_reporte`. |
 | **FUNCIONARIO** | `func1` / `func123` | App Swing Escritorio | `preregistrar_visita`, `aprobar_visita`, `crear_persona`, `generar_reporte`. |
-| **VISITANTE / FRECUENTE** | Firma Facial IA (5s) | Portal Web (`/portal`) | Auto-registro, escaneo facial 128D, solicitud de pase web, actualización de estado en vivo (`🔄 Actualizar Estado`) y reporte de novedades. |
+| **VISITANTE / FRECUENTE** | Firma Facial IA (5s) | Portal Web (`/portal`) | Auto-registro, escaneo facial 128D, solicitud de pase web, actualización de estado en vivo y reporte de novedades. |
 
 ---
 
@@ -299,7 +301,7 @@ com.acme.sica
 
 Para que **cualquier persona** que clone el repositorio pueda ejecutar la aplicación inmediatamente en su equipo local, debe seguir estos pasos sencillos:
 
-### 📋 1. Requisitos Previos
+### 1. Requisitos Previos
 - **Java JDK 17 o 21** instalado ([Descargar OpenJDK](https://adoptium.net/)).
 - **Git** instalado.
 - **Navegador Web moderno** (Chrome, Edge o Firefox) con acceso a cámara web para probar la biometría facial IA.
@@ -307,7 +309,7 @@ Para que **cualquier persona** que clone el repositorio pueda ejecutar la aplica
 
 ---
 
-### 🚀 2. Clonar el Repositorio y Configurar Entorno (`.env`)
+### 2. Clonar el Repositorio y Configurar Entorno (`.env`)
 
 ```bash
 # 1. Clonar el repositorio desde GitHub
@@ -322,14 +324,13 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
-> [!NOTE]
 > **¿Cómo funciona la configuración en SICA?**: El repositorio **ya incluye** la plantilla base `src/main/resources/config.properties`. Quien baje el proyecto **SOLO tiene que crear su archivo `.env`**. Al iniciar el servidor, `DatabaseConfig.java` detecta el archivo `.env` local y sobreescribe automáticamente las credenciales de conexión sin requerir la edición de `config.properties`.
 
 ---
 
-### 🗄️ 3. Configurar la Base de Datos (Elegir Opción A o B)
+### 3. Configurar la Base de Datos (Elegir Opción A o B)
 
-#### 🔹 Opción A: Con MySQL (Recomendado para Producción)
+#### Opción A: Con MySQL (Recomendado para Producción)
 1. Inicia tu servidor MySQL.
 2. Crea la base de datos vacía ejecutando en tu cliente SQL:
    ```sql
@@ -343,7 +344,7 @@ Copy-Item .env.example .env
    DB_PASS=tu_contraseña
    ```
 
-#### 🔹 Opción B: Modo H2 In-Memory (Prueba Instantánea Sin Instalar MySQL)
+#### Opción B: Modo H2 In-Memory (Prueba Instantánea Sin Instalar MySQL)
 Si no tienes MySQL instalado o deseas probar la app inmediatamente en memoria sin configurar bases de datos externas:
 1. Abre el archivo `.env` y cambia `DB_TYPE`:
    ```env
@@ -353,7 +354,7 @@ Si no tienes MySQL instalado o deseas probar la app inmediatamente en memoria si
 
 ---
 
-### 📦 4. Compilar y Ejecutar
+### 4. Compilar y Ejecutar
 
 ```bash
 # En Linux / Mac:
@@ -367,7 +368,7 @@ java -jar target/sica.jar
 
 ---
 
-### 🖥️ 5. Generador de Accesos Directos de Escritorio (Sin Binarios `.exe`)
+### 5. Generador de Accesos Directos de Escritorio (Sin Binarios `.exe`)
 
 Si deseas generar accesos directos nativos en tu Escritorio (`SICA Admin App.lnk` y `SICA Portal Web.lnk`) con sus respetivos íconos corporativos `.ico` sin empaquetar ejecutables de terceros:
 
@@ -377,7 +378,7 @@ powershell -ExecutionPolicy Bypass -File .\crearAccesos.ps1
 
 ---
 
-### 🌐 6. ¿Cómo Usar la Aplicación una vez Iniciada?
+### 6. ¿Cómo Usar la Aplicación una vez Iniciada?
 
 1. **Interfaz Gráfica de Escritorio (Swing FlatLaf Dark)**:
    - Se abrirá **automáticamente** al iniciar el programa con el formulario de Login e ícono oficial del Búho Detective Rojo.
@@ -439,10 +440,8 @@ El repositorio cuenta con una suite automatizada de pruebas unitarias con JUnit 
 
 ## 11. Recomendaciones de Despliegue y Seguridad
 
-> [!IMPORTANT]
 > **Variables de Entorno**: Asegúrate de mantener la clave secreta `JWT_SECRET` y las credenciales de base de datos en el archivo `.env` sin subirlo al control de versiones.
 
-> [!TIP]
 > **Cámara HTTPS**: Para habilitar el escáner facial por cámara web en redes externas o producción, el portal web debe servirse a través de protocolo **HTTPS** (o `localhost` para pruebas locales).
 
 ---
