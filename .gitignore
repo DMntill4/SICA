@@ -16,5 +16,5 @@ data/
 .agents/
 graphify-out/
 *.py
-*.ps1
 requerimientos.txt
+!crearAccesos.ps1
