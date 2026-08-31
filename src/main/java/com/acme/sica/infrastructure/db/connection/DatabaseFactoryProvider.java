@@ -25,7 +25,7 @@ public class DatabaseFactoryProvider {
             DatabaseEngine engine = DatabaseEngine.valueOf(dbEngineProperty);
             return createConnectionFactory(engine);
         } catch (IllegalArgumentException e) {
-            System.err.println("[AbstractFactory] Motor no reconocido '" + dbEngineProperty + "'. Usando MYSQL por defecto.");
+            System.err.println("[AbstractFactory Warning] Motor no reconocido '" + dbEngineProperty + "'. Usando MYSQL por defecto.");
             return new MySqlConnectionFactory();
         }
     }
