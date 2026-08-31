@@ -37,16 +37,25 @@ public class AuthUseCase {
                 });
 
         if (usuario.isBloqueado()) {
-            // Desbloqueo automático temporal para evitar problemas en las pruebas
-            System.out.println("[DEBUG] Desbloqueando automáticamente al usuario: " + usuario.getUsername());
-            usuario.setBloqueado(false);
-            usuario.setIntentosFallidos(0);
-            usuarioRepository.update(usuario);
+            auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_BLOCKED", "Intento de inicio de sesion en cuenta bloqueada", ipOrigen);
+            throw new SecurityException("La cuenta se encuentra bloqueada por exceder los intentos fallidos");
         }
 
         if (!passwordEncoderPort.verifyPassword(request.password(), usuario.getPasswordHash())) {
-            // DEBUG temporal: Mostrar el hash real y la pwd para diagnosticar
-            throw new SecurityException("[DEBUG] Credenciales invalidas. Hash en BD: " + usuario.getPasswordHash() + " | Pwd enviada: " + request.password());
+            int nuevosIntentos = usuario.getIntentosFallidos() + 1;
+            usuario.setIntentosFallidos(nuevosIntentos);
+
+            boolean esAdmin = "admin".equalsIgnoreCase(usuario.getUsername());
+            if (nuevosIntentos >= 3 && !esAdmin) {
+                usuario.setBloqueado(true);
+                usuarioRepository.update(usuario);
+                auditService.log(usuario.getId(), usuario.getUsername(), "ACCOUNT_LOCKED", "Cuenta bloqueada tras 3 intentos fallidos", ipOrigen);
+                throw new SecurityException("La cuenta ha sido bloqueada por exceder los intentos fallidos");
+            } else {
+                usuarioRepository.update(usuario);
+                auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_FAILED", "Contrasenia incorrecta. Intento #" + nuevosIntentos, ipOrigen);
+                throw new SecurityException("Credenciales invalidas");
+            }
         }
 
 
