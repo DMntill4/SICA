@@ -104,16 +104,16 @@ public class GestionarVisitaUseCase {
         Persona persona = personaRepository.findById(visita.getPersonaId())
                 .orElseThrow(() -> new IllegalArgumentException("Persona no encontrada asociada a la visita"));
 
-        // 1. Validar restriccion por incidente
+        // REGLA DE NEGOCIO: Validar que la persona NO tenga estado RESTRINGIDO por un incidente activo
         new RestrictedPersonValidationStrategy().validate(persona, visita);
 
-        // 2. Validar estrategia segun tipo de visita
+        // REGLA DE NEGOCIO: Aplicar estrategia de validacion de acceso segun el tipo de visita
         AccessValidationStrategy strategy = visita.getTipoVisita() == TipoVisita.PRE_REGISTRADA
                 ? new PreRegisteredValidationStrategy()
                 : new UnannouncedValidationStrategy();
         strategy.validate(persona, visita);
 
-        // 3. REGLA 3.3.d: Regularizacion de Salida Olvidada (CERRADA_POR_SISTEMA)
+        // REGLA DE NEGOCIO: Auto-regularizacion de salida olvidada. Si existe una visita previa en estado DENTRO, cerrarla como CERRADA_POR_SISTEMA
         Optional<Visita> visitaActivaPrevia = visitaRepository.findLatestActiveVisitByPersonaId(persona.getId());
         if (visitaActivaPrevia.isPresent()) {
             Visita previa = visitaActivaPrevia.get();
@@ -125,7 +125,7 @@ public class GestionarVisitaUseCase {
             auditService.logSalidaOlvidada(persona.getId(), persona.getDocIdentidad(), previa.getId(), ipOrigen);
         }
 
-        // 4. Marcar ingreso
+        // INTENCION: Cambiar estado de la visita actual a DENTRO e imponer fecha/hora de ingreso actual
         visita.setEstadoVisita(EstadoVisita.DENTRO);
         visita.setFechaHoraIngreso(LocalDateTime.now());
         visita.setGuardiaIngresoId(guardiaContext.userId());
