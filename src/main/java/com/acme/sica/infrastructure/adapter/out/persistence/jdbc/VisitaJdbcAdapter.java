@@ -234,12 +234,31 @@ public class VisitaJdbcAdapter implements VisitaRepository {
         long gs = rs.getLong("guardia_salida_id");
         if (!rs.wasNull()) v.setGuardiaSalidaId(gs);
 
-        v.setTipoVisita(TipoVisita.valueOf(rs.getString("tipo_visita")));
-        v.setEstadoVisita(EstadoVisita.valueOf(rs.getString("estado_visita")));
+        String tvStr = rs.getString("tipo_visita");
+        if (tvStr != null && !tvStr.trim().isEmpty()) {
+            try {
+                v.setTipoVisita(TipoVisita.valueOf(tvStr));
+            } catch (IllegalArgumentException e) {
+                v.setTipoVisita(TipoVisita.PRE_REGISTRADA);
+            }
+        }
+
+        String evStr = rs.getString("estado_visita");
+        if (evStr != null && !evStr.trim().isEmpty()) {
+            try {
+                v.setEstadoVisita(EstadoVisita.valueOf(evStr));
+            } catch (IllegalArgumentException e) {
+                v.setEstadoVisita(EstadoVisita.PENDIENTE_APROBACION);
+            }
+        }
         
         String tipoCierre = rs.getString("tipo_cierre");
-        if (tipoCierre != null) {
-            v.setTipoCierre(TipoCierreVisita.valueOf(tipoCierre));
+        if (tipoCierre != null && !tipoCierre.trim().isEmpty()) {
+            try {
+                v.setTipoCierre(TipoCierreVisita.valueOf(tipoCierre));
+            } catch (IllegalArgumentException e) {
+                // Ignore invalid enum
+            }
         }
 
         v.setMotivo(rs.getString("motivo"));

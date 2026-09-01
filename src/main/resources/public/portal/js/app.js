@@ -7,8 +7,10 @@ let currentVector = null;
 let currentFotoRealBase64 = null;
 let lastGeneratedPassId = null;
 let authenticatedUser = null; // Guardar datos de usuario autenticado por rostro
+let isCreatingVisitForAuthenticatedUser = false;
 
 document.addEventListener('DOMContentLoaded', () => {
+
     updateWizardUI();
 });
 
@@ -77,8 +79,10 @@ function mostrarConfirmacionCustomSica(titulo, mensaje, icono = '❓') {
 
 function selectRoad(road) {
     selectedRoad = road;
+    isCreatingVisitForAuthenticatedUser = false;
     
     if (road === 'FRECUENTE') {
+
         // ROAD A: Directo a escaneo biométrico (Paso 3)
         currentStep = 3;
         const scanTitle = document.getElementById('scan-step-title');
@@ -243,8 +247,17 @@ function iniciarSecuenciaEscaneo5s() {
                     console.warn("Error en verificación biométrica:", e);
                 }
 
-                // SI EL ROSTRO YA EXISTE EN EL SISTEMA SICA (CUALQUIERA SEA EL CAMINO):
-                if (matchedPersona) {
+                // CASO A: USUARIO FRECUENTE AUTENTICADO QUE ESTÁ EMITIENDO UNA NUEVA VISITA
+                if (isCreatingVisitForAuthenticatedUser && authenticatedUser) {
+                    isCreatingVisitForAuthenticatedUser = false;
+                    banner.style.display = 'flex';
+                    if (btnSubmit) btnSubmit.style.display = 'inline-block';
+                    setTimeout(() => {
+                        procesarSolicitudPaseInteligente();
+                    }, 500);
+
+                // CASO B: EL ROSTRO COINCIDE CON UN REGISTRO EN BASE DE DATOS (NUEVO O LOGIN)
+                } else if (matchedPersona) {
                     if (selectedRoad === 'NUEVO') {
                         // INTERCEPCIÓN DE SEGURIDAD: Intentó registrarse como nuevo con otro nombre, pero su rostro ya existe!
                         await mostrarNotificacionCustomSica(
@@ -261,6 +274,7 @@ function iniciarSecuenciaEscaneo5s() {
                         goToStep('user-hub');
                     }, 400);
 
+
                 } else if (selectedRoad === 'FRECUENTE') {
                     // ROSTRO NO RECONOCIDO EN CAMINO DE USUARIO FRECUENTE -> RECHAZO Y REORIENTACIÓN
                     await mostrarNotificacionCustomSica(
@@ -268,6 +282,8 @@ function iniciarSecuenciaEscaneo5s() {
                         "Tu rostro no coincide con ningún usuario registrado en la base de datos SICA.\n\nPor favor regístrate como Nuevo Visitante (Road B) para crear tu perfil.",
                         "⛔"
                     );
+                    // BUG #9 FIX: detener la cámara antes de cambiar de sección
+                    if (window.detenerCamara) window.detenerCamara();
                     selectRoad('NUEVO');
 
                 } else {
@@ -331,60 +347,266 @@ function cargarPerfilHubUsuario() {
         }
     }
 
-    // Cargar automáticamente el historial reciente
     verVisitasPendientesUsuario();
 }
 
-// 1. GESTIÓN FRECUENTE: VER HISTORIAL DE VISITAS REALIZADAS Y PENDIENTES
+// 1. GESTIÓN FRECUENTE: VER HISTORIAL Y ESTADO EN VIVO DE VISITAS (SINCRONIZADO CON PORTERÍA)
 async function verVisitasPendientesUsuario() {
+
     if (!authenticatedUser || !authenticatedUser.docIdentidad) return;
 
+    const docUser = String(authenticatedUser.docIdentidad || '').trim();
     const listContainer = document.getElementById('user-visits-list-container');
     const listTitle = document.getElementById('user-visits-list-title');
     const kpiBadge = document.getElementById('user-visits-kpi-badge');
     const cardsDiv = document.getElementById('user-visits-cards');
-    cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>Cargando historial de visitas...</p>";
+
+    cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>🔄 Obteniendo estado actualizado de visitas en vivo desde portería...</p>";
     listContainer.style.display = 'block';
-    listTitle.innerText = "📜 Historial de Visitas Realizadas";
+    listTitle.innerText = "📋 Historial y Estado en Vivo de Visitas (Sincronizado con Portería)";
 
     try {
-        const res = await fetch(`/api/pases/persona/${authenticatedUser.docIdentidad}`);
-        if (res.ok) {
-            const pases = await res.json();
+        const [resPersona, resPases, resVisitas] = await Promise.all([
+            fetch(`/api/personas?doc=${docUser}`).then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch(`/api/pases/persona/${docUser}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/visitas`).then(r => r.ok ? r.json() : []).catch(() => [])
+        ]);
 
-            if (!pases || pases.length === 0) {
-                if (kpiBadge) kpiBadge.innerText = "Total: 0 visitas";
-                cardsDiv.innerHTML = "<p style='color: var(--status-granted-text); font-size: 13px; font-weight: 600;'>No tienes historial de visitas registradas.</p>";
-                return;
+        // 1. VERIFICACIÓN DE RESTRICCIÓN O BLOQUEO DE SEGURIDAD (PERSONA)
+        let estadoPersona = 'HABILITADO';
+        if (resPersona && resPersona.estadoAcceso) {
+            estadoPersona = resPersona.estadoAcceso;
+        } else if (authenticatedUser.estadoAcceso) {
+            estadoPersona = authenticatedUser.estadoAcceso;
+        }
+
+        const isRestringido = (estadoPersona === 'RESTRINGIDO');
+
+        // Mostrar u ocultar banner de restricción en el Hub
+        const restrBanner = document.getElementById('hub-restriction-banner');
+        if (restrBanner) {
+            restrBanner.style.display = isRestringido ? 'block' : 'none';
+        }
+
+        // 2. FILTRAR Y ORDENAR VISITAS DE LA BASE DE DATOS (NUEVA A VIEJA)
+        const misVisitasDB = resVisitas.filter(v =>
+            (v.personaDocIdentidad && String(v.personaDocIdentidad).trim() === docUser) ||
+            (v.personaDoc && String(v.personaDoc).trim() === docUser) ||
+            (v.personaId && (v.personaId == authenticatedUser.personaId || v.personaId == authenticatedUser.id))
+        ).sort((a, b) => (b.id || 0) - (a.id || 0));
+
+        if ((!resPases || resPases.length === 0) && (!misVisitasDB || misVisitasDB.length === 0)) {
+            cardsDiv.innerHTML = "<p style='color: var(--text-muted); font-size: 13px;'>No tienes solicitudes ni visitas registradas en el sistema.</p>";
+            if (kpiBadge) kpiBadge.innerText = "";
+            return;
+        }
+
+        let items = [];
+
+        // BUG #6 FIX: usar el estado del pase como fuente de verdad.
+        // Solo complementar con la visita de portería cuando el pase siga PENDIENTE_APROBACION.
+        resPases.forEach(p => {
+            // Estado base del pase (web)
+            let estadoReal = p.estado;
+            let rawEstado = p.estado;
+
+            if (isRestringido) {
+                estadoReal = '🔴 ACCESO RESTRINGIDO POR SEGURIDAD SICA';
+            } else if (p.estado === 'PENDIENTE_APROBACION') {
+                // Solo buscar en portería si el pase aún no fue procesado
+                const visitaMatch = misVisitasDB.find(v =>
+                    v.estadoVisita === 'DENTRO' ||
+                    v.estadoVisita === 'APROBADO' ||
+                    v.estadoVisita === 'RECHAZADO' ||
+                    v.estadoVisita === 'FINALIZADO'
+                );
+                if (visitaMatch) {
+                    rawEstado = visitaMatch.estadoVisita;
+                    if (visitaMatch.estadoVisita === 'DENTRO')     estadoReal = '🟢 DENTRO (Ingreso Realizado en Portería)';
+                    else if (visitaMatch.estadoVisita === 'FINALIZADO') estadoReal = '🏁 FINALIZADO (Salida Registrada)';
+                    else if (visitaMatch.estadoVisita === 'APROBADO')   estadoReal = '✅ APROBADO (Listo para Ingreso)';
+                    else if (visitaMatch.estadoVisita === 'RECHAZADO')  estadoReal = '🔴 RECHAZADO POR FUNCIONARIO';
+                } else {
+                    estadoReal = '⏳ PENDIENTE DE APROBACIÓN POR FUNCIONARIO';
+                }
+            } else if (p.estado === 'APROBADO') {
+                // Si el pase ya fue aprobado, verificar si ya ingresó
+                const dentroVisita = misVisitasDB.find(v => v.estadoVisita === 'DENTRO');
+                const finVisita    = misVisitasDB.find(v => v.estadoVisita === 'FINALIZADO');
+                if      (finVisita)   { estadoReal = '🏁 FINALIZADO (Salida Registrada)'; rawEstado = 'FINALIZADO'; }
+                else if (dentroVisita){ estadoReal = '🟢 DENTRO (Ingreso Realizado en Portería)'; rawEstado = 'DENTRO'; }
+                else                  { estadoReal = '✅ APROBADO (Listo para Ingreso)'; }
+            } else if (p.estado === 'RECHAZADO' || p.estado === 'CANCELADO') {
+                estadoReal = '🔴 RECHAZADO / CANCELADO';
             }
 
-            const aprobadas = pases.filter(p => p.estado === 'APROBADO').length;
-            const pendientes = pases.filter(p => p.estado === 'PENDIENTE_APROBACION').length;
-            const canceladas = pases.filter(p => p.estado === 'RECHAZADO' || p.estado === 'CANCELADO').length;
+            items.push({
+                id: p.id,
+                empresa: p.empresaDestino || 'Zona Acme',
+                motivo: p.motivo,
+                estado: estadoReal,
+                rawEstado: rawEstado
+            });
+        });
 
-            if (kpiBadge) {
-                kpiBadge.innerText = `Total: ${pases.length} | Pendientes: ${pendientes} | Aprobadas: ${aprobadas} | Canceladas: ${canceladas}`;
+        // Agregar visitas directas de portería no contempladas en pases web
+        misVisitasDB.forEach(v => {
+            const yaMapeado = items.some(i => i.id === v.id || (i.motivo && v.motivo && i.motivo.includes(v.motivo)));
+            if (!yaMapeado) {
+                let estText = v.estadoVisita;
+                if (isRestringido) estText = '🔴 ACCESO RESTRINGIDO POR SEGURIDAD SICA';
+                else if (v.estadoVisita === 'DENTRO')                    estText = '🟢 DENTRO (Ingreso Realizado en Portería)';
+                else if (v.estadoVisita === 'FINALIZADO')                estText = '🏁 FINALIZADO (Salida Registrada)';
+                else if (v.estadoVisita === 'APROBADO')                  estText = '✅ APROBADO (Listo para Ingreso)';
+                else if (v.estadoVisita === 'PENDIENTE_APROBACION')      estText = '⏳ PENDIENTE DE APROBACIÓN POR FUNCIONARIO';
+                else if (v.estadoVisita === 'PENDIENTE_APROBACION_OLVIDO') estText = '🪪 OLVIDO CARNET (Pendiente Aprobación)';
+
+                items.push({
+                    id: v.id,
+                    empresa: 'Zona Acme',
+                    motivo: v.motivo || 'Registro en Portería',
+                    estado: estText,
+                    rawEstado: v.estadoVisita
+                });
+            }
+        });
+
+        const total = items.length;
+        const dentroCount = items.filter(i => String(i.estado).includes('DENTRO')).length;
+        const aprCount = items.filter(i => String(i.estado).includes('APROBADO')).length;
+
+        if (kpiBadge) {
+            kpiBadge.innerText = `Total: ${total} | Aprobadas: ${aprCount} | En Instalaciones: ${dentroCount}`;
+        }
+
+        cardsDiv.innerHTML = items.map(item => {
+            let colorBorder = 'var(--border-color)';
+            let badgeBg = 'rgba(59, 130, 246, 0.15)';
+            let badgeColor = '#60A5FA';
+
+            if (String(item.estado).includes('DENTRO')) {
+                colorBorder = '#10B981';
+                badgeBg = 'rgba(16, 185, 129, 0.2)';
+                badgeColor = '#34D399';
+            } else if (String(item.estado).includes('APROBADO')) {
+                colorBorder = '#3B82F6';
+                badgeBg = 'rgba(59, 130, 246, 0.2)';
+                badgeColor = '#60A5FA';
+            } else if (String(item.estado).includes('FINALIZADO')) {
+                colorBorder = '#6B7280';
+                badgeBg = 'rgba(107, 114, 128, 0.2)';
+                badgeColor = '#9CA3AF';
+            } else if (String(item.estado).includes('RESTRINGIDO') || String(item.estado).includes('RECHAZADO') || String(item.estado).includes('CANCELADO')) {
+                colorBorder = '#EF4444';
+                badgeBg = 'rgba(239, 68, 68, 0.2)';
+                badgeColor = '#FCA5A5';
             }
 
-            cardsDiv.innerHTML = pases.map(p => `
-                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; text-align: left;">
+            return `
+                <div style="background: var(--bg-card); border: 1px solid ${colorBorder}; border-radius: 10px; padding: 14px; display: flex; justify-content: space-between; align-items: center; text-align: left;">
                     <div>
-                        <strong style="color: var(--accent-primary); font-size: 14px;">Solicitud #${p.id}</strong> - <span style="font-size: 12px; color: var(--text-muted);">${p.empresaDestino || 'General'}</span>
-                        <div style="font-size: 13px; margin-top: 4px; color: var(--text-main);">${p.motivo}</div>
-                        <span class="cat-tag ${p.estado === 'APROBADO' ? 'green' : (p.estado === 'PENDIENTE_APROBACION' ? 'red' : 'red')}" style="font-size: 11px; margin-top: 6px; display: inline-block;">${p.estado}</span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <strong style="color: var(--accent-primary); font-size: 14px;">Solicitud #${item.id}</strong>
+                            <span style="font-size: 11px; padding: 3px 10px; border-radius: 12px; background: ${badgeBg}; color: ${badgeColor}; font-weight: 700;">
+                                ${item.estado}
+                            </span>
+                        </div>
+                        <div style="font-size: 13px; margin-top: 6px; color: var(--text-main); font-weight: 600;">${item.motivo}</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">📍 Destino: ${item.empresa}</div>
                     </div>
-                    ${(p.estado === 'PENDIENTE_APROBACION' || p.estado === 'APROBADO') ? `
-                        <button type="button" class="btn-danger" onclick="cancelarPasePorId(${p.id})" style="padding: 8px 12px; font-size: 12px; background: #EF4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    ${(!isRestringido && (item.rawEstado === 'PENDIENTE_APROBACION' || item.rawEstado === 'APROBADO')) ? `
+                        <button type="button" class="btn-danger" onclick="cancelarPasePorId(${item.id})" style="padding: 8px 12px; font-size: 12px; background: #EF4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                             🚫 Cancelar
                         </button>
                     ` : ''}
                 </div>
-            `).join('');
-        }
+            `;
+        }).join('');
+
     } catch (e) {
         cardsDiv.innerHTML = "<p style='color: #EF4444; font-size: 13px;'>Error al obtener el historial de visitas.</p>";
     }
 }
+
+// CONSULTA DE ESTADO EN VIVO PARA TICKET DE PASE PRIMERA VEZ
+async function actualizarEstadoTicketEnVivo() {
+    const docElem = document.getElementById('t-doc');
+    const badgeElem = document.getElementById('ticket-status-badge');
+    if (!docElem || !badgeElem) return;
+
+    const doc = docElem.innerText.trim();
+    if (!doc) return;
+
+    badgeElem.innerText = "🔄 CONSULTANDO...";
+    badgeElem.style.background = "#3B82F6";
+
+    try {
+        const [resPersona, resPases, resVisitas] = await Promise.all([
+            fetch(`/api/personas?doc=${doc}`).then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch(`/api/pases/persona/${doc}`).then(r => r.ok ? r.json() : []).catch(() => []),
+            fetch(`/api/visitas`).then(r => r.ok ? r.json() : []).catch(() => [])
+        ]);
+
+        let estadoEncontrado = "PENDIENTE APROBACIÓN";
+        let colorBg = "#F59E0B";
+
+        if (resPersona && resPersona.estadoAcceso === 'RESTRINGIDO') {
+            estadoEncontrado = "🔴 ACCESO RESTRINGIDO POR SEGURIDAD SICA";
+            colorBg = "#EF4444";
+        } else {
+            const misVisitas = resVisitas.filter(v => 
+                (v.personaDocIdentidad && String(v.personaDocIdentidad).trim() === doc) ||
+                (v.personaDoc && String(v.personaDoc).trim() === doc)
+            ).sort((a, b) => (b.id || 0) - (a.id || 0));
+
+            if (misVisitas.length > 0) {
+                const ultVisita = misVisitas[0];
+                if (ultVisita.estadoVisita === 'DENTRO') {
+                    estadoEncontrado = "🟢 DENTRO (Ingreso Realizado en Portería)";
+                    colorBg = "#10B981";
+                } else if (ultVisita.estadoVisita === 'FINALIZADO') {
+                    estadoEncontrado = "🏁 FINALIZADO (Salida Registrada)";
+                    colorBg = "#6B7280";
+                } else if (ultVisita.estadoVisita === 'APROBADO') {
+                    estadoEncontrado = "✅ APROBADO POR FUNCIONARIO";
+                    colorBg = "#2563EB";
+                } else if (ultVisita.estadoVisita === 'RECHAZADO') {
+                    estadoEncontrado = "🔴 SOLICITUD RECHAZADA";
+                    colorBg = "#EF4444";
+                } else if (ultVisita.estadoVisita === 'PENDIENTE_APROBACION_OLVIDO') {
+                    estadoEncontrado = "🪪 PENDIENTE APROBACIÓN POR OLVIDO CARNET";
+                    colorBg = "#F59E0B";
+                } else if (ultVisita.estadoVisita === 'PENDIENTE_APROBACION') {
+                    estadoEncontrado = "PENDIENTE APROBACIÓN";
+                    colorBg = "#F59E0B";
+                }
+            } else if (resPases.length > 0) {
+                const ultPase = resPases[0];
+                if (ultPase.estado === 'APROBADO') {
+                    estadoEncontrado = "✅ APROBADO POR FUNCIONARIO";
+                    colorBg = "#2563EB";
+                } else if (ultPase.estado === 'RECHAZADO' || ultPase.estado === 'CANCELADO') {
+                    estadoEncontrado = "🔴 RECHAZADO / CANCELADO";
+                    colorBg = "#EF4444";
+                }
+            }
+        }
+
+        badgeElem.innerText = estadoEncontrado;
+        badgeElem.style.background = colorBg;
+
+        await mostrarNotificacionCustomSica(
+            "ESTADO EN VIVO DESDE PORTERÍA",
+            `🔄 El estado actual de tu solicitud en el sistema SICA es:\n\n👉 [ ${estadoEncontrado} ]`,
+            "ℹ️"
+        );
+
+    } catch (e) {
+        badgeElem.innerText = "ERROR AL CONSULTAR";
+    }
+}
+
+
 
 // 2. GESTIÓN FRECUENTE: CANCELAR VISITAS ACTIVAS
 async function abrirModalCancelarVisitaUsuario() {
@@ -460,9 +682,11 @@ async function abrirFormularioNuevaVisitaFrecuente() {
         document.getElementById('telefono').value = authenticatedUser.telefono || '';
         document.getElementById('empresaDestino').value = authenticatedUser.empresaNombre || 'General';
     }
+    isCreatingVisitForAuthenticatedUser = true;
     currentStep = 1;
     updateWizardUI();
 }
+
 
 
 async function procesarSolicitudPaseInteligente() {
@@ -570,6 +794,84 @@ async function cancelarVisitaActual() {
     resetPortal();
 }
 
+// 4. REPORTAR NOVEDAD / PÉRDIDA DE CARNET ESTANDO ADENTRO
+async function abrirModalReportarAnomaliaUsuario() {
+    if (!authenticatedUser) {
+        await mostrarNotificacionCustomSica("AUTENTICACIÓN REQUERIDA", "Debes estar autenticado por biometría facial para reportar una novedad de carnet.", "🔒");
+        return;
+    }
+
+    const listContainer = document.getElementById('user-visits-list-container');
+    const listTitle = document.getElementById('user-visits-list-title');
+    const cardsDiv = document.getElementById('user-visits-cards');
+    
+    listContainer.style.display = 'block';
+    listTitle.innerText = "🚨 Reportar Novedad / Pérdida de Carnet (Validado por Biometría IA)";
+
+    cardsDiv.innerHTML = `
+        <div style="background: var(--bg-card); border: 1px solid #F59E0B; border-radius: 10px; padding: 16px; text-align: left;">
+            <div style="font-weight: 700; color: #F59E0B; font-size: 14px; margin-bottom: 8px;">
+                👤 Reportante: ${authenticatedUser.nombreCompleto || 'Usuario Registrado'} (${authenticatedUser.docIdentidad})
+            </div>
+            
+            <label style="display: block; font-size: 12.5px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">Selecciona el tipo de Novedad / Incidencia (*):</label>
+            <select id="select-tipo-anomalia" style="width: 100%; padding: 10px; border-radius: 6px; background: var(--bg-card-alt); color: var(--text-main); border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 13px;">
+                <option value="PERDIDA_CARNET">🪪 Pérdida / Extravío de Carnet Físico estando Adentro</option>
+                <option value="OLVIDO_CARNET">🚪 Olvido de Carnet Físico / Requiero Pase Temporal de Salida</option>
+                <option value="DIFICULTAD_TORNIQUETE">⚠️ Dificultad o Bloqueo de Ingreso/Salida en Punto de Acceso</option>
+                <option value="ASISTENCIA_SEGURIDAD">🆘 Solicitar Asistencia Directa de Portería / Seguridad</option>
+            </select>
+
+            <label style="display: block; font-size: 12.5px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">Detalles adicionales / Comentario (*):</label>
+            <textarea id="txt-desc-anomalia" rows="3" placeholder="Ej: Se me extravió el carnet en el edificio A, solicito pase de salida temporal..." style="width: 100%; padding: 10px; border-radius: 6px; background: var(--bg-card-alt); color: var(--text-main); border: 1px solid var(--border-color); margin-bottom: 14px; font-size: 13px; resize: vertical;"></textarea>
+
+            <button type="button" class="btn-neon" onclick="enviarReporteAnomaliaWeb()" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 700; background: #F59E0B; color: #FFFFFF; border: none; border-radius: 8px; cursor: pointer;">
+                🚨 Transmitir Reporte de Novedad con Firma Biométrica
+            </button>
+        </div>
+    `;
+}
+
+async function enviarReporteAnomaliaWeb() {
+    if (!authenticatedUser) return;
+
+    const tipo = document.getElementById('select-tipo-anomalia').value;
+    const desc = document.getElementById('txt-desc-anomalia').value.trim();
+
+    if (!desc) {
+        await mostrarNotificacionCustomSica("CAMPO REQUERIDO", "Por favor ingresa una descripción o comentario del evento.", "⚠️");
+        return;
+    }
+
+    try {
+        const payload = {
+            docIdentidad: authenticatedUser.docIdentidad,
+            tipoAnomalia: tipo,
+            descripcion: desc
+        };
+
+        const res = await fetch('/api/pases/anomalia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            await mostrarNotificacionCustomSica(
+                "NOVEDAD TRANSMITIDA A PORTERÍA",
+                `✅ Se ha registrado tu reporte de novedad (${tipo}) exitosamente en el sistema SICA.\n\nSe ha emitido tu solicitud de Pase Temporal por Olvido/Pérdida en portería. El guardia/administrador ya puede verificar tu documento e identidad en pantalla.`,
+                "✅"
+            );
+            document.getElementById('user-visits-list-container').style.display = 'none';
+        } else {
+            const errData = await res.json().catch(() => ({}));
+            await mostrarNotificacionCustomSica("ERROR", "Error al transmitir el reporte: " + (errData.mensaje || res.statusText), "❌");
+        }
+    } catch (e) {
+        await mostrarNotificacionCustomSica("ERROR DE CONEXIÓN", "Error al conectar con el servidor SICA: " + e.message, "❌");
+    }
+}
+
 function resetPortal() {
     location.reload();
 }
@@ -582,8 +884,13 @@ window.procesarSolicitudPaseInteligente = procesarSolicitudPaseInteligente;
 window.verVisitasPendientesUsuario = verVisitasPendientesUsuario;
 window.abrirModalCancelarVisitaUsuario = abrirModalCancelarVisitaUsuario;
 window.abrirFormularioNuevaVisitaFrecuente = abrirFormularioNuevaVisitaFrecuente;
+window.abrirModalReportarAnomaliaUsuario = abrirModalReportarAnomaliaUsuario;
+window.enviarReporteAnomaliaWeb = enviarReporteAnomaliaWeb;
+window.actualizarEstadoTicketEnVivo = actualizarEstadoTicketEnVivo;
 window.cancelarPasePorId = cancelarPasePorId;
 window.cancelarVisitaActual = cancelarVisitaActual;
 window.resetPortal = resetPortal;
 window.mostrarNotificacionCustomSica = mostrarNotificacionCustomSica;
 window.mostrarConfirmacionCustomSica = mostrarConfirmacionCustomSica;
+
+

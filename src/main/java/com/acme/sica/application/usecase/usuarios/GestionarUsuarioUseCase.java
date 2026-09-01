@@ -33,6 +33,9 @@ public class GestionarUsuarioUseCase {
         usuario.setEmail(dto.email());
         usuario.setRolId(dto.rolId());
         usuario.setEmpresaId(dto.empresaId());
+        if (dto.fotoUrl() != null && !dto.fotoUrl().isEmpty()) {
+            usuario.setFotoUrl(dto.fotoUrl());
+        }
         usuario.setIntentosFallidos(0);
         usuario.setBloqueado(false);
 
@@ -52,6 +55,10 @@ public class GestionarUsuarioUseCase {
         usuario.setEmail(dto.email());
         usuario.setRolId(dto.rolId());
         usuario.setEmpresaId(dto.empresaId());
+        if (dto.fotoUrl() != null && !dto.fotoUrl().isEmpty()) {
+            usuario.setFotoUrl(dto.fotoUrl());
+        }
+
         if (dto.bloqueado() != null) {
             if (dto.bloqueado() && "admin".equalsIgnoreCase(usuario.getUsername())) {
                 throw new IllegalArgumentException("El usuario Administrador principal (admin) no puede ser bloqueado");

@@ -106,6 +106,16 @@ public class Usuario {
         this.bloqueado = bloqueado;
     }
 
+    private String fotoUrl;
+
+    public String getFotoUrl() {
+        return fotoUrl;
+    }
+
+    public void setFotoUrl(String fotoUrl) {
+        this.fotoUrl = fotoUrl;
+    }
+
     public LocalDateTime getCreadoEn() {
         return creadoEn;
     }
@@ -114,3 +124,4 @@ public class Usuario {
         this.creadoEn = creadoEn;
     }
 }
+

@@ -7,5 +7,7 @@ public record PersonaDTO(
     String apellido,
     String email,
     String telefono,
-    Long empresaId
+    Long empresaId,
+    String fotoUrl
 ) {}
+

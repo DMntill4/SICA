@@ -100,8 +100,10 @@ public class BiometriaHttpHandler implements HttpHandler {
                     Persona p = optP.get();
                     if (p.getVectorBiometrico() != null && !p.getVectorBiometrico().isEmpty()) {
                         double dist = calcularDistanciaEuclidianaStrict(p.getVectorBiometrico(), nuevoVectorStr);
-                        if (dist <= 0.35) { // Umbral estricto de coincidencia facial (85%+ similitud)
-                            double pct = Math.round((1.0 - dist) * 100.0 * 10.0) / 10.0;
+                        // NOTA: El umbral 0.55 es apropiado para vectores de luminancia por zonas del frontend.
+                        // Si se migra a FaceNet/ArcFace real, reducir a 0.35.
+                        if (dist <= 0.55) {
+                            double pct = Math.round((1.0 - dist / 0.55) * 100.0 * 10.0) / 10.0;
                             Map<String, Object> resp = buildPersonaMatchResponse(p, true, pct, "Identidad verificada exitosamente.");
                             HttpUtils.sendJsonResponse(exchange, 200, resp);
                             return;
@@ -132,9 +134,9 @@ public class BiometriaHttpHandler implements HttpHandler {
                 }
             }
 
-            // UMBRAL DE SEGURIDAD ESTRICTO: Solo se acepta coincidencia si la distancia euclidiana es <= 0.35 (85%+ similitud)
-            if (mejorPersona != null && menorDistancia <= 0.35) {
-                double porcentaje = Math.round((1.0 - menorDistancia) * 100.0 * 10.0) / 10.0;
+            // UMBRAL: 0.55 para vectores de luminancia del frontend. Cambiar a 0.35 con embeddings de red neuronal real.
+            if (mejorPersona != null && menorDistancia <= 0.55) {
+                double porcentaje = Math.round((1.0 - menorDistancia / 0.55) * 100.0 * 10.0) / 10.0;
                 Map<String, Object> resp = buildPersonaMatchResponse(mejorPersona, true, porcentaje, "Identidad facial autenticada.");
                 HttpUtils.sendJsonResponse(exchange, 200, resp);
             } else {

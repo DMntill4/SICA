@@ -11,7 +11,9 @@
     
     <div class="container">
         <!-- HEADER PORTAL -->
-        <header class="header-box">
+        <header class="header-box" style="text-align: center;">
+            <img src="/portal/img/web.png" alt="SICA Logo" style="height: 80px; margin-bottom: 10px;">
+            <br>
             <span class="header-badge">SISTEMA INTEGRADO DE CONTROL DE ACCESOS</span>
             <h1 class="header-title">SICA SMART PASS</h1>
             <p class="subtitle">Portal de Autoservicio de Alta Seguridad</p>
@@ -253,24 +255,33 @@
                     </div>
                 </div>
 
-                <!-- 3 BOTONES PRINCIPALES DE GESTIÓN -->
-                <div class="hub-actions-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px;">
-                    <button type="button" class="btn-neon" onclick="verVisitasPendientesUsuario()" style="padding: 14px 16px; font-size: 14px; border-radius: 10px;">
+                <!-- 4 BOTONES PRINCIPALES DE GESTIÓN -->
+                <div class="hub-actions-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 24px;">
+                    <button type="button" class="btn-neon" onclick="verVisitasPendientesUsuario()" style="padding: 14px 12px; font-size: 13.5px; border-radius: 10px;">
                         📋 Ver Historial de Visitas
                     </button>
-                    <button type="button" class="btn-danger" onclick="abrirModalCancelarVisitaUsuario()" style="padding: 14px 16px; font-size: 14px; background: #EF4444; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    <button type="button" class="btn-danger" onclick="abrirModalCancelarVisitaUsuario()" style="padding: 14px 12px; font-size: 13.5px; background: #EF4444; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
                         🚫 Cancelar Visitas
                     </button>
-                    <button type="button" class="btn-primary" id="btn-new-visit-frecuente" onclick="abrirFormularioNuevaVisitaFrecuente()" style="padding: 14px 16px; font-size: 14px; background: #2563EB; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    <button type="button" class="btn-primary" id="btn-new-visit-frecuente" onclick="abrirFormularioNuevaVisitaFrecuente()" style="padding: 14px 12px; font-size: 13.5px; background: #2563EB; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
                         ➕ Registrar Nueva Visita
+                    </button>
+                    <button type="button" class="btn-warning" id="btn-reportar-anomalia" onclick="abrirModalReportarAnomaliaUsuario()" style="padding: 14px 12px; font-size: 13.5px; background: #F59E0B; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                        🚨 Reportar Olvido / Novedad
                     </button>
                 </div>
 
+
                 <!-- CONTENEDOR DE HISTORIAL DE VISITAS -->
                 <div id="user-visits-list-container" style="display: none; background: var(--bg-card-alt); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                         <h3 id="user-visits-list-title" style="margin: 0; font-size: 15px;">Mis Visitas Registradas</h3>
-                        <span id="user-visits-kpi-badge" style="font-size: 12px; color: var(--accent-primary); font-weight: 600;"></span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button type="button" onclick="verVisitasPendientesUsuario()" style="padding: 6px 12px; font-size: 12px; background: #2563EB; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                                🔄 Actualizar Estado
+                            </button>
+                            <span id="user-visits-kpi-badge" style="font-size: 12px; color: var(--accent-primary); font-weight: 600;"></span>
+                        </div>
                     </div>
                     <div id="user-visits-cards" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
@@ -311,15 +322,19 @@
                     <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">Preséntate en portería. El guardia/funcionario verificará tu foto e ingresará tu Check-In.</p>
                 </div>
 
-                <div class="actions space-between" style="display: flex; gap: 12px; margin-top: 20px;">
-                    <button type="button" class="btn-danger" onclick="cancelarVisitaActual()" style="flex: 1; padding: 12px 16px; background: #EF4444; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                        🚫 Cancelar / Anular Visita
+                <div class="actions space-between" style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                    <button type="button" class="btn-neon" onclick="actualizarEstadoTicketEnVivo()" style="flex: 1; padding: 12px 14px; background: #06B6D4; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        🔄 Actualizar Estado en Vivo
                     </button>
-                    <button type="button" class="btn-secondary" onclick="resetPortal()" style="flex: 1; padding: 12px 16px; background: var(--bg-card-alt); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-weight: 600; cursor: pointer;">
-                        ➕ Registrar Otra Visita
+                    <button type="button" class="btn-danger" onclick="cancelarVisitaActual()" style="flex: 1; padding: 12px 14px; background: #EF4444; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        🚫 Cancelar / Anular
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="resetPortal()" style="flex: 1; padding: 12px 14px; background: var(--bg-card-alt); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        ➕ Otra Visita
                     </button>
                 </div>
             </div>
+
 
 
         </div>

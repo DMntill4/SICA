@@ -32,6 +32,9 @@ public class GestionarPersonaUseCase {
         persona.setEmail(dto.email());
         persona.setTelefono(dto.telefono());
         persona.setEmpresaId(dto.empresaId());
+        if (dto.fotoUrl() != null && !dto.fotoUrl().isEmpty()) {
+            persona.setFotoUrl(dto.fotoUrl());
+        }
         persona.setEstadoAcceso(EstadoAcceso.HABILITADO);
 
         Persona creada = personaRepository.save(persona);
@@ -49,6 +52,10 @@ public class GestionarPersonaUseCase {
         persona.setEmail(dto.email());
         persona.setTelefono(dto.telefono());
         persona.setEmpresaId(dto.empresaId());
+        if (dto.fotoUrl() != null && !dto.fotoUrl().isEmpty()) {
+            persona.setFotoUrl(dto.fotoUrl());
+        }
+
 
         personaRepository.update(persona);
         auditService.log(actor.userId(), actor.username(), "ACTUALIZAR_PERSONA", "Persona actualizada: " + persona.getDocIdentidad(), ipOrigen);

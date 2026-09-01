@@ -37,22 +37,24 @@ public class AuthUseCase {
                 });
 
         if (usuario.isBloqueado()) {
-            auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_BLOCKED", "Intento de login en cuenta bloqueada", ipOrigen);
-            throw new SecurityException("La cuenta se encuentra bloqueada por multiples intentos fallidos");
+            auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_BLOCKED", "Intento de inicio de sesion en cuenta bloqueada", ipOrigen);
+            throw new SecurityException("La cuenta se encuentra bloqueada por exceder los intentos fallidos");
         }
 
         if (!passwordEncoderPort.verifyPassword(request.password(), usuario.getPasswordHash())) {
             int nuevosIntentos = usuario.getIntentosFallidos() + 1;
             usuario.setIntentosFallidos(nuevosIntentos);
-            if (nuevosIntentos >= 3 && !"admin".equalsIgnoreCase(usuario.getUsername())) {
+
+            boolean esAdmin = "admin".equalsIgnoreCase(usuario.getUsername());
+            if (nuevosIntentos >= 3 && !esAdmin) {
                 usuario.setBloqueado(true);
-                auditService.log(usuario.getId(), usuario.getUsername(), "ACCOUNT_LOCKED", "Cuenta bloqueada tras 3 intentos fallidos de contrasenia", ipOrigen);
                 usuarioRepository.update(usuario);
-                throw new SecurityException("La cuenta se encuentra bloqueada por multiples intentos fallidos");
+                auditService.log(usuario.getId(), usuario.getUsername(), "ACCOUNT_LOCKED", "Cuenta bloqueada tras 3 intentos fallidos", ipOrigen);
+                throw new SecurityException("La cuenta ha sido bloqueada por exceder los intentos fallidos");
             } else {
-                auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_FAILED", "Contrasenia incorrecta. Intento " + nuevosIntentos + "/3", ipOrigen);
                 usuarioRepository.update(usuario);
-                throw new SecurityException("Credenciales invalidas. Intento " + nuevosIntentos + " de 3");
+                auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_FAILED", "Contrasenia incorrecta. Intento #" + nuevosIntentos, ipOrigen);
+                throw new SecurityException("Credenciales invalidas");
             }
         }
 

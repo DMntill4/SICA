@@ -42,9 +42,19 @@ public class PersonaHttpHandler {
         AuthenticatedUserContext actor = (AuthenticatedUserContext) exchange.getAttribute("userContext");
         String ipOrigen = getRemoteIp(exchange);
         PersonaDTO dto = HttpUtils.readRequestBody(exchange, PersonaDTO.class);
+
+        if (dto == null || dto.docIdentidad() == null || dto.docIdentidad().trim().isEmpty() ||
+            dto.nombre() == null || dto.nombre().trim().isEmpty() ||
+            dto.apellido() == null || dto.apellido().trim().isEmpty()) {
+            HttpUtils.sendErrorResponse(exchange, 400, "⚠️ Campos obligatorios faltantes: Documento, Nombre y Apellido son requeridos.");
+            return;
+        }
+
+
         Persona creada = personaUseCase.registrarPersona(dto, actor, ipOrigen);
         HttpUtils.sendJsonResponse(exchange, 201, creada);
     }
+
 
     public void handleUpdate(HttpExchange exchange) throws IOException {
         AuthenticatedUserContext actor = (AuthenticatedUserContext) exchange.getAttribute("userContext");

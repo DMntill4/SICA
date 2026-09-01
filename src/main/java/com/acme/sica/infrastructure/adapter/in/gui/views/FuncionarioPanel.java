@@ -4,10 +4,14 @@ import com.acme.sica.domain.model.Persona;
 import com.acme.sica.domain.model.Visita;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
 import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
+import com.acme.sica.infrastructure.adapter.in.gui.components.AvatarPickerPanel;
+
 
 import javax.swing.*;
 
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+
 import javax.swing.table.DefaultTableModel;
 
 import java.awt.*;
@@ -29,7 +33,11 @@ public class FuncionarioPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable tblPasesWeb;
     private DefaultTableModel tableModelPasesWeb;
+    private JTable tblMisPreregistros;
+    private DefaultTableModel tableModelPreregistros;
+
     private JButton btnAprobar;
+
 
     private JButton btnRechazar;
     private JButton btnRefresh;
@@ -123,9 +131,19 @@ public class FuncionarioPanel extends JPanel {
         tblPendientes = new JTable(tableModel);
         com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblPendientes);
         JScrollPane scrollPane = new JScrollPane(tblPendientes);
-        tabbedPendientes.addTab("[📋] Visitas Pendientes Internas", scrollPane);
+        tabbedPendientes.addTab("[📋] Pendientes de Mi Aprobación", scrollPane);
 
-        // Tabla Pases Web Biométricos
+        // Tabla 2: Mis Visitas Pre-Registradas (Enviadas a Portería)
+        String[] colsPrereg = {"ID Visita", "Persona / Visitante", "Documento", "Tipo Visita", "Estado Visita", "Motivo"};
+        tableModelPreregistros = new DefaultTableModel(colsPrereg, 0) {
+            @Override public boolean isCellEditable(int row, int col) { return false; }
+        };
+        tblMisPreregistros = new JTable(tableModelPreregistros);
+        com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblMisPreregistros);
+        JScrollPane scrollPrereg = new JScrollPane(tblMisPreregistros);
+        tabbedPendientes.addTab("[📅] Mis Visitas Pre-Registradas", scrollPrereg);
+
+        // Tabla 3: Pases Web Biométricos
         String[] colsWeb = {"ID Pase", "Nombre Completo", "Documento", "Empresa Destino", "Biometría IA", "Motivo"};
         tableModelPasesWeb = new DefaultTableModel(colsWeb, 0) {
             @Override public boolean isCellEditable(int row, int col) { return false; }
@@ -134,6 +152,7 @@ public class FuncionarioPanel extends JPanel {
         com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme.styleTable(tblPasesWeb);
         JScrollPane scrollWeb = new JScrollPane(tblPasesWeb);
         tabbedPendientes.addTab("[🌐] Solicitudes Portal Web (Biometría IA)", scrollWeb);
+
 
         centerPanel.add(tabbedPendientes, BorderLayout.CENTER);
 
@@ -204,16 +223,30 @@ public class FuncionarioPanel extends JPanel {
                 try {
                     allVisitas = get();
                     tableModel.setRowCount(0);
-                    allVisitas.stream()
-                            .filter(v -> v.getEstadoVisita().name().contains("PENDIENTE"))
-                            .forEach(v -> tableModel.addRow(new Object[]{
+                    if (tableModelPreregistros != null) tableModelPreregistros.setRowCount(0);
+
+                    for (Visita v : allVisitas) {
+                        if (v.getEstadoVisita().name().contains("PENDIENTE")) {
+                            tableModel.addRow(new Object[]{
                                     v.getId(),
                                     v.getPersonaNombreCompleto(),
                                     v.getPersonaDocIdentidad(),
                                     v.getTipoVisita(),
                                     v.getEstadoVisita(),
                                     v.getMotivo()
-                            }));
+                            });
+                        } else if (tableModelPreregistros != null) {
+                            tableModelPreregistros.addRow(new Object[]{
+                                    v.getId(),
+                                    v.getPersonaNombreCompleto(),
+                                    v.getPersonaDocIdentidad(),
+                                    v.getTipoVisita(),
+                                    v.getEstadoVisita(),
+                                    v.getMotivo()
+                            });
+                        }
+                    }
+
                 } catch (Exception ignored) {
                 }
             }
@@ -317,47 +350,144 @@ public class FuncionarioPanel extends JPanel {
 
 
     private void executePreregistro() {
-        if (comboPersonas.getSelectedItem() == null) return;
-        try {
-            String sel = (String) comboPersonas.getSelectedItem();
-            Long pId = Long.parseLong(sel.split(" - ")[0]);
-            String motivo = txtMotivo.getText().trim();
-            if (motivo.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Ingrese el motivo de la visita", "Aviso", JOptionPane.WARNING_MESSAGE);
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentWindow instanceof Frame f ? f : null, "📅 Pre-Registrar Visita (Ingreso Autorizado)", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(480, 440);
+        dialog.setLocationRelativeTo(this);
+
+        AvatarPickerPanel avatarPicker = new AvatarPickerPanel();
+
+        JComboBox<String> comboInvitados = new JComboBox<>();
+        if (personasCache != null) {
+            for (Persona p : personasCache) {
+                comboInvitados.addItem(p.getId() + " - " + p.getNombre() + " " + p.getApellido() + " (" + p.getDocIdentidad() + ")");
+            }
+        }
+
+        Runnable updateAvatarFromSelection = () -> {
+            String sel = (String) comboInvitados.getSelectedItem();
+            if (sel != null && personasCache != null) {
+                try {
+                    Long selectedId = Long.parseLong(sel.split(" - ")[0]);
+                    for (Persona p : personasCache) {
+                        if (p.getId().equals(selectedId)) {
+                            if (p.getFotoUrl() != null && !p.getFotoUrl().trim().isEmpty()) {
+                                avatarPicker.setFotoUrl(p.getFotoUrl());
+                            } else {
+                                avatarPicker.restablecerAvatarPredeterminado();
+                            }
+                            break;
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        };
+
+        comboInvitados.addActionListener(e -> updateAvatarFromSelection.run());
+        updateAvatarFromSelection.run();
+
+        String fechaDefecto = LocalDateTime.now().plusHours(2).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        JTextField txtFechaHora = new JTextField(fechaDefecto, 16);
+
+        JTextField txtMotivoVisita = new JTextField("Reunión de Negocios y Consultoría", 16);
+
+        JPanel formGrid = new JPanel(new GridLayout(3, 2, 8, 8));
+        formGrid.setOpaque(false);
+        formGrid.add(new JLabel("Seleccionar Invitado (*):")); formGrid.add(comboInvitados);
+        formGrid.add(new JLabel("Fecha / Hora Visita (*):")); formGrid.add(txtFechaHora);
+        formGrid.add(new JLabel("Motivo de Visita (*):")); formGrid.add(txtMotivoVisita);
+
+        JPanel centerPanel = new JPanel(new BorderLayout(8, 12));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 8, 16));
+        centerPanel.setOpaque(false);
+
+        JPanel avatarContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        avatarContainer.setOpaque(false);
+        avatarContainer.add(avatarPicker);
+
+        centerPanel.add(avatarContainer, BorderLayout.NORTH);
+        centerPanel.add(formGrid, BorderLayout.CENTER);
+
+        JLabel lblError = new JLabel("", SwingConstants.CENTER);
+        lblError.setForeground(new Color(239, 68, 68));
+        lblError.setFont(SicaTheme.FONT_BOLD);
+        centerPanel.add(lblError, BorderLayout.SOUTH);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        JButton btnCancelar = new JButton("Cancelar");
+        JButton btnAceptar = new JButton("Aceptar y Guardar");
+
+        SicaTheme.styleButton(btnAceptar, SicaTheme.ACCENT_CYAN, Color.WHITE);
+        SicaTheme.styleButton(btnCancelar, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MUTED);
+
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        btnAceptar.addActionListener(e -> {
+            if (comboInvitados.getSelectedItem() == null) {
+                lblError.setText("⚠️ Debe seleccionar un invitado válido");
                 return;
             }
+            String mot = txtMotivoVisita.getText().trim();
+            String fecStr = txtFechaHora.getText().trim();
+
+            if (mot.isEmpty() || fecStr.isEmpty()) {
+                lblError.setText("⚠️ Complete la fecha/hora y motivo de la visita");
+                return;
+            }
+
+            LocalDateTime fecha;
+            try {
+                fecha = LocalDateTime.parse(fecStr, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            } catch (Exception ex) {
+                lblError.setText("⚠️ Formato de fecha inválido. Ejemplo: 2026-08-29 14:00");
+                return;
+            }
+
+            String sel = (String) comboInvitados.getSelectedItem();
+            Long personaId = Long.parseLong(sel.split(" - ")[0]);
+
+            btnAceptar.setEnabled(false);
+            lblError.setForeground(SicaTheme.ACCENT_CYAN);
+            lblError.setText("Enviando pre-registro a portería...");
 
             SwingWorker<Visita, Void> worker = new SwingWorker<>() {
                 @Override
                 protected Visita doInBackground() throws Exception {
-                    return apiClient.preregistrarVisita(pId, motivo, LocalDateTime.now().plusHours(2));
+                    return apiClient.preregistrarVisita(personaId, mot, fecha);
                 }
 
                 @Override
                 protected void done() {
                     try {
                         Visita v = get();
-                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(FuncionarioPanel.this,
+                        dialog.dispose();
+                        loadAll();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(
+                                FuncionarioPanel.this,
                                 "[+] Visita Pre-Registrada Exitosamente (ID #" + v.getId() + ")",
-                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS);
-                        JOptionPane.showMessageDialog(FuncionarioPanel.this,
-                                "Visita pre-registrada exitosamente (ID #" + v.getId() + ").\nEl guardia ya puede realizar el Check-In en portería.",
-                                "Pre-Registro Éxitoso", JOptionPane.INFORMATION_MESSAGE);
-                        loadPendientes();
-                    } catch (Exception e) {
-                        Throwable cause = e.getCause() != null ? e.getCause() : e;
-                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(FuncionarioPanel.this,
-                                "[x] Error en Pre-Registro: " + cause.getMessage(),
-                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.ERROR);
-                        JOptionPane.showMessageDialog(FuncionarioPanel.this, "Error: " + cause.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS
+                        );
+                    } catch (Exception ex) {
+                        btnAceptar.setEnabled(true);
+                        lblError.setForeground(new Color(239, 68, 68));
+                        lblError.setText("Error: " + ex.getMessage());
                     }
                 }
             };
             worker.execute();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Selección inválida: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        });
+
+        btnPanel.add(btnCancelar);
+        btnPanel.add(btnAceptar);
+
+        dialog.add(centerPanel, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+
+        SicaTheme.applyDarkThemeRecursively(dialog);
+        dialog.setVisible(true);
     }
+
 
     private void executeAprobar() {
         int row = tblPendientes.getSelectedRow();
@@ -427,56 +557,145 @@ public class FuncionarioPanel extends JPanel {
     }
 
     private void openCrearPersonaDialog() {
-        JTextField txtDoc = new JTextField(12);
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentWindow instanceof Frame f ? f : null, "👤 Registrar Nuevo Trabajador / Persona", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(480, 520);
+        dialog.setLocationRelativeTo(this);
+
+        AvatarPickerPanel avatarPicker = new AvatarPickerPanel();
+
+        JTextField txtDoc = new JTextField(15);
         JComboBox<String> comboTipoDoc = new JComboBox<>(new String[]{"CC", "CE", "PASAPORTE", "TI"});
         JTextField txtNombre = new JTextField(15);
         JTextField txtApellido = new JTextField(15);
         JTextField txtEmail = new JTextField(15);
         JTextField txtTel = new JTextField(15);
 
-        JPanel panel = new JPanel(new GridLayout(6, 2, 6, 6));
-        panel.add(new JLabel("Documento:")); panel.add(txtDoc);
-        panel.add(new JLabel("Tipo Documento:")); panel.add(comboTipoDoc);
-        panel.add(new JLabel("Nombre:")); panel.add(txtNombre);
-        panel.add(new JLabel("Apellido:")); panel.add(txtApellido);
-        panel.add(new JLabel("Email:")); panel.add(txtEmail);
-        panel.add(new JLabel("Teléfono:")); panel.add(txtTel);
+        JComboBox<String> comboEmpresas = new JComboBox<>();
+        comboEmpresas.addItem("0 - Sin Empresa (Independiente / Visitante)");
+        try {
+            List<Map<String, Object>> empresas = apiClient.listarEmpresas();
+            for (Map<String, Object> e : empresas) {
+                comboEmpresas.addItem(e.get("id") + " - " + e.get("nombre"));
+            }
+        } catch (Exception ignored) {}
 
-        int option = JOptionPane.showConfirmDialog(this, panel, "👤 Registrar Nuevo Invitado / Persona", JOptionPane.OK_CANCEL_OPTION);
-        if (option == JOptionPane.OK_OPTION) {
+        JPanel formPanel = new JPanel(new GridLayout(7, 2, 8, 8));
+        formPanel.setOpaque(false);
+        formPanel.add(new JLabel("Documento (*):")); formPanel.add(txtDoc);
+        formPanel.add(new JLabel("Tipo Documento:")); formPanel.add(comboTipoDoc);
+        formPanel.add(new JLabel("Nombre (*):")); formPanel.add(txtNombre);
+        formPanel.add(new JLabel("Apellido (*):")); formPanel.add(txtApellido);
+        formPanel.add(new JLabel("Empresa Asociada:")); formPanel.add(comboEmpresas);
+        formPanel.add(new JLabel("Email:")); formPanel.add(txtEmail);
+        formPanel.add(new JLabel("Teléfono:")); formPanel.add(txtTel);
+
+        JPanel centerPanel = new JPanel(new BorderLayout(8, 12));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 8, 16));
+        centerPanel.setOpaque(false);
+
+        JPanel avatarContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        avatarContainer.setOpaque(false);
+        avatarContainer.add(avatarPicker);
+
+        centerPanel.add(avatarContainer, BorderLayout.NORTH);
+        centerPanel.add(formPanel, BorderLayout.CENTER);
+
+        JLabel lblError = new JLabel("", SwingConstants.CENTER);
+        lblError.setForeground(new Color(239, 68, 68));
+        lblError.setFont(SicaTheme.FONT_BOLD);
+        centerPanel.add(lblError, BorderLayout.SOUTH);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        JButton btnCancelar = new JButton("Cancelar");
+        JButton btnAceptar = new JButton("Aceptar y Guardar");
+
+        SicaTheme.styleButton(btnAceptar, SicaTheme.ACCENT_CYAN, Color.WHITE);
+        SicaTheme.styleButton(btnCancelar, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MUTED);
+
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        btnAceptar.addActionListener(e -> {
             String doc = txtDoc.getText().trim();
             String tipo = (String) comboTipoDoc.getSelectedItem();
             String nom = txtNombre.getText().trim();
             String ape = txtApellido.getText().trim();
             String email = txtEmail.getText().trim();
             String tel = txtTel.getText().trim();
+            String fotoUrl = avatarPicker.getFotoUrl();
 
-            if (doc.isEmpty() || nom.isEmpty() || ape.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Documento, Nombre y Apellido son obligatorios", "Aviso", JOptionPane.WARNING_MESSAGE);
+            txtDoc.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtNombre.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtApellido.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+
+            boolean hasError = false;
+            if (doc.isEmpty()) {
+                txtDoc.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (nom.isEmpty()) {
+                txtNombre.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (ape.isEmpty()) {
+                txtApellido.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+
+            if (hasError) {
+                lblError.setText("⚠️ Debe rellenar Documento, Nombre y Apellido para continuar");
                 return;
             }
+
+            String selEmp = (String) comboEmpresas.getSelectedItem();
+            Long empId = null;
+            if (selEmp != null && !selEmp.startsWith("0")) {
+                try { empId = Long.parseLong(selEmp.split(" - ")[0]); } catch (Exception ignored) {}
+            }
+
+            final Long finalEmpId = empId;
+            btnAceptar.setEnabled(false);
+            lblError.setForeground(SicaTheme.ACCENT_CYAN);
+            lblError.setText("Guardando persona con fotografía...");
 
             SwingWorker<Persona, Void> worker = new SwingWorker<>() {
                 @Override
                 protected Persona doInBackground() throws Exception {
-                    return apiClient.crearPersona(doc, tipo, nom, ape, email, tel);
+                    return apiClient.crearPersona(doc, tipo, nom, ape, email, tel, finalEmpId, fotoUrl);
                 }
 
                 @Override
                 protected void done() {
                     try {
                         Persona p = get();
-                        JOptionPane.showMessageDialog(FuncionarioPanel.this,
-                                "✅ Persona registrada exitosamente:\n" + p.getNombre() + " " + p.getApellido() + " (Doc: " + p.getDocIdentidad() + ")",
-                                "Registro Éxitoso", JOptionPane.INFORMATION_MESSAGE);
-                        loadPersonas();
-                    } catch (Exception e) {
-                        Throwable cause = e.getCause() != null ? e.getCause() : e;
-                        JOptionPane.showMessageDialog(FuncionarioPanel.this, "Error: " + cause.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        dialog.dispose();
+                        loadAll();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(
+                                FuncionarioPanel.this,
+                                "[+] Persona Registrada Exitosamente: " + p.getNombre() + " " + p.getApellido(),
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS
+                        );
+                    } catch (Exception ex) {
+                        btnAceptar.setEnabled(true);
+                        lblError.setForeground(new Color(239, 68, 68));
+                        lblError.setText("Error: " + ex.getMessage());
                     }
                 }
             };
             worker.execute();
-        }
+        });
+
+        btnPanel.add(btnCancelar);
+        btnPanel.add(btnAceptar);
+
+        dialog.add(centerPanel, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+
+        SicaTheme.applyDarkThemeRecursively(dialog);
+        dialog.setVisible(true);
     }
+
+
+
 }

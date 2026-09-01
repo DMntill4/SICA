@@ -20,8 +20,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 /**
  * Cliente HTTP desacoplado para consumir la API REST de SICA en http://localhost:8080.
@@ -110,14 +112,20 @@ public class SicaApiClient {
     }
 
     public Persona crearPersona(String docIdentidad, String tipoDocumento, String nombre, String apellido, String email, String telefono) throws Exception {
-        Map<String, Object> body = Map.of(
-                "docIdentidad", docIdentidad,
-                "tipoDocumento", tipoDocumento,
-                "nombre", nombre,
-                "apellido", apellido,
-                "email", email,
-                "telefono", telefono
-        );
+        return crearPersona(docIdentidad, tipoDocumento, nombre, apellido, email, telefono, null, null);
+    }
+
+    public Persona crearPersona(String docIdentidad, String tipoDocumento, String nombre, String apellido, String email, String telefono, Long empresaId, String fotoUrl) throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("docIdentidad", docIdentidad);
+        body.put("tipoDocumento", tipoDocumento);
+        body.put("nombre", nombre);
+        body.put("apellido", apellido);
+        body.put("email", email);
+        body.put("telefono", telefono);
+        if (empresaId != null) body.put("empresaId", empresaId);
+        if (fotoUrl != null) body.put("fotoUrl", fotoUrl);
+
         String json = HttpUtils.objectMapper.writeValueAsString(body);
 
         HttpRequest request = buildAuthRequest("/personas")
@@ -132,6 +140,34 @@ public class SicaApiClient {
             throw parseErrorResponse(response);
         }
     }
+
+    public Persona actualizarPersona(Long id, String docIdentidad, String tipoDocumento, String nombre, String apellido, String email, String telefono, Long empresaId, String fotoUrl) throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("docIdentidad", docIdentidad);
+        body.put("tipoDocumento", tipoDocumento);
+        body.put("nombre", nombre);
+        body.put("apellido", apellido);
+        body.put("email", email);
+        body.put("telefono", telefono);
+        if (empresaId != null) body.put("empresaId", empresaId);
+        if (fotoUrl != null) body.put("fotoUrl", fotoUrl);
+
+        String json = HttpUtils.objectMapper.writeValueAsString(body);
+
+        HttpRequest request = buildAuthRequest("/personas/" + id)
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return HttpUtils.objectMapper.readValue(response.body(), Persona.class);
+        } else {
+            throw parseErrorResponse(response);
+        }
+    }
+
+
 
     public void eliminarPersona(Long id) throws Exception {
         HttpRequest request = buildAuthRequest("/personas/" + id)
@@ -158,13 +194,18 @@ public class SicaApiClient {
     }
 
     public Map<String, Object> crearUsuario(String username, String password, String nombreCompleto, String email, Long rolId) throws Exception {
-        Map<String, Object> body = Map.of(
-                "username", username,
-                "password", password,
-                "nombreCompleto", nombreCompleto,
-                "email", email,
-                "rolId", rolId
-        );
+        return crearUsuario(username, password, nombreCompleto, email, rolId, null);
+    }
+
+    public Map<String, Object> crearUsuario(String username, String password, String nombreCompleto, String email, Long rolId, String fotoUrl) throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("username", username);
+        body.put("password", password);
+        body.put("nombreCompleto", nombreCompleto);
+        body.put("email", email);
+        body.put("rolId", rolId);
+        if (fotoUrl != null) body.put("fotoUrl", fotoUrl);
+
         String json = HttpUtils.objectMapper.writeValueAsString(body);
 
         HttpRequest request = buildAuthRequest("/usuarios")
@@ -179,6 +220,7 @@ public class SicaApiClient {
             throw parseErrorResponse(response);
         }
     }
+
 
     public Map<String, Object> actualizarUsuario(Long id, String nombreCompleto, String email, Long rolId) throws Exception {
         Map<String, Object> body = Map.of(
@@ -385,28 +427,58 @@ public class SicaApiClient {
     }
 
     public Visita registrarVisitaNoAnunciada(String docIdentidad, String motivo) throws Exception {
+        return registrarVisitaNoAnunciada(docIdentidad, "Visitante", "No Anunciado", "visitante@sica.local", 3L, motivo, null);
+    }
+
+    public Visita registrarVisitaNoAnunciada(String docIdentidad, String nombre, String apellido, String email, Long funcionarioId, String motivo, String fotoUrl) throws Exception {
         Persona p = null;
         try {
             p = buscarPersonaPorDoc(docIdentidad);
         } catch (Exception ignored) {}
 
         if (p == null) {
-            p = crearPersona("Visitante", "No Anunciado", docIdentidad, "visitante@sica.local");
+            p = crearPersona(docIdentidad, "CC", nombre, apellido, email, "", null, fotoUrl);
+        } else if ((nombre != null && !nombre.trim().isEmpty()) || (fotoUrl != null && !fotoUrl.trim().isEmpty())) {
+            try {
+                actualizarPersona(p.getId(), docIdentidad, "CC",
+                        (nombre != null && !nombre.trim().isEmpty()) ? nombre : p.getNombre(),
+                        (apellido != null && !apellido.trim().isEmpty()) ? apellido : p.getApellido(),
+                        (email != null && !email.trim().isEmpty()) ? email : p.getEmail(),
+                        "", p.getEmpresaId(), fotoUrl != null ? fotoUrl : p.getFotoUrl());
+            } catch (Exception ignored) {}
         }
-        return registrarNoAnunciada(p.getId(), 1L, motivo);
+
+        Long fId = (funcionarioId != null && funcionarioId > 0) ? funcionarioId : 3L;
+        return registrarNoAnunciada(p.getId(), fId, motivo != null ? motivo : "Visita No Anunciada");
     }
+
 
     public Visita emitirPaseTemporal(String docIdentidad) throws Exception {
+        return emitirPaseTemporal(docIdentidad, "Trabajador", "Pase Temporal", "temporal@sica.local", 3L, "Pase Temporal Emitido en Porteria", null);
+    }
+
+    public Visita emitirPaseTemporal(String docIdentidad, String nombre, String apellido, String email, Long funcionarioId, String motivo, String fotoUrl) throws Exception {
         Persona p = null;
         try {
             p = buscarPersonaPorDoc(docIdentidad);
         } catch (Exception ignored) {}
 
         if (p == null) {
-            p = crearPersona("Visitante", "Pase Temporal", docIdentidad, "temporal@sica.local");
+            p = crearPersona(docIdentidad, "CC", nombre, apellido, email, "", null, fotoUrl);
+        } else if ((nombre != null && !nombre.trim().isEmpty()) || (fotoUrl != null && !fotoUrl.trim().isEmpty())) {
+            try {
+                actualizarPersona(p.getId(), docIdentidad, "CC",
+                        (nombre != null && !nombre.trim().isEmpty()) ? nombre : p.getNombre(),
+                        (apellido != null && !apellido.trim().isEmpty()) ? apellido : p.getApellido(),
+                        (email != null && !email.trim().isEmpty()) ? email : p.getEmail(),
+                        "", p.getEmpresaId(), fotoUrl != null ? fotoUrl : p.getFotoUrl());
+            } catch (Exception ignored) {}
         }
-        return registrarPaseTemporal(p.getId(), 1L, "Pase Temporal Emitido en Porteria");
+
+        Long fId = (funcionarioId != null && funcionarioId > 0) ? funcionarioId : 3L;
+        return registrarPaseTemporal(p.getId(), fId, motivo != null ? motivo : "Pase Temporal Emitido por Olvido de Carnet");
     }
+
 
     public List<Incidente> listarIncidentesPorPersona(Long personaId) throws Exception {
         HttpRequest request = buildAuthRequest("/incidentes/persona/" + personaId)

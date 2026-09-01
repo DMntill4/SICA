@@ -52,6 +52,19 @@ public class LoginFrame extends JFrame {
         lblBrandTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lblBrandTitle.setForeground(Color.WHITE);
 
+        try {
+            java.net.URL logoUrl = getClass().getResource("/img/enter.png");
+            if (logoUrl != null) {
+                ImageIcon originalIcon = new ImageIcon(logoUrl);
+                this.setIconImage(originalIcon.getImage());
+                Image scaledImage = originalIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+                lblBrandTitle.setIcon(new ImageIcon(scaledImage));
+                lblBrandTitle.setIconTextGap(12);
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading default logo: " + e.getMessage());
+        }
+
         JLabel lblSub = new JLabel("Plataforma Integrada de Control de Accesos y Registro Biométrico.");
         lblSub.setFont(SicaTheme.FONT_BODY);
         lblSub.setForeground(new Color(200, 220, 240));

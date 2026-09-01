@@ -157,7 +157,8 @@ public class IncidentesPanel extends JPanel {
                     personasCache.forEach(p -> 
                         comboPersonas.addItem(p.getId() + " - " + p.getNombre() + " " + p.getApellido() + " (" + p.getDocIdentidad() + ")")
                     );
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    System.err.println("[IncidentesPanel Warning] Error al cargar personas: " + e.getMessage());
                 }
             }
         };
@@ -187,7 +188,8 @@ public class IncidentesPanel extends JPanel {
                                 i.getFechaHora()
                         });
                     }
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    System.err.println("[IncidentesPanel Warning] Error al cargar incidentes: " + e.getMessage());
                 }
             }
         };

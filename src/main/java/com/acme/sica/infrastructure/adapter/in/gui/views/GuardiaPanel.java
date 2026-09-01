@@ -6,6 +6,8 @@ import com.acme.sica.domain.model.Visita;
 import com.acme.sica.infrastructure.adapter.in.gui.client.SicaApiClient;
 import com.acme.sica.infrastructure.adapter.in.gui.theme.SicaTheme;
 import com.acme.sica.infrastructure.adapter.in.gui.components.CriticalConfirmationDialog;
+import com.acme.sica.infrastructure.adapter.in.gui.components.AvatarPickerPanel;
+
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,6 +16,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import java.util.Map;
+
 
 /**
  * Panel de Control de Accesos en Vivo en Portería (Sin Emojis).
@@ -34,6 +38,8 @@ public class GuardiaPanel extends JPanel {
     private JLabel lblPersonaDoc;
     private JLabel lblVisitaTarget;
     private JLabel lblVisitaEstado;
+    private JLabel lblFotoConsulta;
+
 
     private JTable tblVisitas;
     private DefaultTableModel tableModelVisitas;
@@ -203,12 +209,31 @@ public class GuardiaPanel extends JPanel {
         detailsGrid.add(lblVisitaTarget);
         detailsGrid.add(lblVisitaEstado);
 
+
+
+
+        lblFotoConsulta = new JLabel();
+        lblFotoConsulta.setPreferredSize(new Dimension(64, 64));
+        lblFotoConsulta.setMinimumSize(new Dimension(64, 64));
+        lblFotoConsulta.setHorizontalAlignment(SwingConstants.CENTER);
+        lblFotoConsulta.setIcon(com.acme.sica.infrastructure.adapter.in.gui.components.ImageUtils.createVectorAvatarIcon(60, 60));
+        lblFotoConsulta.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(SicaTheme.ACCENT_CYAN, 1, true),
+                new EmptyBorder(2, 2, 2, 2)
+        ));
+
+        JPanel detailsAndPhoto = new JPanel(new BorderLayout(8, 0));
+        detailsAndPhoto.setOpaque(false);
+        detailsAndPhoto.add(detailsGrid, BorderLayout.CENTER);
+        detailsAndPhoto.add(lblFotoConsulta, BorderLayout.EAST);
+
         JPanel searchContent = new JPanel(new BorderLayout(4, 4));
         searchContent.setOpaque(false);
         searchContent.add(searchForm, BorderLayout.NORTH);
-        searchContent.add(detailsGrid, BorderLayout.CENTER);
+        searchContent.add(detailsAndPhoto, BorderLayout.CENTER);
 
         JPanel cardSearch = SicaTheme.createHeaderCard("Consulta de Visitante", searchContent);
+
 
         com.acme.sica.infrastructure.adapter.in.gui.components.EstadoSicaGradientCard gradientCard = new com.acme.sica.infrastructure.adapter.in.gui.components.EstadoSicaGradientCard();
         this.gradientCardRef = gradientCard;
@@ -259,6 +284,10 @@ public class GuardiaPanel extends JPanel {
         SicaTheme.styleButton(btnCrearPersona, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MAIN);
         btnCrearPersona.addActionListener(e -> openCrearPersonaDialog());
 
+        JButton btnEditarPersona = new JButton("✏️ Editar Persona");
+        SicaTheme.styleButton(btnEditarPersona, SicaTheme.CARD_BG_ALT, SicaTheme.ACCENT_CYAN);
+        btnEditarPersona.addActionListener(e -> openEditarPersonaDialog());
+
         JButton btnEliminarPersona = new JButton("Eliminar Persona");
         SicaTheme.styleButton(btnEliminarPersona, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MUTED);
         btnEliminarPersona.addActionListener(e -> executeEliminarPersona());
@@ -268,8 +297,10 @@ public class GuardiaPanel extends JPanel {
         btnLimpiarVisitas.addActionListener(e -> executeLimpiarVisitas());
 
         row2.add(btnCrearPersona);
+        row2.add(btnEditarPersona);
         row2.add(btnEliminarPersona);
         row2.add(btnLimpiarVisitas);
+
 
         JPanel row3 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
         row3.setOpaque(false);
@@ -414,10 +445,26 @@ public class GuardiaPanel extends JPanel {
                     lblVisitaEstado.setText("Estado: " + p.getEstadoAcceso());
 
                     if (gradientCardRef != null) {
-                        gradientCardRef.updateState(p.getNombreCompleto(), p.getDocIdentidad(), "", p.getEstadoAcceso() != null ? p.getEstadoAcceso().name() : "HABILITADO");
+                        gradientCardRef.updateState(
+                                p.getNombreCompleto(),
+                                p.getDocIdentidad(),
+                                "",
+                                p.getEstadoAcceso() != null ? p.getEstadoAcceso().name() : "HABILITADO",
+                                p.getFotoUrl()
+                        );
+                    }
+
+                    if (lblFotoConsulta != null) {
+                        java.awt.image.BufferedImage img = com.acme.sica.infrastructure.adapter.in.gui.components.ImageUtils.fetchImage(p.getFotoUrl());
+                        if (img != null) {
+                            lblFotoConsulta.setIcon(new ImageIcon(img.getScaledInstance(60, 60, Image.SCALE_SMOOTH)));
+                        } else {
+                            lblFotoConsulta.setIcon(com.acme.sica.infrastructure.adapter.in.gui.components.ImageUtils.createVectorAvatarIcon(60, 60));
+                        }
                     }
 
                     loadIncidentesDePersona(p.getId());
+
 
                 } catch (Exception e) {
                     lblPersonaNombre.setText("Persona: No encontrada");
@@ -533,8 +580,10 @@ public class GuardiaPanel extends JPanel {
         panel.add(new JLabel("Documento (*):")); panel.add(txtDoc);
         panel.add(new JLabel("Nombre:")); panel.add(txtNom);
         panel.add(new JLabel("Motivo Visita:")); panel.add(txtMotivo);
+        SicaTheme.applyDarkThemeRecursively(panel);
 
         int res = JOptionPane.showConfirmDialog(this, panel, "⚡ Registro de Visita Rápida / Express (Portería)", JOptionPane.OK_CANCEL_OPTION);
+
         if (res == JOptionPane.OK_OPTION) {
             String doc = txtDoc.getText().trim();
             String nom = txtNom.getText().trim();
@@ -575,88 +624,648 @@ public class GuardiaPanel extends JPanel {
 
 
     private void openCrearPersonaDialog() {
-        JTextField txtNom = new JTextField();
-        JTextField txtApe = new JTextField();
-        JTextField txtDoc = new JTextField();
-        JTextField txtMail = new JTextField();
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentWindow instanceof Frame f ? f : null, "👤 Registrar Nueva Persona / Trabajador", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(480, 480);
+        dialog.setLocationRelativeTo(this);
 
-        JPanel panel = new JPanel(new GridLayout(4, 2, 6, 6));
-        panel.add(new JLabel("Nombre:")); panel.add(txtNom);
-        panel.add(new JLabel("Apellido:")); panel.add(txtApe);
-        panel.add(new JLabel("Documento:")); panel.add(txtDoc);
-        panel.add(new JLabel("Email:")); panel.add(txtMail);
+        AvatarPickerPanel avatarPicker = new AvatarPickerPanel();
 
-        int res = JOptionPane.showConfirmDialog(this, panel, "Registrar Nueva Persona", JOptionPane.OK_CANCEL_OPTION);
-        if (res == JOptionPane.OK_OPTION) {
+        JTextField txtDoc = new JTextField(15);
+        JTextField txtNom = new JTextField(15);
+        JTextField txtApe = new JTextField(15);
+        JTextField txtMail = new JTextField(15);
+
+        JComboBox<String> comboEmpresas = new JComboBox<>();
+        comboEmpresas.addItem("0 - Sin Empresa (Independiente)");
+        try {
+            List<Map<String, Object>> empresas = apiClient.listarEmpresas();
+            for (Map<String, Object> e : empresas) {
+                comboEmpresas.addItem(e.get("id") + " - " + e.get("nombre"));
+            }
+        } catch (Exception ignored) {}
+
+        JPanel formPanel = new JPanel(new GridLayout(5, 2, 8, 8));
+        formPanel.setOpaque(false);
+        formPanel.add(new JLabel("Documento (*):")); formPanel.add(txtDoc);
+        formPanel.add(new JLabel("Nombre (*):")); formPanel.add(txtNom);
+        formPanel.add(new JLabel("Apellido (*):")); formPanel.add(txtApe);
+        formPanel.add(new JLabel("Empresa Asociada:")); formPanel.add(comboEmpresas);
+        formPanel.add(new JLabel("Email:")); formPanel.add(txtMail);
+
+        JPanel centerPanel = new JPanel(new BorderLayout(8, 12));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 8, 16));
+        centerPanel.setOpaque(false);
+
+        JPanel avatarContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        avatarContainer.setOpaque(false);
+        avatarContainer.add(avatarPicker);
+
+        centerPanel.add(avatarContainer, BorderLayout.NORTH);
+        centerPanel.add(formPanel, BorderLayout.CENTER);
+
+        JLabel lblError = new JLabel("", SwingConstants.CENTER);
+        lblError.setForeground(new Color(239, 68, 68));
+        lblError.setFont(SicaTheme.FONT_BOLD);
+        centerPanel.add(lblError, BorderLayout.SOUTH);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        JButton btnCancelar = new JButton("Cancelar");
+        JButton btnAceptar = new JButton("Aceptar");
+
+        SicaTheme.styleButton(btnAceptar, SicaTheme.ACCENT_CYAN, Color.WHITE);
+        SicaTheme.styleButton(btnCancelar, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MUTED);
+
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        btnAceptar.addActionListener(e -> {
+            String doc = txtDoc.getText().trim();
             String nom = txtNom.getText().trim();
             String ape = txtApe.getText().trim();
-            String doc = txtDoc.getText().trim();
             String mail = txtMail.getText().trim();
+            String fotoUrl = avatarPicker.getFotoUrl();
 
-            if (!nom.isEmpty() && !doc.isEmpty()) {
-                SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                    @Override
-                    protected Void doInBackground() throws Exception {
-                        apiClient.crearPersona(nom, ape, doc, mail);
-                        return null;
-                    }
+            txtDoc.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtNom.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtApe.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
 
-                    @Override
-                    protected void done() {
-                        try {
-                            get();
-                            loadPersonas();
-                        } catch (Exception ignored) {}
-                    }
-                };
-                worker.execute();
+            boolean hasError = false;
+            if (doc.isEmpty()) {
+                txtDoc.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
             }
-        }
+            if (nom.isEmpty()) {
+                txtNom.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (ape.isEmpty()) {
+                txtApe.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+
+            if (hasError) {
+                lblError.setText("⚠️ Debe rellenar Documento, Nombre y Apellido para continuar");
+                return;
+            }
+
+            String selEmp = (String) comboEmpresas.getSelectedItem();
+            Long empId = null;
+            if (selEmp != null && !selEmp.startsWith("0")) {
+                try { empId = Long.parseLong(selEmp.split(" - ")[0]); } catch (Exception ignored) {}
+            }
+
+            final Long finalEmpId = empId;
+            btnAceptar.setEnabled(false);
+            lblError.setForeground(SicaTheme.ACCENT_CYAN);
+            lblError.setText("Guardando persona...");
+
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    apiClient.crearPersona(doc, "CC", nom, ape, mail, "", finalEmpId, fotoUrl);
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        dialog.dispose();
+                        loadPersonas();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(
+                                GuardiaPanel.this,
+                                "[+] Persona Registrada: " + nom + " " + ape,
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS
+                        );
+                    } catch (Exception ex) {
+                        btnAceptar.setEnabled(true);
+                        lblError.setForeground(new Color(239, 68, 68));
+                        lblError.setText("Error: " + ex.getMessage());
+                    }
+                }
+            };
+            worker.execute();
+        });
+
+        btnPanel.add(btnCancelar);
+        btnPanel.add(btnAceptar);
+
+        dialog.add(centerPanel, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+
+        SicaTheme.applyDarkThemeRecursively(dialog);
+        dialog.setVisible(true);
     }
+
+    private void openEditarPersonaDialog() {
+        int row = tblPersonas.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Por favor, selecciona una persona de la tabla para editar.", "Editar Persona", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        String docSelect = (String) tableModelPersonas.getValueAt(row, 1);
+        Long personaId = (Long) tableModelPersonas.getValueAt(row, 0);
+
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "✏️ Editar Persona Registrada", true);
+        dialog.setSize(480, 530);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
+
+        JPanel formPanel = new JPanel(new GridLayout(5, 2, 8, 8));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+
+        JTextField txtDoc = new JTextField(15);
+        txtDoc.setText(docSelect);
+        txtDoc.setEditable(false);
+        JTextField txtNom = new JTextField(15);
+        JTextField txtApe = new JTextField(15);
+        JTextField txtMail = new JTextField(15);
+
+        JComboBox<String> comboEmpresas = new JComboBox<>();
+        comboEmpresas.addItem("0 - Ninguna / Visitante Externo");
+        try {
+            List<Map<String, Object>> emps = apiClient.listarEmpresas();
+            for (Map<String, Object> e : emps) {
+                comboEmpresas.addItem(e.get("id") + " - " + e.get("nombre"));
+            }
+        } catch (Exception ignored) {}
+
+        formPanel.add(new JLabel("Documento (Doc):")); formPanel.add(txtDoc);
+        formPanel.add(new JLabel("Nombre: *")); formPanel.add(txtNom);
+        formPanel.add(new JLabel("Apellido: *")); formPanel.add(txtApe);
+        formPanel.add(new JLabel("Email:")); formPanel.add(txtMail);
+        formPanel.add(new JLabel("Empresa / Filial:")); formPanel.add(comboEmpresas);
+
+        com.acme.sica.infrastructure.adapter.in.gui.components.AvatarPickerPanel avatarPicker =
+                new com.acme.sica.infrastructure.adapter.in.gui.components.AvatarPickerPanel();
+
+        JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
+        centerPanel.add(formPanel, BorderLayout.NORTH);
+        centerPanel.add(avatarPicker, BorderLayout.CENTER);
+
+        JLabel lblError = new JLabel("", SwingConstants.CENTER);
+        lblError.setFont(SicaTheme.FONT_SMALL);
+        lblError.setForeground(new Color(239, 68, 68));
+        centerPanel.add(lblError, BorderLayout.SOUTH);
+
+        SwingWorker<Persona, Void> loader = new SwingWorker<>() {
+            @Override
+            protected Persona doInBackground() throws Exception {
+                return apiClient.buscarPersonaPorDoc(docSelect);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    Persona p = get();
+                    if (p != null) {
+                        txtNom.setText(p.getNombre() != null ? p.getNombre() : "");
+                        txtApe.setText(p.getApellido() != null ? p.getApellido() : "");
+                        txtMail.setText(p.getEmail() != null ? p.getEmail() : "");
+                        if (p.getFotoUrl() != null && !p.getFotoUrl().isEmpty()) {
+                            avatarPicker.setFotoUrl(p.getFotoUrl());
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        };
+        loader.execute();
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        JButton btnCancelar = new JButton("Cancelar");
+        JButton btnAceptar = new JButton("Guardar Cambios");
+
+        SicaTheme.styleButton(btnAceptar, SicaTheme.ACCENT_CYAN, Color.WHITE);
+        SicaTheme.styleButton(btnCancelar, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MUTED);
+
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        btnAceptar.addActionListener(e -> {
+            String nom = txtNom.getText().trim();
+            String ape = txtApe.getText().trim();
+            String mail = txtMail.getText().trim();
+            String fotoUrl = avatarPicker.getFotoUrl();
+
+            txtNom.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtApe.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+
+            boolean hasError = false;
+            if (nom.isEmpty()) {
+                txtNom.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (ape.isEmpty()) {
+                txtApe.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+
+            if (hasError) {
+                lblError.setText("⚠️ Debe rellenar Nombre y Apellido para continuar");
+                return;
+            }
+
+            String selEmp = (String) comboEmpresas.getSelectedItem();
+            Long empId = null;
+            if (selEmp != null && !selEmp.startsWith("0")) {
+                try { empId = Long.parseLong(selEmp.split(" - ")[0]); } catch (Exception ignored) {}
+            }
+
+            final Long finalEmpId = empId;
+            btnAceptar.setEnabled(false);
+            lblError.setForeground(SicaTheme.ACCENT_CYAN);
+            lblError.setText("Actualizando datos...");
+
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    apiClient.actualizarPersona(personaId, docSelect, "CC", nom, ape, mail, "", finalEmpId, fotoUrl);
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        dialog.dispose();
+                        loadPersonas();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(
+                                GuardiaPanel.this,
+                                "[✏️] Persona Actualizada: " + nom + " " + ape,
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS
+                        );
+                    } catch (Exception ex) {
+                        btnAceptar.setEnabled(true);
+                        lblError.setForeground(new Color(239, 68, 68));
+                        lblError.setText("Error: " + ex.getMessage());
+                    }
+                }
+            };
+            worker.execute();
+        });
+
+        btnPanel.add(btnCancelar);
+        btnPanel.add(btnAceptar);
+
+        dialog.add(centerPanel, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+
+        SicaTheme.applyDarkThemeRecursively(dialog);
+        dialog.setVisible(true);
+    }
+
+
+
+
 
     private void openVisitaNoAnunciadaDialog() {
-        String doc = JOptionPane.showInputDialog(this, "Ingresa el Documento del Visitante No Anunciado:");
-        if (doc != null && !doc.trim().isEmpty()) {
-            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentWindow instanceof Frame f ? f : null, "🚪 Registrar Visitante No Anunciado (WALKIN-01)", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(520, 570);
+        dialog.setLocationRelativeTo(this);
+
+        String initialDoc = txtSearchDoc != null ? txtSearchDoc.getText().trim() : "";
+        JTextField txtDoc = new JTextField(initialDoc, 15);
+        JTextField txtNom = new JTextField(15);
+        JTextField txtApe = new JTextField(15);
+        JTextField txtMail = new JTextField(15);
+        JTextField txtMotivo = new JTextField("Reunión de Negocios No Anunciada", 15);
+
+        JComboBox<String> comboFuncionarios = new JComboBox<>();
+        try {
+            List<Map<String, Object>> users = apiClient.listarUsuarios();
+            for (Map<String, Object> u : users) {
+                comboFuncionarios.addItem(u.get("id") + " - " + u.get("nombreCompleto") + " (" + u.get("rolNombre") + ")");
+            }
+        } catch (Exception ignored) {
+            comboFuncionarios.addItem("3 - Funcionario Principal (func1)");
+        }
+
+        JPanel formGrid = new JPanel(new GridLayout(6, 2, 8, 8));
+        formGrid.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        formGrid.setOpaque(false);
+
+        formGrid.add(new JLabel("Documento (Doc) (*):")); formGrid.add(txtDoc);
+        formGrid.add(new JLabel("Nombre del Invitado (*):")); formGrid.add(txtNom);
+        formGrid.add(new JLabel("Apellido del Invitado (*):")); formGrid.add(txtApe);
+        formGrid.add(new JLabel("Email Invitado:")); formGrid.add(txtMail);
+        formGrid.add(new JLabel("A quién visita (Anfitrión) (*):")); formGrid.add(comboFuncionarios);
+        formGrid.add(new JLabel("Motivo de Visita (*):")); formGrid.add(txtMotivo);
+
+        com.acme.sica.infrastructure.adapter.in.gui.components.AvatarPickerPanel avatarPicker =
+                new com.acme.sica.infrastructure.adapter.in.gui.components.AvatarPickerPanel();
+
+        txtDoc.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                String d = txtDoc.getText().trim();
+                if (!d.isEmpty()) {
+                    SwingWorker<Persona, Void> loader = new SwingWorker<>() {
+                        @Override
+                        protected Persona doInBackground() throws Exception {
+                            return apiClient.buscarPersonaPorDoc(d);
+                        }
+
+                        @Override
+                        protected void done() {
+                            try {
+                                Persona p = get();
+                                if (p != null) {
+                                    txtNom.setText(p.getNombre() != null ? p.getNombre() : "");
+                                    txtApe.setText(p.getApellido() != null ? p.getApellido() : "");
+                                    txtMail.setText(p.getEmail() != null ? p.getEmail() : "");
+                                    if (p.getFotoUrl() != null && !p.getFotoUrl().isEmpty()) {
+                                        avatarPicker.setFotoUrl(p.getFotoUrl());
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        }
+                    };
+                    loader.execute();
+                }
+            }
+        });
+
+        JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
+        centerPanel.add(formGrid, BorderLayout.NORTH);
+        centerPanel.add(avatarPicker, BorderLayout.CENTER);
+
+        JLabel lblError = new JLabel("", SwingConstants.CENTER);
+        lblError.setFont(SicaTheme.FONT_SMALL);
+        lblError.setForeground(new Color(239, 68, 68));
+        centerPanel.add(lblError, BorderLayout.SOUTH);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        JButton btnCancelar = new JButton("Cancelar");
+        JButton btnAceptar = new JButton("Crear Visita No Anunciada");
+
+        SicaTheme.styleButton(btnAceptar, SicaTheme.ACCENT_CYAN, Color.WHITE);
+        SicaTheme.styleButton(btnCancelar, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MUTED);
+
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        btnAceptar.addActionListener(e -> {
+            String doc = txtDoc.getText().trim();
+            String nom = txtNom.getText().trim();
+            String ape = txtApe.getText().trim();
+            String mail = txtMail.getText().trim();
+            String mot = txtMotivo.getText().trim();
+            String fotoUrl = avatarPicker.getFotoUrl();
+
+            txtDoc.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtNom.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtApe.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtMotivo.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+
+            boolean hasError = false;
+            if (doc.isEmpty()) {
+                txtDoc.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (nom.isEmpty()) {
+                txtNom.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (ape.isEmpty()) {
+                txtApe.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (mot.isEmpty()) {
+                txtMotivo.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+
+            if (hasError) {
+                lblError.setText("⚠️ Debe rellenar Documento, Nombre, Apellido y Motivo para continuar");
+                return;
+            }
+
+            String selFunc = (String) comboFuncionarios.getSelectedItem();
+            Long funcId = 3L;
+            if (selFunc != null) {
+                try { funcId = Long.parseLong(selFunc.split(" - ")[0]); } catch (Exception ignored) {}
+            }
+
+            final Long finalFuncId = funcId;
+            btnAceptar.setEnabled(false);
+            lblError.setForeground(SicaTheme.ACCENT_CYAN);
+            lblError.setText("Registrando visita no anunciada...");
+
+            SwingWorker<Visita, Void> worker = new SwingWorker<>() {
                 @Override
-                protected Void doInBackground() throws Exception {
-                    apiClient.registrarVisitaNoAnunciada(doc.trim(), "Visita No Anunciada en Porteria");
-                    return null;
+                protected Visita doInBackground() throws Exception {
+                    return apiClient.registrarVisitaNoAnunciada(doc, nom, ape, mail, finalFuncId, mot, fotoUrl);
                 }
 
                 @Override
                 protected void done() {
                     try {
-                        get();
+                        Visita v = get();
+                        dialog.dispose();
                         loadVisitas();
-                    } catch (Exception ignored) {}
+                        loadPersonas();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(
+                                GuardiaPanel.this,
+                                "[🚪] Visita No Anunciada Creada (#" + v.getId() + " - Pendiente de Aprobación)",
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS
+                        );
+                    } catch (Exception ex) {
+                        btnAceptar.setEnabled(true);
+                        lblError.setForeground(new Color(239, 68, 68));
+                        lblError.setText("Error: " + ex.getMessage());
+                    }
                 }
             };
             worker.execute();
-        }
+        });
+
+        btnPanel.add(btnCancelar);
+        btnPanel.add(btnAceptar);
+
+        dialog.add(centerPanel, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+
+        SicaTheme.applyDarkThemeRecursively(dialog);
+        dialog.setVisible(true);
     }
+
 
     private void openPaseTemporalDialog() {
-        String doc = JOptionPane.showInputDialog(this, "Ingresa el Documento para emitir Pase Temporal:");
-        if (doc != null && !doc.trim().isEmpty()) {
-            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentWindow instanceof Frame f ? f : null, "🪪 Pase Temporal por Olvido de Carnet (FORGET-01)", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(520, 570);
+        dialog.setLocationRelativeTo(this);
+
+        String initialDoc = txtSearchDoc != null ? txtSearchDoc.getText().trim() : "";
+        JTextField txtDoc = new JTextField(initialDoc, 15);
+        JTextField txtNom = new JTextField(15);
+        JTextField txtApe = new JTextField(15);
+        JTextField txtMail = new JTextField(15);
+        JTextField txtMotivo = new JTextField("Pase Temporal por Olvido de Carnet Físico", 15);
+
+        JComboBox<String> comboFuncionarios = new JComboBox<>();
+        try {
+            List<Map<String, Object>> users = apiClient.listarUsuarios();
+            for (Map<String, Object> u : users) {
+                comboFuncionarios.addItem(u.get("id") + " - " + u.get("nombreCompleto") + " (" + u.get("rolNombre") + ")");
+            }
+        } catch (Exception ignored) {
+            comboFuncionarios.addItem("3 - Funcionario Principal (func1)");
+        }
+
+        JPanel formGrid = new JPanel(new GridLayout(6, 2, 8, 8));
+        formGrid.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        formGrid.setOpaque(false);
+
+        formGrid.add(new JLabel("Documento Trabajador (*):")); formGrid.add(txtDoc);
+        formGrid.add(new JLabel("Nombre (*):")); formGrid.add(txtNom);
+        formGrid.add(new JLabel("Apellido (*):")); formGrid.add(txtApe);
+        formGrid.add(new JLabel("Email:")); formGrid.add(txtMail);
+        formGrid.add(new JLabel("A quién notifica (Jefe/Anfitrión) (*):")); formGrid.add(comboFuncionarios);
+        formGrid.add(new JLabel("Motivo de Ingreso (*):")); formGrid.add(txtMotivo);
+
+        com.acme.sica.infrastructure.adapter.in.gui.components.AvatarPickerPanel avatarPicker =
+                new com.acme.sica.infrastructure.adapter.in.gui.components.AvatarPickerPanel();
+
+        txtDoc.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                String d = txtDoc.getText().trim();
+                if (!d.isEmpty()) {
+                    SwingWorker<Persona, Void> loader = new SwingWorker<>() {
+                        @Override
+                        protected Persona doInBackground() throws Exception {
+                            return apiClient.buscarPersonaPorDoc(d);
+                        }
+
+                        @Override
+                        protected void done() {
+                            try {
+                                Persona p = get();
+                                if (p != null) {
+                                    txtNom.setText(p.getNombre() != null ? p.getNombre() : "");
+                                    txtApe.setText(p.getApellido() != null ? p.getApellido() : "");
+                                    txtMail.setText(p.getEmail() != null ? p.getEmail() : "");
+                                    if (p.getFotoUrl() != null && !p.getFotoUrl().isEmpty()) {
+                                        avatarPicker.setFotoUrl(p.getFotoUrl());
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        }
+                    };
+                    loader.execute();
+                }
+            }
+        });
+
+        JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
+        centerPanel.add(formGrid, BorderLayout.NORTH);
+        centerPanel.add(avatarPicker, BorderLayout.CENTER);
+
+        JLabel lblError = new JLabel("", SwingConstants.CENTER);
+        lblError.setFont(SicaTheme.FONT_SMALL);
+        lblError.setForeground(new Color(239, 68, 68));
+        centerPanel.add(lblError, BorderLayout.SOUTH);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        JButton btnCancelar = new JButton("Cancelar");
+        JButton btnAceptar = new JButton("Emitir Pase por Olvido");
+
+        SicaTheme.styleButton(btnAceptar, SicaTheme.ACCENT_CYAN, Color.WHITE);
+        SicaTheme.styleButton(btnCancelar, SicaTheme.CARD_BG_ALT, SicaTheme.TEXT_MUTED);
+
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        btnAceptar.addActionListener(e -> {
+            String doc = txtDoc.getText().trim();
+            String nom = txtNom.getText().trim();
+            String ape = txtApe.getText().trim();
+            String mail = txtMail.getText().trim();
+            String mot = txtMotivo.getText().trim();
+            String fotoUrl = avatarPicker.getFotoUrl();
+
+            txtDoc.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtNom.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtApe.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+            txtMotivo.setBorder(BorderFactory.createCompoundBorder(new LineBorder(SicaTheme.BORDER_SUBTLE, 1, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+
+            boolean hasError = false;
+            if (doc.isEmpty()) {
+                txtDoc.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (nom.isEmpty()) {
+                txtNom.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (ape.isEmpty()) {
+                txtApe.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+            if (mot.isEmpty()) {
+                txtMotivo.setBorder(BorderFactory.createCompoundBorder(new LineBorder(new Color(239, 68, 68), 2, true), BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+                hasError = true;
+            }
+
+            if (hasError) {
+                lblError.setText("⚠️ Debe rellenar Documento, Nombre, Apellido y Motivo para continuar");
+                return;
+            }
+
+            String selFunc = (String) comboFuncionarios.getSelectedItem();
+            Long funcId = 3L;
+            if (selFunc != null) {
+                try { funcId = Long.parseLong(selFunc.split(" - ")[0]); } catch (Exception ignored) {}
+            }
+
+            final Long finalFuncId = funcId;
+            btnAceptar.setEnabled(false);
+            lblError.setForeground(SicaTheme.ACCENT_CYAN);
+            lblError.setText("Emitiendo pase por olvido...");
+
+            SwingWorker<Visita, Void> worker = new SwingWorker<>() {
                 @Override
-                protected Void doInBackground() throws Exception {
-                    apiClient.emitirPaseTemporal(doc.trim());
-                    return null;
+                protected Visita doInBackground() throws Exception {
+                    return apiClient.emitirPaseTemporal(doc, nom, ape, mail, finalFuncId, mot, fotoUrl);
                 }
 
                 @Override
                 protected void done() {
                     try {
-                        get();
+                        Visita v = get();
+                        dialog.dispose();
                         loadVisitas();
-                    } catch (Exception ignored) {}
+                        loadPersonas();
+                        com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.showToast(
+                                GuardiaPanel.this,
+                                "[🪪] Pase Temporal Creado (#" + v.getId() + " - Pendiente Aprobación por Olvido)",
+                                com.acme.sica.infrastructure.adapter.in.gui.components.ToastNotificationManager.ToastType.SUCCESS
+                        );
+                    } catch (Exception ex) {
+                        btnAceptar.setEnabled(true);
+                        lblError.setForeground(new Color(239, 68, 68));
+                        lblError.setText("Error: " + ex.getMessage());
+                    }
                 }
             };
             worker.execute();
-        }
+        });
+
+        btnPanel.add(btnCancelar);
+        btnPanel.add(btnAceptar);
+
+        dialog.add(centerPanel, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+
+        SicaTheme.applyDarkThemeRecursively(dialog);
+        dialog.setVisible(true);
     }
+
 
     private void executeEliminarPersona() {
         int row = tblPersonas.getSelectedRow();
