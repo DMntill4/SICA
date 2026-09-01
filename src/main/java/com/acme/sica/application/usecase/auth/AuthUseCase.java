@@ -26,25 +26,31 @@ public class AuthUseCase {
     }
 
     public LoginResponseDTO login(LoginRequestDTO request, String ipOrigen) {
+        // REGLA DE NEGOCIO: Validar que la peticion contenga campos requeridos no nulos
         if (request == null || request.username() == null || request.password() == null) {
             throw new IllegalArgumentException("Debe ingresar usuario y contrasenia");
         }
 
+        // REGLA DE NEGOCIO: Buscar usuario por username. Si no existe, registrar auditoria y lanzar excepcion
         Usuario usuario = usuarioRepository.findByUsername(request.username().trim())
                 .orElseThrow(() -> {
                     auditService.log(null, request.username(), "LOGIN_FAILED", "Intento de inicio de sesion con usuario inexistente", ipOrigen);
                     return new SecurityException("Credenciales invalidas");
                 });
 
+        // REGLA DE NEGOCIO: Verificar si la cuenta esta previamente bloqueada por intentos fallidos
         if (usuario.isBloqueado()) {
             auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_BLOCKED", "Intento de inicio de sesion en cuenta bloqueada", ipOrigen);
             throw new SecurityException("La cuenta se encuentra bloqueada por exceder los intentos fallidos");
         }
 
+        // REGLA DE NEGOCIO: Verificar hash de contraseña con BCrypt (!verifyPassword indica contraseña incorrecta)
         if (!passwordEncoderPort.verifyPassword(request.password(), usuario.getPasswordHash())) {
+            // INTENCION: Incrementar en 1 el contador de intentos fallidos
             int nuevosIntentos = usuario.getIntentosFallidos() + 1;
             usuario.setIntentosFallidos(nuevosIntentos);
 
+            // REGLA DE NEGOCIO: Si acumula 3 o mas intentos y no es usuario admin, bloquear cuenta
             boolean esAdmin = "admin".equalsIgnoreCase(usuario.getUsername());
             if (nuevosIntentos >= 3 && !esAdmin) {
                 usuario.setBloqueado(true);
@@ -58,11 +64,11 @@ public class AuthUseCase {
             }
         }
 
-
-
+        // REGLA DE NEGOCIO: Si la contraseña fue correcta, reiniciar contador de intentos a 0
         usuario.setIntentosFallidos(0);
         usuarioRepository.update(usuario);
 
+        // INTENCION: Generar token JWT firmado con 8 horas de vigencia y consultar permisos por rol
         String token = jwtPort.generateToken(usuario);
         auditService.log(usuario.getId(), usuario.getUsername(), "LOGIN_SUCCESS", "Inicio de sesion exitoso", ipOrigen);
 

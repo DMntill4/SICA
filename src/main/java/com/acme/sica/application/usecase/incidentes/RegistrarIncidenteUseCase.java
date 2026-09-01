@@ -38,7 +38,7 @@ public class RegistrarIncidenteUseCase {
 
         Incidente guardado = incidenteRepository.save(incidente);
 
-        // REGLA CRITICA DE NEGOCIO: Al registrar un incidente, el estadoAcceso pasa a RESTRINGIDO de inmediato.
+        // REGLA DE NEGOCIO CRITICA: Al registrar un incidente (gravedad ALTO o CRITICO), cambiar inmediatamente estadoAcceso de la persona a RESTRINGIDO
         personaRepository.updateEstadoAcceso(persona.getId(), EstadoAcceso.RESTRINGIDO);
 
         auditService.log(actor.userId(), actor.username(), "REGISTRO_INCIDENTE",

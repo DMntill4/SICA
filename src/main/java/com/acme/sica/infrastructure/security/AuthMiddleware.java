@@ -22,10 +22,12 @@ public class AuthMiddleware {
     }
 
     public boolean intercept(HttpExchange exchange, Route route) throws IOException {
+        // REGLA DE SEGURIDAD: Si la ruta HTTP es publica (no requiere auth), permitir paso directo
         if (!route.requiresAuth()) {
             return true;
         }
 
+        // REGLA DE SEGURIDAD: Extraer encabezado Authorization: Bearer <token>
         String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             HttpUtils.sendErrorResponse(exchange, 401, "Acceso denegado: Token Bearer JWT no proporcionado");
@@ -34,9 +36,11 @@ public class AuthMiddleware {
 
         String token = authHeader.substring(7).trim();
         try {
+            // INTENCION: Verificar firma JWT con clave secreta HMAC256
             DecodedJWT jwt = jwtUtil.verifyToken(token);
             String jti = jwt.getId();
 
+            // REGLA DE SEGURIDAD: Comprobar si el token jti se encuentra en la tabla negra token_revocado (logout)
             if (usuarioRepository.isTokenRevoked(jti)) {
                 HttpUtils.sendErrorResponse(exchange, 401, "Acceso denegado: El token ha sido revocado (Sesion cerrada)");
                 return false;
@@ -49,6 +53,7 @@ public class AuthMiddleware {
 
             Set<String> userPermissions = permissionChecker.getPermissions(roleId);
 
+            // REGLA DE SEGURIDAD RBAC: Verificar si el rol del usuario posee el permiso especifico requerido por la ruta
             if (route.requiredPermission() != null && !permissionChecker.hasPermission(roleId, route.requiredPermission())) {
                 HttpUtils.sendErrorResponse(exchange, 403, "Acceso prohibido: El rol '" + roleName + "' no posee el permiso '" + route.requiredPermission() + "'");
                 return false;
