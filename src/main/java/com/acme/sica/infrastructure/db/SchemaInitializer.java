@@ -38,13 +38,9 @@ public class SchemaInitializer {
                 }
             }
 
-            if (!tableExists) {
-                executeSqlScript(stmt, "/schema.sql");
-                executeSqlScript(stmt, "/data.sql");
-                System.out.println("[DB Init] Tablas creadas y datos iniciales insertados con exito en " + connectionFactory.getDatabaseType() + ".");
-            } else {
-                System.out.println("[DB Init] Base de datos " + connectionFactory.getDatabaseType() + " lista y verificada.");
-            }
+            executeSqlScript(stmt, "/schema.sql");
+            executeSqlScript(stmt, "/data.sql");
+            System.out.println("[DB Init] Base de datos " + connectionFactory.getDatabaseType() + " lista y verificada.");
 
             // Garantizar migración de columnas en tabla visita si la base de datos ya existía
             try {
