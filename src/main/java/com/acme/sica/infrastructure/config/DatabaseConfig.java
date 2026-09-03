@@ -67,19 +67,19 @@ public class DatabaseConfig {
     }
 
     public static String getDbEngine() {
-        return getProperty("db.engine", "MYSQL");
+        return getProperty("db.engine", "H2");
     }
 
     public static String getDbUrl() {
-        return getProperty("db.url", "jdbc:mysql://localhost:3306/sica?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true");
+        return getProperty("db.url", "jdbc:h2:mem:sica;DB_CLOSE_DELAY=-1;MODE=MySQL");
     }
 
     public static String getDbUser() {
-        return getProperty("db.user", "root");
+        return getProperty("db.user", "sa");
     }
 
     public static String getDbPassword() {
-        return getProperty("db.password", "root");
+        return getProperty("db.password", "");
     }
 
 

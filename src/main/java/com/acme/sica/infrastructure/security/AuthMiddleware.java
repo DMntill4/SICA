@@ -1,4 +1,5 @@
 package com.acme.sica.infrastructure.security;
+
 import com.acme.sica.application.AuthenticatedUserContext;
 import com.acme.sica.application.port.out.UsuarioRepository;
 import com.acme.sica.infrastructure.adapter.in.http.router.HttpUtils;
@@ -22,7 +23,8 @@ public class AuthMiddleware {
     }
 
     public boolean intercept(HttpExchange exchange, Route route) throws IOException {
-        // REGLA DE SEGURIDAD: Si la ruta HTTP es publica (no requiere auth), permitir paso directo
+        // REGLA DE SEGURIDAD: Si la ruta HTTP es publica (no requiere auth), permitir
+        // paso directo
         if (!route.requiresAuth()) {
             return true;
         }
@@ -40,9 +42,11 @@ public class AuthMiddleware {
             DecodedJWT jwt = jwtUtil.verifyToken(token);
             String jti = jwt.getId();
 
-            // REGLA DE SEGURIDAD: Comprobar si el token jti se encuentra en la tabla negra token_revocado (logout)
+            // REGLA DE SEGURIDAD: Comprobar si el token jti se encuentra en la tabla negra
+            // token_revocado (logout)
             if (usuarioRepository.isTokenRevoked(jti)) {
-                HttpUtils.sendErrorResponse(exchange, 401, "Acceso denegado: El token ha sido revocado (Sesion cerrada)");
+                HttpUtils.sendErrorResponse(exchange, 401,
+                        "Acceso denegado: El token ha sido revocado (Sesion cerrada)");
                 return false;
             }
 
@@ -53,18 +57,23 @@ public class AuthMiddleware {
 
             Set<String> userPermissions = permissionChecker.getPermissions(roleId);
 
-            // REGLA DE SEGURIDAD RBAC: Verificar si el rol del usuario posee el permiso especifico requerido por la ruta
-            if (route.requiredPermission() != null && !permissionChecker.hasPermission(roleId, route.requiredPermission())) {
-                HttpUtils.sendErrorResponse(exchange, 403, "Acceso prohibido: El rol '" + roleName + "' no posee el permiso '" + route.requiredPermission() + "'");
+            // REGLA DE SEGURIDAD RBAC: Verificar si el rol del usuario posee el permiso
+            // especifico requerido por la ruta
+            if (route.requiredPermission() != null
+                    && !permissionChecker.hasPermission(roleId, route.requiredPermission())) {
+                HttpUtils.sendErrorResponse(exchange, 403, "Acceso prohibido: El rol '" + roleName
+                        + "' no posee el permiso '" + route.requiredPermission() + "'");
                 return false;
             }
 
-            AuthenticatedUserContext userContext = new AuthenticatedUserContext(userId, username, roleId, roleName, userPermissions, jti);
+            AuthenticatedUserContext userContext = new AuthenticatedUserContext(userId, username, roleId, roleName,
+                    userPermissions, jti);
             exchange.setAttribute("userContext", userContext);
 
             return true;
         } catch (Exception e) {
-            HttpUtils.sendErrorResponse(exchange, 401, "Acceso denegado: Token JWT invalido o expirado - " + e.getMessage());
+            HttpUtils.sendErrorResponse(exchange, 401,
+                    "Acceso denegado: Token JWT invalido o expirado - " + e.getMessage());
             return false;
         }
     }
