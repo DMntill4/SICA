@@ -18,7 +18,8 @@ public class RegistrarIncidenteUseCase {
     private final PersonaRepository personaRepository;
     private final AuditService auditService;
 
-    public RegistrarIncidenteUseCase(IncidenteRepository incidenteRepository, PersonaRepository personaRepository, AuditService auditService) {
+    public RegistrarIncidenteUseCase(IncidenteRepository incidenteRepository, PersonaRepository personaRepository,
+            AuditService auditService) {
         this.incidenteRepository = incidenteRepository;
         this.personaRepository = personaRepository;
         this.auditService = auditService;
@@ -38,12 +39,14 @@ public class RegistrarIncidenteUseCase {
 
         Incidente guardado = incidenteRepository.save(incidente);
 
-        // REGLA DE NEGOCIO CRITICA: Al registrar un incidente (gravedad ALTO o CRITICO), cambiar inmediatamente estadoAcceso de la persona a RESTRINGIDO
+        // REGLA DE NEGOCIO CRITICA: Al registrar un incidente (gravedad ALTO o
+        // CRITICO), cambiar inmediatamente estadoAcceso de la persona a RESTRINGIDO
         personaRepository.updateEstadoAcceso(persona.getId(), EstadoAcceso.RESTRINGIDO);
 
         auditService.log(actor.userId(), actor.username(), "REGISTRO_INCIDENTE",
                 "Incidente '" + guardado.getTitulo() + "' registrado para persona doc: " + persona.getDocIdentidad() +
-                        ". Estado cambiado a RESTRINGIDO.", ipOrigen);
+                        ". Estado cambiado a RESTRINGIDO.",
+                ipOrigen);
 
         return guardado;
     }

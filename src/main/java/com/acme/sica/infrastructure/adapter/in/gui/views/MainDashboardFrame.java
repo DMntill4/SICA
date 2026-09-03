@@ -70,9 +70,6 @@ public class MainDashboardFrame extends JFrame {
             if (logoUrl != null) {
                 ImageIcon originalIcon = new ImageIcon(logoUrl);
                 this.setIconImage(originalIcon.getImage());
-                Image scaledImage = originalIcon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
-                titleLabel.setIcon(new ImageIcon(scaledImage));
-                titleLabel.setIconTextGap(10);
             }
         } catch (Exception e) {
             System.err.println("Error loading logo: " + e.getMessage());

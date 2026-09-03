@@ -28,26 +28,29 @@ public class GestionarVisitaUseCase {
     private final PersonaRepository personaRepository;
     private final AuditService auditService;
 
-    public GestionarVisitaUseCase(VisitaRepository visitaRepository, PersonaRepository personaRepository, AuditService auditService) {
+    public GestionarVisitaUseCase(VisitaRepository visitaRepository, PersonaRepository personaRepository,
+            AuditService auditService) {
         this.visitaRepository = visitaRepository;
         this.personaRepository = personaRepository;
         this.auditService = auditService;
     }
 
     public Visita preregistrarVisita(PreregistroVisitaDTO dto, AuthenticatedUserContext actor, String ipOrigen) {
-        Visita visita = VisitaFactory.createVisita(TipoVisita.PRE_REGISTRADA, dto.personaId(), actor.userId(), dto.motivo(), dto.fechaHoraProgramada());
+        Visita visita = VisitaFactory.createVisita(TipoVisita.PRE_REGISTRADA, dto.personaId(), actor.userId(),
+                dto.motivo(), dto.fechaHoraProgramada());
         Visita guardada = visitaRepository.save(visita);
-        
+
         Persona persona = personaRepository.findById(dto.personaId()).orElse(null);
         String doc = persona != null ? persona.getDocIdentidad() : String.valueOf(dto.personaId());
-        
+
         auditService.log(actor.userId(), actor.username(), "PREREGISTRO_VISITA",
                 "Visita pre-registrada ID " + guardada.getId() + " para persona " + doc, ipOrigen);
         return guardada;
     }
 
     public Visita registrarNoAnunciada(VisitaNoAnunciadaDTO dto, AuthenticatedUserContext actor, String ipOrigen) {
-        Visita visita = VisitaFactory.createVisita(TipoVisita.NO_ANUNCIADA, dto.personaId(), dto.funcionarioId(), dto.motivo(), null);
+        Visita visita = VisitaFactory.createVisita(TipoVisita.NO_ANUNCIADA, dto.personaId(), dto.funcionarioId(),
+                dto.motivo(), null);
         visita.setGuardiaIngresoId(actor.userId());
         if (dto.puntoAccesoIngresoId() != null) {
             visita.setPuntoAccesoIngresoId(dto.puntoAccesoIngresoId());
@@ -60,7 +63,8 @@ public class GestionarVisitaUseCase {
     }
 
     public Visita registrarPaseTemporal(PaseTemporalDTO dto, AuthenticatedUserContext actor, String ipOrigen) {
-        Visita visita = VisitaFactory.createVisita(TipoVisita.PASE_TEMPORAL, dto.personaId(), dto.funcionarioId(), dto.motivo(), null);
+        Visita visita = VisitaFactory.createVisita(TipoVisita.PASE_TEMPORAL, dto.personaId(), dto.funcionarioId(),
+                dto.motivo(), null);
         visita.setGuardiaIngresoId(actor.userId());
         if (dto.puntoAccesoIngresoId() != null) {
             visita.setPuntoAccesoIngresoId(dto.puntoAccesoIngresoId());
@@ -68,7 +72,9 @@ public class GestionarVisitaUseCase {
 
         Visita guardada = visitaRepository.save(visita);
         auditService.log(actor.userId(), actor.username(), "REGISTRO_PASE_TEMPORAL",
-                "Pase temporal ID " + guardada.getId() + " registrado por carnet olvidado (PENDIENTE_APROBACION_OLVIDO)", ipOrigen);
+                "Pase temporal ID " + guardada.getId()
+                        + " registrado por carnet olvidado (PENDIENTE_APROBACION_OLVIDO)",
+                ipOrigen);
         return guardada;
     }
 
@@ -77,13 +83,15 @@ public class GestionarVisitaUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("Visita no encontrada con ID: " + visitaId));
 
         if (visita.getEstadoVisita() != EstadoVisita.PENDIENTE_APROBACION &&
-            visita.getEstadoVisita() != EstadoVisita.PENDIENTE_APROBACION_OLVIDO) {
-            throw new IllegalStateException("La visita no requiere aprobacion o ya fue procesada. Estado: " + visita.getEstadoVisita());
+                visita.getEstadoVisita() != EstadoVisita.PENDIENTE_APROBACION_OLVIDO) {
+            throw new IllegalStateException(
+                    "La visita no requiere aprobacion o ya fue procesada. Estado: " + visita.getEstadoVisita());
         }
 
         visita.setEstadoVisita(EstadoVisita.APROBADO);
         visitaRepository.update(visita);
-        auditService.log(actor.userId(), actor.username(), "APROBAR_VISITA", "Visita ID " + visitaId + " aprobada por funcionario", ipOrigen);
+        auditService.log(actor.userId(), actor.username(), "APROBAR_VISITA",
+                "Visita ID " + visitaId + " aprobada por funcionario", ipOrigen);
         return visita;
     }
 
@@ -93,7 +101,8 @@ public class GestionarVisitaUseCase {
 
         visita.setEstadoVisita(EstadoVisita.RECHAZADO);
         visitaRepository.update(visita);
-        auditService.log(actor.userId(), actor.username(), "RECHAZAR_VISITA", "Visita ID " + visitaId + " rechazada por funcionario", ipOrigen);
+        auditService.log(actor.userId(), actor.username(), "RECHAZAR_VISITA",
+                "Visita ID " + visitaId + " rechazada por funcionario", ipOrigen);
         return visita;
     }
 
@@ -104,16 +113,19 @@ public class GestionarVisitaUseCase {
         Persona persona = personaRepository.findById(visita.getPersonaId())
                 .orElseThrow(() -> new IllegalArgumentException("Persona no encontrada asociada a la visita"));
 
-        // REGLA DE NEGOCIO: Validar que la persona NO tenga estado RESTRINGIDO por un incidente activo
+        // REGLA DE NEGOCIO: Validar que la persona NO tenga estado RESTRINGIDO por un
+        // incidente activo
         new RestrictedPersonValidationStrategy().validate(persona, visita);
 
-        // REGLA DE NEGOCIO: Aplicar estrategia de validacion de acceso segun el tipo de visita
+        // REGLA DE NEGOCIO: Aplicar estrategia de validacion de acceso segun el tipo de
+        // visita
         AccessValidationStrategy strategy = visita.getTipoVisita() == TipoVisita.PRE_REGISTRADA
                 ? new PreRegisteredValidationStrategy()
                 : new UnannouncedValidationStrategy();
         strategy.validate(persona, visita);
 
-        // REGLA DE NEGOCIO: Auto-regularizacion de salida olvidada. Si existe una visita previa en estado DENTRO, cerrarla como CERRADA_POR_SISTEMA
+        // REGLA DE NEGOCIO: Auto-regularizacion de salida olvidada. Si existe una
+        // visita previa en estado DENTRO, cerrarla como CERRADA_POR_SISTEMA
         Optional<Visita> visitaActivaPrevia = visitaRepository.findLatestActiveVisitByPersonaId(persona.getId());
         if (visitaActivaPrevia.isPresent()) {
             Visita previa = visitaActivaPrevia.get();
@@ -125,7 +137,8 @@ public class GestionarVisitaUseCase {
             auditService.logSalidaOlvidada(persona.getId(), persona.getDocIdentidad(), previa.getId(), ipOrigen);
         }
 
-        // INTENCION: Cambiar estado de la visita actual a DENTRO e imponer fecha/hora de ingreso actual
+        // INTENCION: Cambiar estado de la visita actual a DENTRO e imponer fecha/hora
+        // de ingreso actual
         visita.setEstadoVisita(EstadoVisita.DENTRO);
         visita.setFechaHoraIngreso(LocalDateTime.now());
         visita.setGuardiaIngresoId(guardiaContext.userId());
@@ -139,7 +152,8 @@ public class GestionarVisitaUseCase {
 
         auditService.log(guardiaContext.userId(), guardiaContext.username(), "CHECK_IN",
                 "Check-in registrado para persona con doc: " + persona.getDocIdentidad() +
-                        " en PuntoAcceso #" + visita.getPuntoAccesoIngresoId(), ipOrigen);
+                        " en PuntoAcceso #" + visita.getPuntoAccesoIngresoId(),
+                ipOrigen);
 
         return visita;
     }
@@ -149,7 +163,8 @@ public class GestionarVisitaUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("Visita no encontrada con ID: " + visitaId));
 
         if (visita.getEstadoVisita() != EstadoVisita.DENTRO) {
-            throw new IllegalStateException("La visita no se encuentra en estado DENTRO. Estado actual: " + visita.getEstadoVisita());
+            throw new IllegalStateException(
+                    "La visita no se encuentra en estado DENTRO. Estado actual: " + visita.getEstadoVisita());
         }
 
         visita.setEstadoVisita(EstadoVisita.FINALIZADO);
@@ -174,7 +189,8 @@ public class GestionarVisitaUseCase {
 
     public void limpiarVisitas(AuthenticatedUserContext actor, String ipOrigen) {
         visitaRepository.deleteAll();
-        auditService.log(actor.userId(), actor.username(), "LIMPIAR_VISITAS", "El administrador limpio todo el historial de visitas", ipOrigen);
+        auditService.log(actor.userId(), actor.username(), "LIMPIAR_VISITAS",
+                "El administrador limpio todo el historial de visitas", ipOrigen);
     }
 
     public Visita findById(Long id) {

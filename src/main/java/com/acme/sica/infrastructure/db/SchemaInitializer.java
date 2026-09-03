@@ -21,8 +21,6 @@ public class SchemaInitializer {
     }
 
     public void initialize() {
-        System.out.println("[DB Init] Inicializando esquema de base de datos (" + connectionFactory.getDatabaseType() + ")...");
-
         try (Connection conn = connectionFactory.getConnection();
              Statement stmt = conn.createStatement()) {
 
@@ -40,7 +38,6 @@ public class SchemaInitializer {
 
             executeSqlScript(stmt, "/schema.sql");
             executeSqlScript(stmt, "/data.sql");
-            System.out.println("[DB Init] Base de datos " + connectionFactory.getDatabaseType() + " lista y verificada.");
 
             // Garantizar migración de columnas en tabla visita si la base de datos ya existía
             try {
@@ -172,7 +169,6 @@ public class SchemaInitializer {
                 updatePst.setString(1, hasher.hashPassword("func123"));
                 updatePst.setString(2, "func1");
                 updatePst.executeUpdate();
-                System.out.println("[DB Init] Hashes y estado de desbloqueo de usuarios semilla verificados (admin, guardia1, func1).");
             } catch (Exception e) {
                 System.err.println("[DB Init Warning] No se pudieron actualizar contraseñas semilla: " + e.getMessage());
             }
@@ -209,9 +205,7 @@ public class SchemaInitializer {
                 if (!sql.trim().isEmpty()) {
                     try {
                         stmt.execute(sql.trim());
-                    } catch (Exception e) {
-                        System.err.println("[DB Init Warning] Warning ejecutando SQL: " + e.getMessage());
-                    }
+                    } catch (Exception ignored) {}
                 }
             }
         }
